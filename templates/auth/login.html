@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block page_title %}Gate Access Logic{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="card" style="width: 420px; padding: 3rem;">
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <i class="fas fa-fingerprint" style="font-size: 3rem; color: var(--accent); margin-bottom: 1.5rem;"></i>
+            <h1 style="color: white; margin-bottom: 0.5rem;">Welcome to SNOX</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Identity verification required.</p>
+        </div>
+
+        <form method="POST">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 1px; color: var(--text-muted);">Secure Key / Staff ID</label>
+                <input type="text" name="username" placeholder="Enter ID" required>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 1px; color: var(--text-muted);">Pin / Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <div style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="remember" id="rem" style="width: 15px;">
+                <label for="rem" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">Maintain session (30m)</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                INITIALIZE ACCESS <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
+            </button>
+        </form>
+        
+        <div style="margin-top: 2rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+            <p>© 2024 SNOX SECURITY HUB. ALL RIGHTS RESERVED.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

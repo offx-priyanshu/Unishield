@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNOX - Smart Outpass System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .alert {
+            animation: slideInRight 0.5s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        {% if current_user.is_authenticated %}
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fas fa-shield-alt"></i> SNOX<span>.AI</span>
+            </div>
+            <nav>
+                <ul>
+                    {% if current_user.role == 'admin' %}
+                    <li><a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' }}"><i class="fas fa-grid-2"></i> <i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('admin.manage_students') }}" class="{{ 'active' if request.endpoint == 'admin.manage_students' }}"><i class="fas fa-user-graduate"></i> Students</a></li>
+                    <li><a href="{{ url_for('admin.manage_staff') }}" class="{{ 'active' if request.endpoint == 'admin.manage_staff' }}"><i class="fas fa-user-shield"></i> Staff</a></li>
+                    <li><a href="#"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                    {% elif current_user.role == 'guard' %}
+                    <li><a href="{{ url_for('guard.dashboard') }}" class="{{ 'active' if request.endpoint == 'guard.dashboard' }}"><i class="fas fa-camera"></i> Scan Center</a></li>
+                    <li><a href="#"><i class="fas fa-history"></i> Log View</a></li>
+                    {% elif current_user.role == 'student' %}
+                    <li><a href="{{ url_for('student.dashboard') }}" class="{{ 'active' if request.endpoint == 'student.dashboard' }}"><i class="fas fa-id-card"></i> My Status</a></li>
+                    <li><a href="{{ url_for('student.request_outpass') }}" class="{{ 'active' if request.endpoint == 'student.request_outpass' }}"><i class="fas fa-paper-plane"></i> Outpass Request</a></li>
+                    {% endif %}
+                    <li style="margin-top: 2rem;"><a href="{{ url_for('auth.logout') }}" style="color: var(--danger);"><i class="fas fa-power-off"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        {% endif %}
+
+        <main class="content {{ 'auth-main' if not current_user.is_authenticated else '' }}">
+            {% if current_user.is_authenticated %}
+            <header class="main-header animate-fade">
+                <div>
+                    <h1 style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">{% block page_title %}{% endblock %}</h1>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                        <i class="far fa-calendar-alt"></i> {{ current_time.strftime('%A, %d %B %Y') }}
+                    </p>
+                </div>
+                <div class="user-profile">
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600; font-size: 0.9375rem;">{{ current_user.name }}</div>
+                        <div style="font-size: 0.75rem; color: var(--primary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">{{ current_user.role }}</div>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </header>
+            {% endif %}
+
+            <div id="flash-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert glass-card" style="padding: 1.25rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid {{ 'var(--success)' if category == 'success' else 'var(--danger)' }}; display: flex; align-items: center; gap: 1rem; background: rgba(15, 23, 42, 0.95);">
+                                <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }}" style="color: {{ 'var(--success)' if category == 'success' else 'var(--danger)' }}; font-size: 1.25rem;"></i>
+                                <div style="font-size: 0.875rem; font-weight: 500;">{{ message }}</div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script>
+        // Auto-hide flashes after 5 seconds
+        setTimeout(() => {
+            const container = document.getElementById('flash-container');
+            if (container) {
+                const alerts = container.getElementsByClassName('alert');
+                for (let alert of alerts) {
+                    alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateX(20px)';
+                    setTimeout(() => alert.remove(), 500);
+                }
+            }
+        }, 5000);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

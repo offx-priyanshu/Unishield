@@ -1,0 +1,296 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Security Scan Center{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 380px; gap: 2.5rem;" class="animate-fade">
+    <div class="glass-card" style="text-align: center; padding: 2.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700;">Live Vision Matcher</h2>
+            <div id="ai-status" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                <span style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; display: inline-block;" id="status-dot"></span>
+                <span id="status-text">AI Ready</span>
+            </div>
+        </div>
+
+        <div class="camera-container" id="camera-box">
+            <div style="width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; position: relative;">
+                <video id="video" width="100%" height="100%" autoplay style="object-fit: cover; display: none;"></video>
+                <div id="camera-placeholder" style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
+                    <div style="width: 80px; height: 80px; background: var(--glass-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-video-slash" style="font-size: 2rem; color: var(--text-muted);"></i>
+                    </div>
+                    <p style="color: var(--text-muted); font-weight: 500;">Access camera to start scanning</p>
+                </div>
+                <div class="camera-overlay" id="cam-overlay"></div>
+                <div class="scan-line" id="scan-line"></div>
+                
+                <!-- Locking Indicator -->
+                <div id="lock-indicator" style="position: absolute; top: 1rem; right: 1rem; background: rgba(16, 185, 129, 0.9); color: white; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: none; z-index: 20;">
+                    <i class="fas fa-lock"></i> FACE LOCKED
+                </div>
+            </div>
+        </div>
+
+        <div id="scan-status" style="margin-top: 1.5rem; font-size: 1.125rem; font-weight: 600; min-height: 1.75rem; color: var(--primary);"></div>
+        
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1.25rem;">
+            <button class="btn" id="start-scan" style="background: var(--primary); padding: 1rem 2rem;">
+                <i class="fas fa-power-off"></i> Initialize System
+            </button>
+            <button class="btn" style="background: var(--danger); display: none; padding: 1rem 2rem;" id="stop-scan">
+                <i class="fas fa-stop-circle"></i> Terminate Session
+            </button>
+        </div>
+
+        <canvas id="canvas" style="display:none;" width="640" height="480"></canvas>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="glass-card" id="scan-result" style="display: none; border-top: 4px solid var(--primary); min-height: 400px;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-id-badge" style="color: var(--primary);"></i> Verification Profile
+            </h3>
+            <div id="student-info">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+        
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem;">Security Monitor</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid var(--glass-border);">
+                    <span style="font-size: 0.875rem;">Neural Engine</span>
+                    <span style="color: var(--success); font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px;">ACTIVE</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid var(--glass-border);">
+                    <span style="font-size: 0.875rem;">Network Latency</span>
+                    <span id="latency-text" style="color: var(--primary); font-size: 0.75rem;">0ms</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.875rem;">Database Sync</span>
+                    <span style="color: var(--success); font-size: 1rem;"><i class="fas fa-check-circle"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const placeholders = document.getElementById('camera-placeholder');
+    const startBtn = document.getElementById('start-scan');
+    const stopBtn = document.getElementById('stop-scan');
+    const scanStatus = document.getElementById('scan-status');
+    const scanLine = document.getElementById('scan-line');
+    const camOverlay = document.getElementById('cam-overlay');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const lockIndicator = document.getElementById('lock-indicator');
+    const scanResult = document.getElementById('scan-result');
+    const studentInfo = document.getElementById('student-info');
+
+    let isScanning = false;
+    let scanInterval = null;
+    let audioCtx = null;
+
+    // Initialize Web Audio for Beeps
+    const initAudio = () => {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    };
+
+    const playBeep = (freq, duration, type = 'sine') => {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    };
+
+    const triggerSuccessSound = () => {
+        playBeep(880, 0.1);
+        setTimeout(() => playBeep(1046, 0.2), 100);
+    };
+
+    const triggerErrorSound = () => {
+        playBeep(220, 0.3, 'sawtooth');
+    };
+
+    startBtn.addEventListener('click', async () => {
+        initAudio();
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.style.display = 'block';
+            placeholders.style.display = 'none';
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+            
+            isScanning = true;
+            scanLine.style.display = 'block';
+            statusDot.style.background = 'var(--success)';
+            statusText.innerText = "System Alive";
+            scanStatus.innerText = "Monitoring for faces...";
+            
+            // Start the automated loop
+            startScanningLoop();
+        } catch (err) {
+            console.error("Error accessing camera:", err);
+            alert("Could not access camera. Please check permissions.");
+        }
+    });
+
+    stopBtn.addEventListener('click', () => {
+        const stream = video.srcObject;
+        if (stream) {
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+        }
+        video.style.display = 'none';
+        placeholders.style.display = 'flex';
+        startBtn.style.display = 'inline-flex';
+        stopBtn.style.display = 'none';
+        
+        isScanning = false;
+        clearInterval(scanInterval);
+        scanLine.style.display = 'none';
+        camOverlay.classList.remove('locked');
+        lockIndicator.style.display = 'none';
+        statusDot.style.background = '#94a3b8';
+        statusText.innerText = "AI Offline";
+        scanStatus.innerText = "";
+        scanResult.style.display = 'none';
+    });
+
+    const startScanningLoop = () => {
+        // Run scan every 2.5 seconds to avoid overloading server
+        scanInterval = setInterval(() => {
+            if (!isScanning) return;
+            performScan();
+        }, 2500);
+    };
+
+    async function performScan() {
+        const startTime = Date.now();
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, 640, 480);
+        const imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+        // Visual "Locking" effect
+        camOverlay.classList.add('locked');
+        lockIndicator.style.display = 'block';
+        scanStatus.innerText = "Face Detected. Analyzing...";
+
+        try {
+            const response = await fetch('/guard/scan-face', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            });
+            const data = await response.json();
+            
+            const latency = Date.now() - startTime;
+            document.getElementById('latency-text').innerText = `${latency}ms`;
+
+            if (data.status === 'success' || data.status === 'denied' || data.status === 'invalid') {
+                // Pause scanning to show result
+                isScanning = false;
+                clearInterval(scanInterval);
+                
+                showResult(data);
+                
+                if (data.status === 'success') {
+                    triggerSuccessSound();
+                    scanStatus.innerText = "Access Granted";
+                    scanStatus.style.color = "var(--success)";
+                } else {
+                    triggerErrorSound();
+                    scanStatus.innerText = "Access Denied";
+                    scanStatus.style.color = "var(--danger)";
+                }
+
+                // Resume after 5 seconds
+                setTimeout(() => {
+                    if (stopBtn.style.display !== 'none') { // only if still active
+                        isScanning = true;
+                        scanResult.style.display = 'none';
+                        scanStatus.innerText = "Monitoring for faces...";
+                        scanStatus.style.color = "var(--primary)";
+                        camOverlay.classList.remove('locked');
+                        lockIndicator.style.display = 'none';
+                        startScanningLoop();
+                    }
+                }, 5000);
+            } else {
+                // Unknown or no face found, just keep monitoring
+                camOverlay.classList.remove('locked');
+                lockIndicator.style.display = 'none';
+                scanStatus.innerText = "Monitoring...";
+            }
+        } catch (err) {
+            console.error("Scan error:", err);
+            camOverlay.classList.remove('locked');
+            lockIndicator.style.display = 'none';
+        }
+    }
+
+    function showResult(data) {
+        scanResult.style.display = 'block';
+        scanResult.style.borderColor = data.status === 'success' ? 'var(--success)' : 'var(--danger)';
+        
+        let content = '';
+        if (data.status === 'success') {
+            content = `
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 100px; height: 100px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; border: 2px solid var(--success);">
+                        <i class="fas fa-check" style="font-size: 3rem; color: var(--success);"></i>
+                    </div>
+                    <div style="color: var(--success); font-weight: 800; font-size: 1.5rem; letter-spacing: 0.1em;">${data.action.toUpperCase()} OK</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="stat-card" style="padding: 1rem; background: var(--glass-bg);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Student Name</div>
+                        <div style="font-weight: 700; font-size: 1.125rem;">${data.student}</div>
+                    </div>
+                    <div class="stat-card" style="padding: 1rem; background: var(--glass-bg);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Timestamp</div>
+                        <div style="font-weight: 700;">${data.timestamp}</div>
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                        <p style="font-size: 0.875rem; color: var(--text-main); font-weight: 500;">
+                            <i class="fas fa-info-circle"></i> ${data.message}
+                        </p>
+                    </div>
+                </div>
+            `;
+        } else {
+            content = `
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 100px; height: 100px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; border: 2px solid var(--danger);">
+                        <i class="fas fa-times" style="font-size: 3rem; color: var(--danger);"></i>
+                    </div>
+                    <div style="color: var(--danger); font-weight: 800; font-size: 1.5rem; letter-spacing: 0.1em;">DENIED</div>
+                </div>
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: center;">
+                    <p style="font-weight: 600; color: var(--danger);">${data.message}</p>
+                </div>
+                <div style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.875rem; text-align: center;">
+                    Please contact admin for manual verification.
+                </div>
+            `;
+        }
+        studentInfo.innerHTML = content;
+    }
+</script>
+{% endblock %}

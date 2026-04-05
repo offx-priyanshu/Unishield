@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Log Manifest{% endblock %}
+
+{% block content %}
+<div class="card" style="display: flex; gap: 1.5rem; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+    <div style="flex: 1; display: flex; gap: 1rem;">
+        <select style="width: auto; font-size: 0.8rem; background: var(--bg-dark); border-color: rgba(255,255,255,0.05); color: var(--text-muted);">
+            <option value="all">ALL SEVERITY NODES</option>
+            <option value="info">INFO ONLY</option>
+            <option value="warning">WARNING ONLY</option>
+            <option value="critical">CRITICAL ALERT</option>
+        </select>
+        <input type="date" style="max-width: 180px; font-size: 0.8rem;">
+    </div>
+    
+    <div style="display: flex; gap: 1rem;">
+        <a href="{{ url_for('admin.export', type='logs') }}" class="btn btn-ghost"><i class="fas fa-file-csv"></i> Export Manifest</a>
+    </div>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Identity</th>
+                <th>System Action</th>
+                <th>Manifest Details</th>
+                <th>Source IP</th>
+                <th>Vibrancy / Severity</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in logs %}
+            <tr>
+                <td class="mono" style="font-weight: 700; color: var(--accent);">STUDENTID_{{ l.user_id if l.user_id else 'SYSTEM' }}</td>
+                <td style="font-weight: 600;">{{ l.action | upper }}</td>
+                <td style="font-size: 0.85rem; color: var(--text-muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ l.description }}</td>
+                <td class="mono" style="font-size: 0.8rem; color: var(--text-muted);">{{ l.ip_address }}</td>
+                <td>
+                    {% if l.severity == 'critical' %}
+                        <span class="st-badge st-expired">CRITICAL</span>
+                    {% elif l.severity == 'warning' %}
+                        <span class="st-badge st-pending">WARNING</span>
+                    {% else %}
+                        <span class="st-badge st-approved">INFO</span>
+                    {% endif %}
+                </td>
+                <td class="mono" style="font-size: 0.8rem;">{{ l.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 4rem;">MANIFEST EMPTY</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

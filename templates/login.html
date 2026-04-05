@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Login to SNOX{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
+    <div class="glass-card" style="width: 100%; max-width: 400px; text-align: center;">
+        <h2 style="margin-bottom: 0.5rem;">SNOX.AI</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Secure Outpass Management System</p>
+        
+        <form method="POST" style="text-align: left;">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Username</label>
+                <input type="text" name="username" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--glass-bg); border: 1px solid var(--border-color); color: white; outline: none;" required>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Password</label>
+                <input type="password" name="password" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--glass-bg); border: 1px solid var(--border-color); color: white; outline: none;" required>
+            </div>
+            
+            <button type="submit" class="btn" style="width: 100%;">Access Portal</button>
+        </form>
+        
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.875rem;">
+            Contact Admin if you forgot your credentials.
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block page_title %}My Outpass Status{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;" class="animate-fade">
+    <h2 style="font-size: 1.25rem; font-weight: 700;">Outpass History</h2>
+    <a href="{{ url_for('student.request_outpass') }}" class="btn">
+        <i class="fas fa-paper-plane"></i> New Request
+    </a>
+</div>
+
+<div class="glass-card animate-fade" style="padding: 0;">
+    {% if not outpasses %}
+    <div style="text-align: center; color: var(--text-muted); padding: 5rem 2rem;">
+        <div style="width: 80px; height: 80px; background: var(--glass-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="fas fa-history" style="font-size: 2rem; opacity: 0.3;"></i>
+        </div>
+        <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">No history found</h3>
+        <p style="font-size: 0.875rem;">You haven't requested any outpasses yet.</p>
+    </div>
+    {% else %}
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Created On</th>
+                    <th>Destination</th>
+                    <th>Expected Return</th>
+                    <th>Current Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in outpasses %}
+                <tr>
+                    <td style="font-size: 0.875rem; font-weight: 500;">
+                        {{ op.created_at.strftime('%d %b, %H:%M') }}
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;">{{ op.destination }}</div>
+                    </td>
+                    <td style="font-size: 0.875rem;">
+                        <i class="far fa-clock"></i> {{ op.expected_entry_time.strftime('%d %b, %H:%M') }}
+                    </td>
+                    <td>
+                        {% set status_type = 'primary' %}
+                        {% if op.status == 'returned' %}{% set status_type = 'success' %}
+                        {% elif op.status == 'exited' and op.expected_entry_time < current_time %}{% set status_type = 'danger' %}
+                        {% elif op.status == 'pending' %}{% set status_type = 'warning' %}
+                        {% elif op.status == 'exited' %}{% set status_type = 'primary' %}
+                        {% endif %}
+                        <span class="status-badge {{ status_type }}">
+                            {% if op.status == 'exited' and op.expected_entry_time < current_time %}
+                                OVERDUE
+                            {% else %}
+                                {{ op.status|upper }}
+                            {% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

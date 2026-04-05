@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Notification Center{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h3 style="color: var(--accent);">SIGNAL INBOX</h3>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Last Polled: {{ now.strftime('%H:%M:%S') }}</p>
+    </div>
+
+    {% for n in notifications %}
+    <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1rem; position: relative; background: {{ 'rgba(0,200,255,0.03)' if not n.is_read else 'transparent' }}; border-left: 4px solid {{ 'var(--accent)' if n.type == 'approval' else 'var(--warning)' if n.type == 'request' else 'var(--danger)' if n.type == 'alert' else 'var(--border)' }};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <p style="font-weight: 700; font-size: 1rem; color: var(--text-main);">{{ n.title | upper }}</p>
+            <p class="mono" style="font-size: 0.75rem; color: var(--text-muted);">{{ n.created_at.strftime('%H:%M %d/%m') }}</p>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">{{ n.message }}</p>
+        {% if not n.is_read %}
+        <span style="position: absolute; top: 0.75rem; left: -10px; width: 6px; height: 60%; background: var(--accent); border-radius: 3px;"></span>
+        {% endif %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 5rem 0; color: var(--text-muted); font-size: 0.85rem;">
+        <i class="fas fa-satellite" style="font-size: 3rem; margin-bottom: 2rem; opacity: 0.1;"></i>
+        <p>NO SIGNALS RECEIVED</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

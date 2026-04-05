@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block page_title %}SMS Command Center{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem;">
+    <!-- SMS Test Form -->
+    <div class="card" style="padding: 3rem;">
+        <h3 style="margin-bottom: 2.5rem; text-align: center;">SIGNAL TEST PANEL</h3>
+        
+        <form method="POST">
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Recipient Index (Phone)</label>
+                <input type="text" name="phone" placeholder="+91-XXXXXXXXXX" required>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Signal Template</label>
+                <select name="type" id="signalType">
+                    <option value="exit">EXIT ALERT (Manifest Exit)</option>
+                    <option value="return">RETURN ALERT (Manifest Return)</option>
+                    <option value="overdue">OVERDUE ALERT (Manifest Critical)</option>
+                    <option value="blacklist">BLACKLIST ALERT (Manifest Restricted)</option>
+                    <option value="custom">CUSTOM SIGNAL (Manual Input)</option>
+                </select>
+            </div>
+
+            <div id="customArea" style="margin-bottom: 2.5rem; display: none;">
+                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Manual Signal Protocol</label>
+                <textarea name="custom" placeholder="Identity encoded message..." style="min-height: 100px;"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem;">
+                INITIATE SIGNAL TRANSMISSION <i class="fas fa-satellite-dish" style="margin-left: 0.75rem;"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Instructions / Stats -->
+    <div>
+        <div class="card" style="background: rgba(0,200,255,0.03); border-color: rgba(0,200,255,0.1); margin-bottom: 2rem; padding: 2.5rem;">
+            <p style="font-size: 0.85rem; color: var(--accent); font-weight: 700; margin-bottom: 1rem;"><i class="fas fa-terminal"></i> TRANSMISSION PROTOCOLS</p>
+            <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: none; line-height: 2;">
+                <li><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--accent);"></i> Fast2SMS: Transactional Route (Default)</li>
+                <li><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--accent);"></i> Delivery Latency: ~0.5s - 4.2s (P99)</li>
+                <li><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--accent);"></i> All signals are logged in the Activity Manifest</li>
+                <li><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--accent);"></i> Auto-Fallback: Twilio Cluster (Failover Mode)</li>
+            </ul>
+        </div>
+        
+        <div class="card" style="padding: 2.5rem;">
+            <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; margin-bottom: 1.5rem;">PROVIDER CALIBRATION</p>
+            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                <div style="flex: 1; height: 4px; background: var(--success); border-radius: 2px;"></div>
+                <p class="mono" style="font-size: 0.75rem; color: var(--success);">FAST2SMS: ACTIVE (Primary)</p>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="flex: 1; height: 4px; background: var(--border); border-radius: 2px;"></div>
+                <p class="mono" style="font-size: 0.75rem; color: var(--text-muted);">TWILIO: STANDBY (Secondary)</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $('#signalType').on('change', function() {
+        if ($(this).val() == 'custom') {
+            $('#customArea').slideDown();
+        } else {
+            $('#customArea').slideUp();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Departure Board{% endblock %}
+
+{% block content %}
+<div class="card" style="display: flex; gap: 0.5rem; background: rgba(255,255,255,0.01); border-color: rgba(255,255,255,0.03); margin-bottom: 2.5rem; padding: 0.5rem; border-radius: 12px;">
+    <a href="{{ url_for('admin.outpasses') }}?status=pending" class="btn btn-ghost {{ 'active' if current_status == 'pending' else '' }}" style="flex: 1; justify-content: center; font-size: 0.75rem; border: none; font-weight: 800;">PENDING NODES</a>
+    <a href="{{ url_for('admin.outpasses') }}?status=approved" class="btn btn-ghost {{ 'active' if current_status == 'approved' else '' }}" style="flex: 1; justify-content: center; font-size: 0.75rem; border: none; font-weight: 800;">AUTHORIZED</a>
+    <a href="{{ url_for('admin.outpasses') }}?status=out" class="btn btn-ghost {{ 'active' if current_status == 'out' else '' }}" style="flex: 1; justify-content: center; font-size: 0.75rem; border: none; font-weight: 800;">ACTIVE DEPARTURES</a>
+    <a href="{{ url_for('admin.outpasses') }}?status=returned" class="btn btn-ghost {{ 'active' if current_status == 'returned' else '' }}" style="flex: 1; justify-content: center; font-size: 0.75rem; border: none; font-weight: 800;">COMPLETED CYCLES</a>
+    <a href="{{ url_for('admin.outpasses') }}?status=expired" class="btn btn-ghost {{ 'active' if current_status == 'expired' else '' }}" style="flex: 1; justify-content: center; font-size: 0.75rem; border: none; font-weight: 800;">EXPIRED / OVERDUE</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Identity #</th>
+                <th>Manifest Details</th>
+                <th>Expected Return</th>
+                <th>Access Status</th>
+                <th>Calibration Metadata</th>
+                <th>Action Node</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for op in outpasses %}
+            <tr>
+                <td class="mono" style="font-weight: 700; color: var(--accent);">DP_REQ_00{{ op.id }}</td>
+                <td>
+                    <div style="font-weight: 600;">Dest: {{ op.destination }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Purpose: {{ op.purpose }}</div>
+                </td>
+                <td class="mono" style="font-size: 0.85rem;">{{ op.expected_return.strftime('%d/%m/%Y %H:%M') if op.expected_return else 'UNDEFINED' }}</td>
+                <td>
+                    <span class="st-badge st-{{ op.status }}">
+                        {{ op.status | upper }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem; opacity: 0.6;">
+                        <i class="fas fa-camera" title="Vision Exit-Verified" style="color: {{ 'var(--success)' if op.face_verified_exit else 'var(--text-muted)' }};"></i>
+                        <i class="fas fa-camera" title="Vision Return-Verified" style="color: {{ 'var(--success)' if op.face_verified_return else 'var(--text-muted)' }};"></i>
+                        <i class="fas fa-sms" title="Mobile Auth Sent" style="color: {{ 'var(--accent)' if op.alert_sent else 'var(--text-muted)' }};"></i>
+                    </div>
+                </td>
+                <td>
+                    {% if op.status == 'pending' %}
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ url_for('admin.outpasses') }}?op_id={{ op.id }}&action=approve" class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.7rem;"><i class="fas fa-check"></i> GRANT</a>
+                            <a href="{{ url_for('admin.outpasses') }}?op_id={{ op.id }}&action=reject" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.7rem;"><i class="fas fa-times"></i> VETO</a>
+                        </div>
+                    {% else %}
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">LOGGED DATA</p>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 4rem;">NO ACTIVITY IN QUEUE</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

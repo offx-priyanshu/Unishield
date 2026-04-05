@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Terminal Control{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+    <!-- Scan Terminal Card -->
+    <a href="{{ url_for('guard.scan') }}" class="card" style="text-decoration: none; text-align: center; padding: 4rem; transition: transform 0.3s; border-top: 4px solid var(--accent);">
+        <i class="fas fa-video" style="font-size: 4rem; color: var(--accent); margin-bottom: 2rem;"></i>
+        <h2 style="color: white; margin-bottom: 1rem;">LIVE SCAN TERMINAL</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Initiate neural face matching for campus entry/exit verification.</p>
+        <div style="margin-top: 2rem; display: inline-flex; align-items: center; gap: 0.5rem; color: var(--accent); font-weight: 700; font-size: 0.8rem;">
+            LAUNCH LENS <i class="fas fa-chevron-right"></i>
+        </div>
+    </a>
+
+    <!-- Dashboard/Stats Card -->
+    <div class="card" style="padding: 4rem; text-align: center; border-top: 4px solid var(--success);">
+        <i class="fas fa-id-card-clip" style="font-size: 4rem; color: var(--success); margin-bottom: 2rem;"></i>
+        <h2 style="color: white; margin-bottom: 1rem;">STAFF MONITOR</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Verified identity logs and security protocols for current duty cycle.</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2.5rem;">
+            <div style="background: rgba(0,232,122,0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,232,122,0.1);">
+                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Engine Status</p>
+                <p style="font-weight: 800; color: var(--success);">ONLINE</p>
+            </div>
+            <div style="background: rgba(0,200,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,200,255,0.1);">
+                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Sync Node</p>
+                <p style="font-weight: 800; color: var(--accent);">STABLE</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card:hover { transform: translateY(-5px); }
+</style>
+{% endblock %}

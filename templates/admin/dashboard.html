@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Command Center{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+    <!-- Stat Cards -->
+    <div class="card" style="border-top: 4px solid var(--accent);">
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">TOTAL DIRECTORY</p>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <h2 style="font-size: 2.25rem;">{{ total_students }}</h2>
+            <p style="font-size: 0.7rem; color: var(--success);"><i class="fas fa-arrow-up"></i> +2%</p>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Verified Student Profiles</p>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--success);">
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">CURRENTLY OUT</p>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <h2 style="font-size: 2.25rem;">{{ currently_out }}</h2>
+            <p style="font-size: 0.7rem; color: var(--success);"><i class="fas fa-signal"></i> Live</p>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Students Outside Campus</p>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--warning);">
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">PENDING REQUESTS</p>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <h2 style="font-size: 2.25rem;">{{ pending_approval }}</h2>
+            <p style="font-size: 0.7rem; color: var(--warning);"><i class="fas fa-clock"></i> Action Required</p>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Outpass Approval Queue</p>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--danger);">
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">BLACKLISTED</p>
+        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <h2 style="font-size: 2.25rem;">{{ blacklisted_count }}</h2>
+            <p style="font-size: 0.7rem; color: var(--danger);"><i class="fas fa-ban"></i> Restricted</p>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Access-Blocked Profiles</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem; margin-bottom: 2.5rem;">
+    <!-- Recent Activity -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3>LIVE ACTIVITY STREAM</h3>
+            <a href="{{ url_for('admin.reports') }}" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.4rem 1rem;">Full Log</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Identity</th>
+                    <th>Action</th>
+                    <th>Node</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                    <td class="mono" style="font-size: 0.85rem; color: var(--accent);">STUDENTID_{{ log.user_id if log.user_id else 'UNKNOWN' }}</td>
+                    <td>{{ log.action }}</td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ log.ip_address }}</td>
+                    <td class="mono" style="font-size: 0.8rem;">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Rapid Access Outpass -->
+    <div class="card">
+        <h3 style="margin-bottom: 1.5rem;">RECENT OUTPASS REQS</h3>
+        {% for op in recent_outpasses %}
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 0.75rem; border-left: 3px solid var(--warning);">
+            <div style="flex: 1;">
+                <p style="font-weight: 700; font-size: 0.85rem;">REQUEST #{{ op.id }}</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">Dest: {{ op.destination }}</p>
+            </div>
+            <a href="{{ url_for('admin.outpasses') }}?status=pending" class="btn btn-ghost" style="padding: 0.5rem;"><i class="fas fa-chevron-right" style="font-size: 0.7rem;"></i></a>
+        </div>
+        {% endfor %}
+        <a href="{{ url_for('admin.outpasses') }}" class="btn btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">MANAGE ALL REQUESTS</a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>WEEKLY DEPARTURE ANALYTICS</h3>
+    <div style="height: 300px; margin-top: 2rem;">
+        <canvas id="weeklyChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Exits Recorded',
+                data: [12, 19, 3, 5, 2, 3, 20],
+                backgroundColor: 'rgba(0, 200, 255, 0.4)',
+                borderColor: '#00c8ff',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

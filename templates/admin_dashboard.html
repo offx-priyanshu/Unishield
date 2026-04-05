@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Admin Overview{% endblock %}
+
+{% block content %}
+<div class="stat-grid animate-fade">
+    <div class="stat-card">
+        <h3>Total Students</h3>
+        <div class="value">{{ total_students }}</div>
+        <i class="fas fa-user-graduate" style="position: absolute; right: 1rem; bottom: 1rem; opacity: 0.1; font-size: 3rem;"></i>
+    </div>
+    <div class="stat-card">
+        <h3>Currently Out</h3>
+        <div class="value" style="color: var(--primary);">{{ active_outpasses }}</div>
+        <i class="fas fa-sign-out-alt" style="position: absolute; right: 1rem; bottom: 1rem; opacity: 0.1; font-size: 3rem;"></i>
+    </div>
+    <div class="stat-card">
+        <h3>Overdue Returns</h3>
+        <div class="value" style="color: var(--warning);">{{ overdue_count }}</div>
+        <i class="fas fa-clock" style="position: absolute; right: 1rem; bottom: 1rem; opacity: 0.1; font-size: 3rem;"></i>
+    </div>
+    <div class="stat-card">
+        <h3>System Status</h3>
+        <div class="value" style="color: var(--success);">Online</div>
+        <i class="fas fa-server" style="position: absolute; right: 1rem; bottom: 1rem; opacity: 0.1; font-size: 3rem;"></i>
+    </div>
+</div>
+
+<div class="glass-card animate-fade" style="animation-delay: 0.1s;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 700;">Live Activity Monitor</h2>
+        <div style="display: flex; gap: 1rem;">
+            <span id="log-status" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                <span style="width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block;"></span>
+                Live Syncing
+            </span>
+            <a href="{{ url_for('admin.export_students') }}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.8125rem; background: var(--glass-bg);">
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+        </div>
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User ID</th>
+                    <th>Action</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="log-table-body">
+                {% for log in recent_logs %}
+                <tr>
+                    <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                    <td><span style="font-family: monospace; background: var(--glass-bg); padding: 2px 6px; border-radius: 4px;">{{ log.user_id }}</span></td>
+                    <td>{{ log.action }}</td>
+                    <td>
+                        <span class="status-badge {{ log.type }}">
+                            {{ log.type }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateLogs() {
+        const logStatus = document.getElementById('log-status');
+        fetch('/admin/api/logs')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('log-table-body');
+                tbody.innerHTML = '';
+                data.forEach(log => {
+                    let typeClass = 'primary';
+                    let typeColor = '#3b82f6';
+                    if (log.type === 'entry') { typeColor = '#10b981'; } 
+                    else if (log.type === 'exit') { typeColor = '#3b82f6'; }
+                    else if (log.type === 'alert') { typeColor = '#ef4444'; }
+                    
+                    const time = log.timestamp.split(' ')[1];
+                    
+                    tbody.innerHTML += `
+                        <tr class="animate-fade">
+                            <td>${time}</td>
+                            <td><span style="font-family: monospace; background: var(--glass-bg); padding: 2px 6px; border-radius: 4px;">${log.user_id}</span></td>
+                            <td>${log.action}</td>
+                            <td>
+                                <span style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; background: ${typeColor}1a; color: ${typeColor}; text-transform: uppercase;">
+                                    ${log.type}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+    }
+
+    // Refresh every 10 seconds
+    setInterval(updateLogs, 10000);
+</script>
+{% endblock %}

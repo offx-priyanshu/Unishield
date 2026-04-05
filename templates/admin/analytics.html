@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Intelligence Hub{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Main Trend -->
+    <div class="card" style="height: 450px;">
+        <h3 style="margin-bottom: 2rem;">30-DAY DEPARTURE TREND</h3>
+        <div style="height: 350px;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Status Dist -->
+    <div class="card" style="height: 450px; text-align: center;">
+        <h3 style="margin-bottom: 2rem;">DISTRIBUTION BY STATUS</h3>
+        <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Violation Stat -->
+    <div class="card">
+        <h3 style="margin-bottom: 2.5rem; color: var(--danger);">SUSPICIOUS NODES (TOP 5)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Identity</th>
+                    <th>Count</th>
+                    <th>Risk Factor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>SID_SNOX_4021</td><td>4</td><td style="color: var(--danger);">CRITICAL</td></tr>
+                <tr><td>SID_SNOX_0092</td><td>3</td><td style="color: var(--danger);">CRITICAL</td></tr>
+                <tr><td>SID_SNOX_8821</td><td>1</td><td style="color: var(--warning);">WARNING</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Dept distribution -->
+    <div class="card">
+        <h3 style="margin-bottom: 2rem;">DEPARTMENT ACTIVITY PROFILE</h3>
+        <div style="height: 300px;">
+            <canvas id="deptChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+    <div class="card" style="text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">AVG EXIT SESSION</p>
+        <h2 style="font-size: 2rem; color: var(--success);">4.2 <span style="font-size: 0.8rem; font-weight: 300;">HRS</span></h2>
+    </div>
+    <div class="card" style="text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">ENROLLMENT %</p>
+        <h2 style="font-size: 2rem; color: var(--accent);">94.8 <span style="font-size: 0.8rem; font-weight: 300;">%</span></h2>
+    </div>
+    <div class="card" style="text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">IDENTITY RECALL</p>
+        <h2 style="font-size: 2rem; color: var(--success);">0.18 <span style="font-size: 0.8rem; font-weight: 300;">MS</span></h2>
+    </div>
+    <div class="card" style="text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">MONTHLY DELTA</p>
+        <h2 style="font-size: 2rem; color: var(--success);">+12.4 <span style="font-size: 0.8rem; font-weight: 300;">%</span></h2>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const COLORS = ['#00c8ff', '#00e87a', '#ffb800', '#ff3b5c', '#94a3b8'];
+    const CHART_OPT = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { 
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, 
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+        }
+    };
+
+    // Trend Chart
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 30}, (_, i) => i+1),
+            datasets: [{ 
+                label: 'Exits', 
+                data: [12,15,4,2,3,10,25,30,12,14,5,6,3,12,4,20,31,12,15,4,2,3,10,25,30,12,14,5,6,3], 
+                borderColor: '#00c8ff', 
+                tension: 0.4, 
+                fill: true, 
+                backgroundColor: 'rgba(0,200,255,0.05)',
+                pointRadius: 0
+            }]
+        },
+        options: CHART_OPT
+    });
+
+    // Doughnut
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Approved', 'Out', 'Returned', 'Rejected', 'Expired'],
+            datasets: [{ 
+                data: [12, 19, 3, 5, 2], 
+                backgroundColor: COLORS, 
+                borderColor: '#0e1216',
+                borderWidth: 5
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            cutout: '80%',
+            plugins: { 
+                legend: { 
+                    position: 'bottom', 
+                    labels: { color: '#94a3b8', font: { family: 'Inter', size: 10 }, padding: 20 } 
+                } 
+            } 
+        }
+    });
+
+    // Dept bar
+    new Chart(document.getElementById('deptChart'), {
+        type: 'bar',
+        data: {
+            labels: ['CSE', 'ECE', 'ME', 'CE', 'IT'],
+            datasets: [{ 
+                data: [42, 35, 12, 8, 22], 
+                backgroundColor: COLORS, 
+                borderRadius: 8,
+                maxBarThickness: 40
+            }]
+        },
+        options: CHART_OPT
+    });
+</script>
+{% endblock %}

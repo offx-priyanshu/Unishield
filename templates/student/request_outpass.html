@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block page_title %}Initiate Security Departure Request{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto; padding: 4rem;">
+    <div style="text-align: center; margin-bottom: 3.5rem;">
+        <i class="fas fa-paper-plane" style="font-size: 3rem; color: var(--accent); margin-bottom: 1.5rem; opacity: 0.8;"></i>
+        <h1 style="color: white; margin-bottom: 0.5rem;">Manifest Request</h1>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Specify departure parameters for authorization.</p>
+    </div>
+
+    <form method="POST">
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Travel Destination</label>
+            <input type="text" name="destination" placeholder="External Sector / Address" required>
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Purpose of Departure</label>
+            <textarea name="purpose" placeholder="Manifest intent / necessity..." style="min-height: 120px;" required></textarea>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 1px; color: var(--text-muted);">Expected Absence Cycle (Hours)</label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
+                <label class="hr-choice">
+                    <input type="radio" name="hours" value="2" checked style="display: none;">
+                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">2H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="hours" value="4" style="display: none;">
+                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">4H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="hours" value="8" style="display: none;">
+                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">8H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="hours" value="24" style="display: none;">
+                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">24H</span>
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem;">
+            SEND FOR REVIEW <i class="fas fa-satellite-dish" style="margin-left: 0.75rem;"></i>
+        </button>
+    </form>
+    
+    <div style="margin-top: 2.5rem; text-align: center;">
+        <a href="{{ url_for('student.dashboard') }}" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; font-weight: 600;"><i class="fas fa-arrow-left"></i> RETURN TO DASHBOARD</a>
+    </div>
+</div>
+
+<style>
+    .hr-choice input:checked + span {
+        background: rgba(0,200,255,0.1) !important;
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+    }
+</style>
+{% endblock %}

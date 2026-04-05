@@ -1,0 +1,236 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Student Directory{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;" class="animate-fade">
+    <div style="display: flex; gap: 1rem; flex: 1;">
+        <div style="position: relative; width: 300px;">
+            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+            <input type="text" id="studentSearch" placeholder="Search by name or ID..." onkeyup="filterStudents()" class="form-input" style="padding-left: 2.5rem;">
+        </div>
+        <select id="deptFilter" onchange="filterStudents()" class="form-input" style="width: 180px;">
+            <option value="">All Departments</option>
+            {% set depts = [] %}
+            {% for s in students %}
+                {% if s.department not in depts %}
+                    {% set _ = depts.append(s.department) %}
+                    <option value="{{ s.department }}">{{ s.department }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+        <a href="{{ url_for('admin.export_students') }}" class="btn" style="background: var(--glass-bg);">
+            <i class="fas fa-file-csv"></i> Export
+        </a>
+        <button class="btn" onclick="toggleAddForm()"><i class="fas fa-plus"></i> Register Student</button>
+    </div>
+</div>
+
+<div id="add-student-form" class="glass-card animate-fade" style="display: none; margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem;">Register New Student</h3>
+    <form method="POST" enctype="multipart/form-data" id="registrationForm">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" class="form-input" required placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label>Student ID</label>
+                <input type="text" name="student_id" class="form-input" required placeholder="S12345">
+            </div>
+            <div class="form-group">
+                <label>Parent's Phone</label>
+                <input type="text" name="parent_phone" class="form-input" required placeholder="+91 XXXX XXXX">
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" name="department" class="form-input" required placeholder="Computer Science">
+            </div>
+            
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Face Registration Mode</label>
+                <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="reg_mode" value="upload" checked onclick="toggleRegMode('upload')"> Upload Photo
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="reg_mode" value="camera" onclick="toggleRegMode('camera')"> Live Capture
+                    </label>
+                </div>
+            </div>
+
+            <div id="upload-mode" class="form-group" style="grid-column: span 2;">
+                <label>Upload Face Photo</label>
+                <input type="file" name="face_image" accept="image/*" class="form-input" id="fileInput">
+                <p style="font-size: 0.75rem; color: var(--text-muted); mt-1;">Clear passport size photo recommended.</p>
+            </div>
+
+            <div id="camera-mode" class="form-group" style="grid-column: span 2; display: none;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; background: #000; border-radius: 8px; padding: 1rem; position: relative;">
+                    <video id="regVideo" width="320" height="240" autoplay style="border-radius: 4px;"></video>
+                    <div id="captureProgress" style="display: none; position: absolute; bottom: 1rem; background: var(--primary); padding: 4px 12px; border-radius: 4px; font-size: 0.75rem;">
+                        Capturing: <span id="captureCount">0</span>/3
+                    </div>
+                    <button type="button" class="btn" id="captureBtn" onclick="captureFace()" style="background: var(--success);">
+                        <i class="fas fa-camera"></i> Take Snapshot
+                    </button>
+                    <input type="hidden" name="captured_image" id="capturedImageInput">
+                    <canvas id="regCanvas" width="640" height="480" style="display: none;"></canvas>
+                    <div id="capturePreview" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;"></div>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <button type="button" class="btn" style="background: var(--glass-bg);" onclick="toggleAddForm()">Cancel</button>
+            <button type="submit" class="btn">Complete Registration</button>
+        </div>
+    </form>
+</div>
+
+<div class="glass-card animate-fade" style="animation-delay: 0.2s;">
+    <div style="overflow-x: auto;">
+        <table class="data-table" id="studentTable">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>ID & Dept</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr class="student-row">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 32px; height: 32px; background: var(--glass-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user" style="font-size: 0.8rem; color: var(--text-muted);"></i>
+                            </div>
+                            <span class="student-name" style="font-weight: 600;">{{ student.name }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.875rem; font-weight: 600;">{{ student.student_id }}</div>
+                        <div class="student-dept" style="font-size: 0.75rem; color: var(--text-muted);">{{ student.department }}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge {{ 'alert' if student.is_blacklisted else 'success' }}">
+                            {{ 'Blacklisted' if student.is_blacklisted else 'Active' }}
+                        </span>
+                    </td>
+                    <td style="font-size: 0.8125rem; color: var(--text-muted);">
+                        {{ student.created_at.strftime('%d %b %Y') }}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            {% if student.is_blacklisted %}
+                            <a href="{{ url_for('admin.toggle_blacklist', user_id=student.id) }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--success);">
+                                <i class="fas fa-user-check"></i>
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('admin.toggle_blacklist', user_id=student.id) }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--warning);">
+                                <i class="fas fa-user-slash"></i>
+                            </a>
+                            {% endif %}
+                            <button type="button" class="btn" onclick="confirmDelete('{{ student.id }}', '{{ student.name }}')" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--danger);">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <form id="delete-form-{{ student.id }}" action="{{ url_for('admin.delete_user', user_id=student.id) }}" method="POST" style="display:none;"></form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleAddForm() {
+        const form = document.getElementById('add-student-form');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        if (form.style.display === 'none') {
+            stopCamera();
+        }
+    }
+
+    function toggleRegMode(mode) {
+        document.getElementById('upload-mode').style.display = mode === 'upload' ? 'block' : 'none';
+        document.getElementById('camera-mode').style.display = mode === 'camera' ? 'block' : 'none';
+        
+        if (mode === 'camera') {
+            startCamera();
+        } else {
+            stopCamera();
+        }
+    }
+
+    let stream = null;
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('regVideo').srcObject = stream;
+        } catch (err) {
+            console.error("Camera error:", err);
+            alert("Could not access camera.");
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+    }
+
+    function captureFace() {
+        const video = document.getElementById('regVideo');
+        const canvas = document.getElementById('regCanvas');
+        const preview = document.getElementById('capturePreview');
+        const input = document.getElementById('capturedImageInput');
+        
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, 640, 480);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        
+        input.value = dataUrl;
+        
+        // Show preview
+        preview.innerHTML = `<img src="${dataUrl}" style="width: 80px; height: 60px; border-radius: 4px; border: 2px solid var(--success);">`;
+        
+        // Show success
+        document.getElementById('captureBtn').innerHTML = `<i class="fas fa-check"></i> Captured!`;
+        setTimeout(() => {
+            document.getElementById('captureBtn').innerHTML = `<i class="fas fa-camera"></i> Take Snapshot`;
+        }, 1500);
+    }
+
+    function filterStudents() {
+        const search = document.getElementById('studentSearch').value.toLowerCase();
+        const dept = document.getElementById('deptFilter').value.toLowerCase();
+        const rows = document.getElementsByClassName('student-row');
+
+        for (let row of rows) {
+            const name = row.querySelector('.student-name').innerText.toLowerCase();
+            const id = row.querySelector('td:nth-child(2) div').innerText.toLowerCase();
+            const rowDept = row.querySelector('.student-dept').innerText.toLowerCase();
+
+            const matchesSearch = name.includes(search) || id.includes(search);
+            const matchesDept = dept === "" || rowDept === dept;
+
+            row.style.display = (matchesSearch && matchesDept) ? 'table-row' : 'none';
+        }
+    }
+
+    function confirmDelete(id, name) {
+        if (confirm(`Are you sure you want to PERMANENTLY delete student ${name}?`)) {
+            document.getElementById(`delete-form-${id}`).submit();
+        }
+    }
+</script>
+{% endblock %}

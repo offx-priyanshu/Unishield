@@ -4,7 +4,7 @@
 
 {% block content %}
 <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem;">
-    <!-- Live Vision Node -->
+    
     <div class="card" style="padding: 2.5rem; text-align: center;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3>LIVE VISION MATCHER</h3>
@@ -15,7 +15,7 @@
         </div>
 
         <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; position: relative; overflow: hidden; border: 1px solid var(--border); box-shadow: inset 0 0 50px rgba(0,0,0,0.8);">
-            <!-- Neural Scan Animation Overlay -->
+            
             <div id="scan_line" style="position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(to right, transparent, var(--accent), transparent); z-index: 10; animation: scanMove 4s infinite linear;"></div>
             <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 280px; height: 280px; border: 2px solid rgba(0, 200, 255, 0.3); border-radius: 50%; z-index: 5; pointer-events: none; border-style: dashed; animation: rotate 20s infinite linear;"></div>
             <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 240px; height: 240px; border: 2px solid rgba(0, 200, 255, 0.1); border-radius: 50%; z-index: 5; pointer-events: none;"></div>
@@ -23,7 +23,7 @@
             <video id="webcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
             <canvas id="canvas" style="display: none;"></canvas>
 
-            <!-- Face Lock HUD -->
+            
             <div id="hud" style="position: absolute; bottom: 2rem; right: 2rem; text-align: right; pointer-events: none; opacity: 0;">
                 <p class="mono" style="color: var(--accent); font-size: 0.8rem; margin-bottom: 0.5rem;"><i class="fas fa-crosshairs"></i> TARGET LOCKED</p>
                 <p id="hud_id" style="font-size: 1.25rem; font-weight: 800; color: white;">XXXX-XXXX</p>
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <!-- Security Monitor -->
+    
     <div>
         <div class="card" style="padding: 2rem;">
             <p style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); margin-bottom: 2rem; letter-spacing: 1px;">SECURITY MONITOR</p>

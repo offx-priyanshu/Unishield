@@ -28,13 +28,11 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
-    # Statistics for dashboard cards
     total_students = User.query.filter_by(role='student').count()
     currently_out = Outpass.query.filter_by(status='out').count()
     pending_approval = Outpass.query.filter_by(status='pending').count()
     blacklisted_count = User.query.filter_by(is_blacklisted=True).count()
     
-    # Recent activities
     recent_logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(10).all()
     recent_outpasses = Outpass.query.order_by(Outpass.created_at.desc()).limit(5).all()
     
@@ -50,7 +48,6 @@ def dashboard():
 @login_required
 @admin_required
 def students():
-    # Handle blacklist toggle via GET/POST
     blacklist_id = request.args.get('blacklist_id')
     if blacklist_id:
         student = User.query.get(blacklist_id)
@@ -62,7 +59,6 @@ def students():
             flash(f'Student {student.name} {action} successfully.', 'success')
             return redirect(url_for('admin.students'))
 
-    # List all students with search
     search = request.args.get('search')
     if search:
         all_students = User.query.filter(
@@ -79,7 +75,6 @@ def students():
 @admin_required
 def add_student():
     if request.method == 'POST':
-        # Registration logic
         name = request.form.get('name')
         student_id = request.form.get('student_id')
         email = request.form.get('email')
@@ -89,12 +84,10 @@ def add_student():
         year = request.form.get('year')
         hostel_room = request.form.get('hostel_room')
         
-        # Check if student exists
         if User.query.filter_by(student_id=student_id).first():
             flash(f'Student ID {student_id} already exists!', 'danger')
             return redirect(url_for('admin.add_student'))
 
-        # Handle face encoding from upload or capture
         captured_image = request.form.get('captured_image') # base64 from webcam
         face_image_file = request.files.get('face_image')
         
@@ -102,7 +95,6 @@ def add_student():
         photo_path = None
         
         if captured_image:
-            # Process base64
             import base64
             header, encoded = captured_image.split(",", 1)
             image_bytes = base64.b64decode(encoded)
@@ -112,7 +104,6 @@ def add_student():
                 f.write(image_bytes)
             photo_path = filepath
         elif face_image_file:
-            # Process uploaded file
             filename = secure_filename(f"{student_id}.jpg")
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             face_image_file.save(filepath)
@@ -126,7 +117,6 @@ def add_student():
             else:
                 flash('Face not detected in image. Please try again.', 'warning')
         
-        # Create user
         new_student = User(
             username=student_id.lower(),
             email=email,
@@ -155,7 +145,6 @@ def add_student():
 @login_required
 @admin_required
 def outpasses():
-    # Approval/Rejection logic
     action = request.args.get('action')
     op_id = request.args.get('op_id')
     
@@ -174,7 +163,6 @@ def outpasses():
             db.session.commit()
             return redirect(url_for('admin.outpasses'))
 
-    # Tabs for filtering
     status_filter = request.args.get('status', 'pending')
     all_outpasses = Outpass.query.filter_by(status=status_filter).order_by(Outpass.created_at.desc()).all()
     
@@ -221,7 +209,6 @@ def sms_test():
 @login_required
 @admin_required
 def notifications():
-    # Admin notification view
     notifs = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
     for n in notifs:
         n.is_read = True
@@ -318,7 +305,6 @@ def manage_admins():
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
-    # Security: Admins shouldn't delete themselves
     if user.id == current_user.id:
         flash("CRITICAL: You cannot delete your own administrative account!", 'danger')
         return redirect(request.referrer or url_for('admin.dashboard'))
@@ -326,10 +312,8 @@ def delete_user(user_id):
     username = user.username
     name = user.name
     
-    # Delete related outpasses if any
     Outpass.query.filter_by(student_id=user.id).delete()
     
-    # Delete user
     db.session.delete(user)
     db.session.commit()
     

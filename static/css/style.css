@@ -1,11 +1,11 @@
 :root {
-    --primary: #3b82f6;           /* Vibrant Blue */
+    --primary: #3b82f6;           
     --primary-glow: rgba(59, 130, 246, 0.5);
     --primary-hover: #2563eb;
     --success: #10b981;
     --danger: #ef4444;
     --warning: #f59e0b;
-    --bg-dark: #0a0f1d;           /* Deep Navy */
+    --bg-dark: #0a0f1d;           
     --card-bg: rgba(15, 23, 42, 0.8);
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
@@ -223,7 +223,7 @@ nav ul li a.active {
     scale: 1.05;
 }
 
-/* Auth Layout */
+
 .auth-main {
     width: 100%;
     padding: 0;
@@ -239,7 +239,7 @@ nav ul li a.active {
     margin: 2rem;
 }
 
-/* Header & Profile */
+
 header.main-header {
     display: flex;
     justify-content: space-between;
@@ -270,7 +270,7 @@ header.main-header {
     font-size: 1.1rem;
 }
 
-/* Alerts */
+
 #flash-container {
     position: fixed;
     top: 2rem;
@@ -298,7 +298,7 @@ header.main-header {
     to { transform: translateX(0); opacity: 1; }
 }
 
-/* Table Styles */
+
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -321,7 +321,7 @@ header.main-header {
     font-size: 0.9375rem;
 }
 
-/* Status Badges */
+
 .status-badge {
     padding: 0.4rem 1rem;
     border-radius: 999px;
@@ -352,7 +352,7 @@ header.main-header {
     color: var(--warning);
 }
 
-/* Form Styles */
+
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -380,7 +380,7 @@ header.main-header {
     background: rgba(15, 23, 42, 0.8);
 }
 
-/* Animations */
+
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-20px); }
     to { opacity: 1; transform: translateY(0); }

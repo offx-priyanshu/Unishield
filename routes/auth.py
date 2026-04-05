@@ -31,7 +31,6 @@ def login():
         login_user(user, remember=remember)
         Logger.log(user.id, f'User {username} logged in')
         
-        # Role-based redirect
         if user.role == 'admin':
             return redirect(url_for('admin.dashboard'))
         elif user.role == 'guard':

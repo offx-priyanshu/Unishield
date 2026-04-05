@@ -38,7 +38,6 @@ def scan():
 @login_required
 @guard_required
 def process_scan():
-    # AJAX call from /guard/scan
     data = request.json
     student_id = data.get('student_id')
     mode = data.get('mode') # EXIT | RETURN
@@ -56,23 +55,19 @@ def process_scan():
     if not student.face_encoded:
         return jsonify({'success': False, 'message': 'Face encoding not found. Contact Admin for enrollment.'}), 400
         
-    # Face recognition
     import json
     known_encoding_list = json.loads(student.face_encoded)
     match, result_msg = FaceUtils.compare_faces(known_encoding_list, base64_frame, tolerance=current_app.config.get('FACE_TOLERANCE', 0.5))
     
     if not match:
-        # Log failure and increment violations
         student.violations += 1
         db.session.commit()
         Logger.log(current_user.id, f'Security Alert: Face mismatch for {student.name}. Violation logged.', severity='warning')
         Logger.notify_admin(student.id, 'Face Mismatch Violation', f'Your face scan failed at the gate. Violation {student.violations}/3.', type='alert')
         return jsonify({'success': False, 'message': f'FACE MISMATCH: Identity could not be verified. Violation {student.violations} registered.'}), 401
 
-    # Identiy verified. Match logic depends on mode
     op = Outpass.query.filter_by(student_id=student.id).order_by(Outpass.created_at.desc()).first()
     
-    # Save frame as snapshot
     filename = secure_filename(f"{student_id}_{mode.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
     photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     header, encoded = base64_frame.split(",", 1)
@@ -89,7 +84,6 @@ def process_scan():
         op.face_verified_exit = True
         db.session.commit()
         
-        # Notify
         SMSService.notify_exit(student.name, student.parent_phone, op.destination, op.expected_return.strftime('%H:%M'))
         Logger.log(student.id, f'Student {student.name} exited campus')
         return jsonify({'success': True, 'message': f'ACCESS GRANTED: Student {student.name} exited campus.'})
@@ -104,7 +98,6 @@ def process_scan():
         op.face_verified_return = True
         db.session.commit()
         
-        # Notify
         SMSService.notify_return(student.name, student.parent_phone)
         Logger.log(student.id, f'Student {student.name} returned to campus')
         return jsonify({'success': True, 'message': f'ACCESS GRANTED: Student {student.name} returned to campus.'})

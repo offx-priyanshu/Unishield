@@ -23,10 +23,8 @@ def student_required(f):
 @login_required
 @student_required
 def dashboard():
-    # User info and outpass history
     outpass_history = Outpass.query.filter_by(student_id=current_user.id).order_by(Outpass.created_at.desc()).all()
     
-    # Recent notifications
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
     
     return render_template('student/dashboard.html', 
@@ -47,7 +45,6 @@ def request_outpass():
         destination = request.form.get('destination')
         hours = int(request.form.get('hours', 2))
         
-        # Check for existing pending/out requests
         active = Outpass.query.filter(
             (Outpass.student_id == current_user.id) & 
             (Outpass.status.in_(['pending', 'approved', 'out']))
@@ -57,7 +54,6 @@ def request_outpass():
             flash(f'You already have an active/pending request for {active.destination}.', 'warning')
             return redirect(url_for('student.dashboard'))
 
-        # Create outpass request
         expected_return = datetime.utcnow() + timedelta(hours=hours)
         
         new_outpass = Outpass(

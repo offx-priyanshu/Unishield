@@ -10,21 +10,6 @@ class SMSService:
         """
         print(f"Sending SMS to {to_number}: {message}")
         
-        # Fast2SMS example (uncomment if credentials available)
-        # url = "https://www.fast2sms.com/dev/bulkV2"
-        # payload = {
-        #     "message": message,
-        #     "language": "english",
-        #     "route": "q",
-        #     "numbers": to_number,
-        # }
-        # headers = {
-        #     "authorization": os.environ.get("FAST2SMS_API_KEY"),
-        #     "Content-Type": "application/x-www-form-urlencoded",
-        #     "Cache-Control": "no-cache",
-        # }
-        # response = requests.request("POST", url, data=payload, headers=headers)
-        # return response.json()
         
         return {"status": "success", "message": "SMS sent successfully (Mocked)"}
 

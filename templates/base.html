@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ app_name }} | {{ block_title | default('Security Panel') }}</title>
     
-    <!-- Fonts -->
+    
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome -->
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -219,7 +219,7 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
+    
     {% if current_user.is_authenticated %}
     <aside>
         <a href="/" class="logo">
@@ -251,7 +251,7 @@
     </aside>
     {% endif %}
 
-    <!-- Content -->
+    
     <main style="{% if not current_user.is_authenticated %}margin-left: 0;{% endif %}">
         {% if current_user.is_authenticated %}
         <div class="top-bar">

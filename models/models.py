@@ -21,7 +21,6 @@ class User(db.Model, UserMixin):
     is_blacklisted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Cascade relationships
     outpasses = db.relationship('Outpass', backref='student', cascade='all, delete-orphan', lazy=True)
     logs = db.relationship('Log', backref='user', cascade='all, delete-orphan', lazy=True)
     blacklist_records = db.relationship('Blacklist', foreign_keys='Blacklist.user_id', cascade='all, delete-orphan', lazy=True)

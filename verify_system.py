@@ -5,14 +5,12 @@ from services.face_service import FaceService
 app = create_app()
 
 with app.app_context():
-    # 1. Check Admin Account
     admin = User.query.filter_by(username='admin').first()
     if admin:
         print(f"✅ Admin account found: {admin.username}")
     else:
         print("❌ Admin account NOT found!")
 
-    # 2. Register a Student manually
     student_data = {
         'username': 'priyanshu_test',
         'name': 'Priyanshu Test',
@@ -37,15 +35,11 @@ with app.app_context():
     else:
         print(f"ℹ️ Student {student_data['username']} already exists.")
 
-    # 3. Test Face Service
     mock_encoding = FaceService.get_face_encoding(None) 
     if mock_encoding is not None:
         print(f"✅ Face Service Mock Encoding length: {len(mock_encoding)}")
     else:
         print(f"ℹ️ Face Service returned None for missing file (as expected).")
     
-    # 4. Check Roles
     from routes.auth import redirect_dashboard
-    # This might need a mock request context if it uses flask global variables, 
-    # but let's just check the logic.
     print(f"✅ Role redirection logic exists in routes/auth.py")

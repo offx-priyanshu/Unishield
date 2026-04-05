@@ -12,7 +12,6 @@ class FaceService:
     @staticmethod
     def get_face_encoding(image_path):
         if not HAS_FACE_RECOG:
-            # Fallback for mock if library is not available
             return np.random.rand(128)
         
         if image_path is None or not os.path.exists(image_path):
@@ -31,11 +30,8 @@ class FaceService:
     @staticmethod
     def compare_faces(known_encoding, face_image):
         if not HAS_FACE_RECOG:
-            # Simple mock match for development
             return True, 0.0
         
-        # known_encoding is a numpy array
-        # face_image can be a numpy array from cv2
         face_encodings = face_recognition.face_encodings(face_image)
         if len(face_encodings) > 0:
             match = face_recognition.compare_faces([known_encoding], face_encodings[0])
@@ -57,7 +53,6 @@ class FaceService:
         if not ret:
             return None, "Could not access camera"
         
-        # Convert BGR to RGB
         rgb_frame = frame[:, :, ::-1]
         face_locations = face_recognition.face_locations(rgb_frame)
         face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)

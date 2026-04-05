@@ -14,7 +14,6 @@ class FaceUtils:
             image = face_recognition.load_image_file(image_path)
             encodings = face_recognition.face_encodings(image)
             if encodings:
-                # Return the list as a JSON-compatible list
                 return encodings[0].tolist()
             return None
         except Exception as e:
@@ -25,21 +24,16 @@ class FaceUtils:
     def compare_faces(known_encoding_list, base64_frame, tolerance=0.5):
         """Compares a base64 frame against a known encoding list."""
         try:
-            # Decode base64 frame
             header, encoded = base64_frame.split(",", 1)
             image_bytes = base64.b64decode(encoded)
             image = Image.open(BytesIO(image_bytes))
             
-            # Convert PIL Image to RGB for face_recognition
             rgb_frame = np.array(image.convert('RGB'))
             
-            # Detect faces and encodings in the frame
             unknown_encodings = face_recognition.face_encodings(rgb_frame)
             if not unknown_encodings:
                 return False, "No face detected"
             
-            # Use the first face found in the frame
-            # Compare face encoding with known encoding
             results = face_recognition.compare_faces([np.array(known_encoding_list)], unknown_encodings[0], tolerance=tolerance)
             if results[0]:
                 return True, "Match found"

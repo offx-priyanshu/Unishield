@@ -22,21 +22,17 @@ def check_overdue():
         for op in overdue_outpasses:
             student = User.query.get(op.student_id)
             if student:
-                # Mark as expired
                 op.status = 'expired'
                 op.alert_sent = True
                 
-                # Increment violations
                 student.violations += 1
                 
-                # Auto-blacklist threshold
                 if student.violations >= Config.VIOLATION_THRESHOLD:
                     student.is_blacklisted = True
                     SMSService.notify_blacklisted(student.name, student.parent_phone)
                 else:
                     SMSService.notify_overdue(student.name, student.parent_phone, op.expected_return.strftime('%H:%M'))
                 
-                # Log it
                 log = ActivityLog(
                     user_id=student.id, 
                     action=f'OVERDUE Alert: {student.name}', 
@@ -49,7 +45,6 @@ def check_overdue():
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler()
-    # Run every 5 minutes
     scheduler.add_job(check_overdue, 'interval', minutes=5)
     print("SNOX Scheduler started...")
     try:

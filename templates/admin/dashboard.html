@@ -4,7 +4,7 @@
 
 {% block content %}
 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
-    <!-- Stat Cards -->
+    
     <div class="card" style="border-top: 4px solid var(--accent);">
         <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">TOTAL DIRECTORY</p>
         <div style="display: flex; align-items: baseline; gap: 0.5rem;">
@@ -43,7 +43,7 @@
 </div>
 
 <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem; margin-bottom: 2.5rem;">
-    <!-- Recent Activity -->
+    
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h3>LIVE ACTIVITY STREAM</h3>
@@ -71,7 +71,7 @@
         </table>
     </div>
 
-    <!-- Rapid Access Outpass -->
+    
     <div class="card">
         <h3 style="margin-bottom: 1.5rem;">RECENT OUTPASS REQS</h3>
         {% for op in recent_outpasses %}

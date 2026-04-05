@@ -11,7 +11,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize extensions
     db.init_app(app)
     
     login_manager = LoginManager()
@@ -24,11 +23,9 @@ def create_app():
         
     jwt = JWTManager(app)
 
-    # Create upload folder if not exists
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # Register blueprints
     from routes.auth import auth_bp
     from routes.admin import admin_bp
     from routes.student import student_bp
@@ -55,7 +52,6 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        # Seed default admin
         admin_user = User.query.filter_by(role='admin').first()
         if not admin_user:
             admin = User(
@@ -69,7 +65,6 @@ def create_app():
             db.session.add(admin)
             db.session.commit()
         else:
-            # Update existing admin to match new requirements if needed
             admin_user.username = 'priyanshugse'
             admin_user.email = 'priyanshugse@gmail.com'
             admin_user.set_password('vipul@123')

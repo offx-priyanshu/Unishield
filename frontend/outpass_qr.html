@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNOX — Outpass QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0e1a;--card:#111827;--card2:#1a2236;--cyan:#00e5ff;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;--border:#1e2d40}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{width:100%;max-width:480px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center}
+.logo span{font-size:22px;font-weight:800;color:var(--cyan);letter-spacing:3px}
+.card{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--green);border-radius:12px;padding:28px;text-align:center}
+.status-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.15);border:1px solid var(--green);color:var(--green);font-size:13px;font-weight:700;padding:8px 20px;border-radius:30px;margin-bottom:24px;letter-spacing:2px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.qr-wrapper{background:white;border-radius:12px;padding:16px;display:inline-block;margin:0 auto 24px;position:relative}
+#qr-container canvas{display:block}
+.qr-label{font-size:11px;color:#333;margin-top:8px;font-weight:600;letter-spacing:1px}
+.outpass-id{font-size:28px;font-weight:800;color:var(--cyan);letter-spacing:4px;margin-bottom:6px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;text-align:left}
+.info-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.info-item.full{grid-column:1/-1}
+.info-label{font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:4px}
+.info-value{font-size:14px;font-weight:600}
+.countdown-box{background:var(--card2);border:1px solid var(--yellow);border-radius:10px;padding:16px;margin-bottom:20px}
+.countdown-label{font-size:11px;color:var(--yellow);letter-spacing:2px;margin-bottom:8px}
+.countdown-time{font-size:32px;font-weight:800;color:var(--yellow);font-family:monospace;letter-spacing:4px}
+.countdown-time.expired{color:var(--red)}
+.expired-overlay{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(239,68,68,.85);border-radius:12px;align-items:center;justify-content:center;flex-direction:column;color:white;font-weight:800;font-size:20px;letter-spacing:3px}
+.expired-overlay.show{display:flex}
+.btn-print{display:block;width:100%;background:var(--cyan);color:#000;border:none;border-radius:8px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:2px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo"><span>SNOX</span></div>
+  <div class="card">
+    <div class="status-badge"><div class="dot"></div>OUTPASS APPROVED</div>
+    <div class="qr-wrapper">
+      <div id="qr-container"></div>
+      <div class="qr-label">SHOW THIS AT GATE</div>
+      <div class="expired-overlay" id="expired-overlay">✗<span style="font-size:14px;margin-top:4px">EXPIRED</span></div>
+    </div>
+    <div class="outpass-id" id="outpass-id">OP-0000</div>
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">STUDENT NAME</div><div class="info-value" id="s-name">—</div></div>
+      <div class="info-item"><div class="info-label">STUDENT ID</div><div class="info-value" id="s-sid">—</div></div>
+      <div class="info-item"><div class="info-label">DEPARTMENT</div><div class="info-value" id="s-dept">—</div></div>
+      <div class="info-item"><div class="info-label">APPROVED AT</div><div class="info-value" id="s-approved">—</div></div>
+      <div class="info-item full"><div class="info-label">DESTINATION</div><div class="info-value" id="s-dest">—</div></div>
+      <div class="info-item full"><div class="info-label">EXPECTED RETURN</div><div class="info-value" id="s-return" style="color:var(--cyan)">—</div></div>
+    </div>
+    <div class="countdown-box">
+      <div class="countdown-label">⏱ TIME REMAINING</div>
+      <div class="countdown-time" id="countdown">--:--:--</div>
+    </div>
+    <button class="btn-print" onclick="window.print()">PRINT / SAVE OUTPASS</button>
+  </div>
+</div>
+<script>
+const API='http://127.0.0.1:5000';
+const id=new URLSearchParams(window.location.search).get('id');
+let returnTime=null;
+
+async function load(){
+  const res=await fetch(`${API}/api/outpass/status/${id}`).catch(()=>null);
+  const d=res?await res.json():null;
+  if(!d||d.error){alert('Outpass not found');return}
+  document.getElementById('outpass-id').textContent=`OP-${String(d.id).padStart(4,'0')}`;
+  document.getElementById('s-name').textContent=d.student_name||'—';
+  document.getElementById('s-sid').textContent=d.sid||'—';
+  document.getElementById('s-dest').textContent=d.destination||'—';
+  document.getElementById('s-return').textContent=d.expected_return||'—';
+  if(d.approved_at) document.getElementById('s-approved').textContent=new Date(d.approved_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  if(d.expected_return){returnTime=new Date(d.expected_return.replace(' ','T'));startCountdown()}
+  new QRCode(document.getElementById('qr-container'),{
+    text:`SNOX|${d.qr_token}|${d.sid}|${d.id}|${d.expected_return}`,
+    width:200,height:200,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H
+  });
+}
+
+function startCountdown(){
+  setInterval(()=>{
+    const diff=returnTime-new Date();
+    const el=document.getElementById('countdown');
+    if(diff<=0){el.textContent='EXPIRED';el.classList.add('expired');document.getElementById('expired-overlay').classList.add('show');return}
+    const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+    el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if(diff<1800000)el.style.color='#ef4444';else if(diff<3600000)el.style.color='#f59e0b';
+  },1000);
+}
+if(id)load();
+</script>
+</body>
+</html>

@@ -203,17 +203,50 @@
         /* Flash message */
         .flash {
             position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            z-index: 2000;
-            animation: slideUp 0.3s ease-out;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1.25rem 2.5rem;
+            border-radius: 12px;
+            z-index: 9999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-weight: 700;
+            font-size: 1rem;
+            animation: slideDown 0.3s ease-out;
+            min-width: 300px;
+            text-align: center;
         }
-        .flash-success { background: var(--success); color: var(--bg-dark); }
-        .flash-danger { background: var(--danger); color: white; }
+        .flash-success { background: var(--success); color: var(--bg-dark); border: 1px solid rgba(255,255,255,0.2); }
+        .flash-danger { background: var(--danger); color: white; border: 1px solid rgba(255,255,255,0.2); }
 
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* Notification Bell CSS */
+        .nb-wrap{position:relative;display:inline-block}
+        .nb-btn{background:rgba(30,45,64,.5);border:1px solid var(--border,#1e2d40);color:var(--text,#e2e8f0);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;position:relative}
+        .nb-btn:hover{border-color:#00e5ff}
+        .nb-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid #0a0e1a}
+        .nb-badge.show{display:flex}
+        .nb-panel{position:absolute;top:calc(100% + 10px);right:0;width:320px;background:#111827;border:1px solid #1e2d40;border-radius:12px;z-index:1000;display:none;overflow:hidden}
+        .nb-panel.open{display:block}
+        .nb-ph{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #1e2d40}
+        .nb-pt{font-size:12px;font-weight:800;letter-spacing:2px}
+        .nb-mar{background:none;border:none;color:#00e5ff;font-size:11px;cursor:pointer;letter-spacing:1px}
+        .nb-list{max-height:360px;overflow-y:auto}
+        .nb-item{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #1e2d40;cursor:pointer;position:relative}
+        .nb-item:hover{background:#1a2236}
+        .nb-item.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#00e5ff}
+        .nb-item.unread[data-type="OVERDUE"]::before{background:#ef4444}
+        .nb-item.unread[data-type="VIOLATION"]::before{background:#f59e0b}
+        .nb-item.unread[data-type="BLACKLIST"]::before{background:#8b5cf6}
+        .nb-ico{width:34px;height:34px;border-radius:8px;background:rgba(0,229,255,.1);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+        .nb-cnt{flex:1;min-width:0}
+        .nb-title{font-size:13px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .nb-msg{font-size:11px;color:#64748b;line-height:1.4}
+        .nb-time{font-size:10px;color:#64748b;margin-top:3px}
+        .nb-empty{text-align:center;padding:40px;color:#64748b;font-size:13px}
+        .nb-footer{padding:10px 16px;border-top:1px solid #1e2d40;text-align:center}
+        .nb-foot-btn{background:none;border:none;color:#00e5ff;font-size:12px;cursor:pointer;letter-spacing:1px}
 
         {% block extra_css %}{% endblock %}
     </style>
@@ -246,6 +279,7 @@
                 <a href="{{ url_for('student.request_outpass') }}" class="nav-link"><i class="fas fa-paper-plane"></i> New Request</a>
             {% endif %}
             
+            <a href="{{ url_for('auth.change_password') }}" class="nav-link"><i class="fas fa-key"></i> Edit Credentials</a>
             <a href="{{ url_for('auth.logout') }}" class="nav-link" style="margin-top: 2rem; color: var(--danger);"><i class="fas fa-power-off"></i> Logout</a>
         </div>
     </aside>
@@ -257,10 +291,26 @@
         <div class="top-bar">
             <h1 style="font-size: 1.75rem;">{% block page_title %}{% endblock %}</h1>
             <div style="display: flex; align-items: center; gap: 1.5rem;">
-                <a href="{{ url_for('admin.notifications') if current_user.role == 'admin' else '#' }}" class="notification-bell">
+                {% if current_user.role == 'admin' %}
+                <div class="nb-wrap" id="nb-wrap">
+                  <button class="nb-btn" onclick="nbToggle()">🔔
+                    <span class="nb-badge" id="nb-badge">0</span>
+                  </button>
+                  <div class="nb-panel" id="nb-panel">
+                    <div class="nb-ph">
+                      <span class="nb-pt">ALERTS</span>
+                      <button class="nb-mar" onclick="nbMarkAll()">MARK ALL READ</button>
+                    </div>
+                    <div class="nb-list" id="nb-list"><div class="nb-empty">Loading...</div></div>
+                    <div class="nb-footer"><button class="nb-foot-btn" onclick="window.location='/activity_logs.html'">VIEW FULL LOG →</button></div>
+                  </div>
+                </div>
+                {% else %}
+                <a href="#" class="notification-bell">
                     <i class="fas fa-bell"></i>
                     <span id="notif-badge" class="badge">0</span>
                 </a>
+                {% endif %}
                 <div style="text-align: right;">
                     <p style="font-weight: 700; font-size: 0.9rem;">{{ current_user.name }}</p>
                     <p class="mono" style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase;">{{ current_user.role }}</p>
@@ -272,7 +322,10 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                    <div class="flash flash-{{ category }}">
+                        {{ message }}
+                        <i class="fas fa-times" style="margin-left: 1.5rem; cursor: pointer; opacity: 0.6;" onclick="this.parentElement.remove()"></i>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
@@ -282,9 +335,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
-        // Auto-dismiss flashes
-        setTimeout(() => { slideUpFlashes(); }, 4000);
-        function slideUpFlashes() { $('.flash').fadeOut(); }
+        // Flash messages stay until manual 'X' click
+        // setTimeout(() => { $('.flash').fadeOut(); }, 10000);
 
         // AJAX Notif Count update
         {% if current_user.is_authenticated %}
@@ -302,5 +354,74 @@
         {% endif %}
     </script>
     {% block scripts %}{% endblock %}
+    <script>
+    (function(){
+    const API='http://127.0.0.1:5000';
+    let nbData=[],nbOpen=false;
+    const ICONS={NEW_OUTPASS:'📋',OVERDUE:'⚠️',VIOLATION:'🚫',BLACKLIST:'🔒'};
+
+    async function nbFetch(){
+      try{
+        const r=await fetch(`${API}/api/notifications`);
+        const d=await r.json();
+        nbData=d.notifications||[];
+        const u=d.unread_count||0;
+        const b=document.getElementById('nb-badge');
+        if(b) {
+            b.textContent=u>99?'99+':u;
+            b.classList.toggle('show',u>0);
+        }
+        if(nbOpen)nbRender();
+      }catch{}
+    }
+
+    function nbRender(){
+      const list=document.getElementById('nb-list');
+      if(!list) return;
+      if(!nbData.length){list.innerHTML='<div class="nb-empty">All clear — no alerts</div>';return}
+      list.innerHTML=nbData.map(n=>`
+        <div class="nb-item ${n.is_read?'':'unread'}" data-type="${n.type}" onclick="nbClick(${n.id},'${n.type}','${n.sid}')">
+          <div class="nb-ico">${ICONS[n.type]||'📢'}</div>
+          <div class="nb-cnt">
+            <div class="nb-title">${n.title||n.type}</div>
+            <div class="nb-msg">${n.message||''}</div>
+            <div class="nb-time">${nbAgo(n.created_at)}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    function nbToggle(){nbOpen=!nbOpen;document.getElementById('nb-panel').classList.toggle('open',nbOpen);if(nbOpen)nbRender()}
+
+    async function nbMarkAll(){
+      try{await fetch(`${API}/api/notifications/mark-read`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})}catch{}
+      nbData.forEach(n=>n.is_read=1);
+      const b=document.getElementById('nb-badge');
+      if(b) { b.classList.remove('show'); }
+      nbRender();
+    }
+
+    async function nbClick(id,type,sid){
+      try{await fetch(`${API}/api/notifications/mark-read`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})}catch{}
+      const n=nbData.find(x=>x.id===id);if(n)n.is_read=1;nbRender();nbFetch();
+      if(type==='NEW_OUTPASS'||type==='OVERDUE')window.location='/departure_board.html';
+      else if(type==='VIOLATION'||type==='BLACKLIST')window.location=`/violation_history.html?sid=${sid}`;
+    }
+
+    window.nbClick=nbClick;window.nbToggle=nbToggle;window.nbMarkAll=nbMarkAll;
+
+    function nbAgo(ts){
+      const d=Date.now()-new Date(ts).getTime();
+      const m=Math.floor(d/60000),h=Math.floor(m/60),dy=Math.floor(h/24);
+      return dy>0?`${dy}d ago`:h>0?`${h}h ago`:m>0?`${m}m ago`:'just now';
+    }
+
+    document.addEventListener('click',e=>{
+      const w=document.getElementById('nb-wrap');
+      if(w&&!w.contains(e.target)){nbOpen=false;document.getElementById('nb-panel').classList.remove('open')}
+    });
+
+    nbFetch();setInterval(nbFetch,15000);
+    })();
+    </script>
 </body>
 </html>

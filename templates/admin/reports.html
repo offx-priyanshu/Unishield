@@ -1,43 +1,94 @@
 {% extends "base.html" %}
 
-{% block page_title %}Security Log Manifest{% endblock %}
+{% block page_title %}System Intelligence & Reports{% endblock %}
 
 {% block content %}
-<div class="card" style="display: flex; gap: 1.5rem; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
-    <div style="flex: 1; display: flex; gap: 1rem;">
-        <select style="width: auto; font-size: 0.8rem; background: var(--bg-dark); border-color: rgba(255,255,255,0.05); color: var(--text-muted);">
-            <option value="all">ALL SEVERITY NODES</option>
-            <option value="info">INFO ONLY</option>
-            <option value="warning">WARNING ONLY</option>
-            <option value="critical">CRITICAL ALERT</option>
-        </select>
-        <input type="date" style="max-width: 180px; font-size: 0.8rem;">
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="margin: 0; color: var(--accent);">Outpass Manifest</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Detailed track of student entries and exits.</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('admin.export', type='outpasses', format='excel') }}" class="btn btn-primary" style="background: #217346; border: none;">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+            <a href="{{ url_for('admin.export', type='outpasses', format='csv') }}" class="btn btn-ghost">
+                <i class="fas fa-file-csv"></i> Export CSV
+            </a>
+        </div>
     </div>
     
-    <div style="display: flex; gap: 1rem;">
-        <a href="{{ url_for('admin.export', type='logs') }}" class="btn btn-ghost"><i class="fas fa-file-csv"></i> Export Manifest</a>
+    <div style="margin-top: 1.5rem; overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Purpose</th>
+                    <th>Destination</th>
+                    <th>Exit Time</th>
+                    <th>Return Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in outpasses %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600;">{{ op.student.name if op.student else 'Unknown' }}</div>
+                        <div class="mono" style="font-size: 0.75rem; color: var(--text-muted);">{{ op.student.student_id if op.student else 'N/A' }}</div>
+                    </td>
+                    <td style="font-size: 0.85rem;">{{ op.purpose }}</td>
+                    <td style="font-size: 0.85rem;">{{ op.destination }}</td>
+                    <td class="mono" style="font-size: 0.8rem;">
+                        {{ op.exit_time.strftime('%b %d, %H:%M') if op.exit_time else '---' }}
+                    </td>
+                    <td class="mono" style="font-size: 0.8rem;">
+                        {{ op.return_time.strftime('%b %d, %H:%M') if op.return_time else '---' }}
+                    </td>
+                    <td>
+                        <span class="st-badge st-{{ op.status }}">
+                            {{ op.status | upper }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">NO OUTPASS RECORDS FOUND</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h3 style="margin: 0; color: var(--accent);">Activity Logs</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">System-wide security and action audit.</p>
+        </div>
+        <a href="{{ url_for('admin.export', type='logs', format='csv') }}" class="btn btn-ghost">
+            <i class="fas fa-file-csv"></i> Export Logs
+        </a>
+    </div>
+    
     <table>
         <thead>
             <tr>
                 <th>Identity</th>
-                <th>System Action</th>
-                <th>Manifest Details</th>
-                <th>Source IP</th>
-                <th>Vibrancy / Severity</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th>Severity</th>
                 <th>Timestamp</th>
             </tr>
         </thead>
         <tbody>
             {% for l in logs %}
             <tr>
-                <td class="mono" style="font-weight: 700; color: var(--accent);">STUDENTID_{{ l.user_id if l.user_id else 'SYSTEM' }}</td>
+                <td class="mono" style="font-weight: 700; color: var(--accent);">ID_{{ l.user_id if l.user_id else 'SYS' }}</td>
                 <td style="font-weight: 600;">{{ l.action | upper }}</td>
-                <td style="font-size: 0.85rem; color: var(--text-muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ l.description }}</td>
-                <td class="mono" style="font-size: 0.8rem; color: var(--text-muted);">{{ l.ip_address }}</td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">{{ l.description }}</td>
                 <td>
                     {% if l.severity == 'critical' %}
                         <span class="st-badge st-expired">CRITICAL</span>
@@ -51,7 +102,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 4rem;">MANIFEST EMPTY</td>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 3rem;">LOGS EMPTY</td>
             </tr>
             {% endfor %}
         </tbody>

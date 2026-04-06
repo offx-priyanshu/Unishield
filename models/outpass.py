@@ -1,5 +1,6 @@
 from datetime import datetime
 from .db import db
+from .user import User
 
 class Outpass(db.Model):
     __tablename__ = 'outpasses'
@@ -26,3 +27,5 @@ class Outpass(db.Model):
     
     remarks = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    student = db.relationship('User', foreign_keys=[student_id], backref='outpasses')

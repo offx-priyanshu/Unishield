@@ -112,20 +112,37 @@
         <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2rem; letter-spacing: 1.5px; text-align: center;">Vibrancy Calibration</p>
         
         <div id="camera_node" style="margin-bottom: 2rem;">
-            <div style="width: 100%; aspect-ratio: 1; background: var(--bg-dark); border-radius: 12px; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.8rem; text-transform: uppercase; font-weight: 700;">1. Face Scan (System Verification)</p>
+            <div style="width: 100%; aspect-ratio: 1.2; background: var(--bg-dark); border-radius: 12px; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-bottom: 1rem;">
                 <video id="webcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none;"></video>
                 <canvas id="canvas" style="display: none;"></canvas>
                 <img id="photo_preview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                 <div id="cam_trigger" style="text-align: center; cursor: pointer; color: var(--text-muted);">
-                    <i class="fas fa-camera" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--accent);"></i>
-                    <p style="font-size: 0.8rem; font-weight: 600;">ACTIVATE LENS</p>
+                    <i class="fas fa-user-circle" style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--accent);"></i>
+                    <p style="font-size: 0.7rem; font-weight: 600;">ACTIVATE LENS</p>
                 </div>
             </div>
+
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.8rem; text-transform: uppercase; font-weight: 700;">2. ID Card Scan (Records)</p>
+            <div style="width: 100%; aspect-ratio: 1.6; background: var(--bg-dark); border-radius: 12px; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                <video id="webcam_id" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; display: none;"></video>
+                <img id="id_preview" src="" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                <div id="id_trigger" style="text-align: center; cursor: pointer; color: var(--text-muted);">
+                    <i class="fas fa-id-card" style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--success);"></i>
+                    <p style="font-size: 0.7rem; font-weight: 600;">SCAN ID CARD</p>
+                </div>
+            </div>
+            <input type="hidden" name="id_card_image" id="id_card_image">
         </div>
 
         <div style="margin-bottom: 2rem;">
             <p style="text-align: center; color: var(--text-muted); font-size: 0.7rem; margin-bottom: 1.5rem;">-- OR UPLOAD ANALOG SOURCE --</p>
-            <input type="file" name="face_image" id="file_source" style="font-size: 0.8rem; border: none; background: transparent; padding: 0;">
+            <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+                <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Face Image</label>
+                <input type="file" name="face_image" style="font-size: 0.7rem; margin-bottom: 0.5rem;">
+                <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">ID Card Image</label>
+                <input type="file" name="id_image" style="font-size: 0.7rem;">
+            </div>
         </div>
 
         <div class="card" style="background: rgba(0,200,255,0.03); border-color: rgba(0,200,255,0.1);">
@@ -138,43 +155,45 @@
 
 {% block scripts %}
 <script>
-    let stream = null;
-    const webcam = document.getElementById('webcam');
-    const canvas = document.getElementById('canvas');
-    const photoPreview = document.getElementById('photo_preview');
-    const capturedInput = document.getElementById('captured_image');
-    const camTrigger = document.getElementById('cam_trigger');
+    const setupCam = (triggerId, videoId, previewId, inputId, isMirror = true) => {
+        const trigger = document.getElementById(triggerId);
+        const video = document.getElementById(videoId);
+        const preview = document.getElementById(previewId);
+        const input = document.getElementById(inputId);
+        const canvas = document.getElementById('canvas');
+        let stream = null;
 
-    camTrigger.onclick = async () => {
-        if (!stream) {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                webcam.srcObject = stream;
-                webcam.style.display = 'block';
-                camTrigger.innerHTML = '<i class="fas fa-dot-circle" style="font-size: 2.5rem; color: var(--danger);"></i><p style="font-size: 0.8rem; font-weight: 700;">CALIBRATE FRAME</p>';
-            } catch (err) {
-                alert("Camera access denied.");
+        trigger.onclick = async () => {
+            if (!stream) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    preview.style.display = 'none';
+                    trigger.innerHTML = `<i class="fas fa-dot-circle" style="font-size: 2rem; color: var(--danger);"></i><p style="font-size: 0.7rem; font-weight: 700;">CAPTURE</p>`;
+                } catch (err) { alert("Camera access denied."); }
+            } else {
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                if (isMirror) {
+                    context.translate(canvas.width, 0);
+                    context.scale(-1, 1);
+                }
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                preview.src = dataUrl;
+                preview.style.display = 'block';
+                video.style.display = 'none';
+                input.value = dataUrl;
+                stream.getTracks().forEach(t => t.stop());
+                stream = null;
+                trigger.innerHTML = `<i class="fas fa-sync" style="font-size: 1.5rem; color: var(--accent);"></i><p style="font-size: 0.7rem; font-weight: 700;">RETAKE</p>`;
             }
-        } else {
-            // Take snapshot
-            const context = canvas.getContext('2d');
-            canvas.width = webcam.videoWidth;
-            canvas.height = webcam.videoHeight;
-            context.translate(canvas.width, 0);
-            context.scale(-1, 1);
-            context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-            
-            const dataUrl = canvas.toDataURL('image/jpeg');
-            photoPreview.src = dataUrl;
-            photoPreview.style.display = 'block';
-            webcam.style.display = 'none';
-            capturedInput.value = dataUrl;
-            
-            // Stop stream
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-            camTrigger.innerHTML = '<i class="fas fa-sync" style="font-size: 2rem; color: var(--accent);"></i><p style="font-size: 0.8rem; font-weight: 700;">RE-CALIBRATE</p>';
-        }
+        };
     };
+
+    setupCam('cam_trigger', 'webcam', 'photo_preview', 'captured_image', true);
+    setupCam('id_trigger', 'webcam_id', 'id_preview', 'id_card_image', false);
 </script>
 {% endblock %}

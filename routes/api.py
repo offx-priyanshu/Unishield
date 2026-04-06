@@ -7,33 +7,54 @@ from datetime import datetime
 
 api_bp = Blueprint('api', __name__)
 
-@api_bp.route('/login', methods=['POST'])
-def api_login():
-    username = request.json.get('username')
-    password = request.json.get('password')
-    
-    user = User.query.filter_by(username=username).first()
-    if not user or not user.check_password(password):
-        return jsonify({'error': 'Unauthorized'}), 401
-        
-    access_token = create_access_token(identity=user.id)
-    return jsonify({'access_token': access_token, 'role': user.role})
+@api_bp.route('/outpass/verify-qr', methods=['POST'])
+def verify_qr():
+    token = request.json.get('token', '').strip()
+    # In this system, we use the Outpass ID as the token for simplicity in manual entry,
+    # but normally we'd have a separate token field.
+    # Let's assume the QR contains the Outpass ID.
+    try:
+        op_id = int(token)
+        op = Outpass.query.get(op_id)
+    except:
+        return jsonify({'valid': False, 'reason': 'Invalid Token Format'}), 400
 
-@api_bp.route('/erp-sync', methods=['GET'])
-@jwt_required()
-def erp_sync():
-    """ERP sync hook to fetch today's exit/return data."""
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0)
-    data = Outpass.query.filter(Outpass.created_at >= today_start).all()
-    
-    result = []
-    for op in data:
-        result.append({
-            'outpass_id': op.id,
-            'student_id': op.student_id,
-            'status': op.status,
-            'exit_time': op.exit_time.strftime('%Y-%m-%d %H:%M:%S') if op.exit_time else None,
-            'return_time': op.return_time.strftime('%Y-%m-%d %H:%M:%S') if op.return_time else None,
-            'face_verified': op.face_verified_exit and op.face_verified_return
-        })
-    return jsonify(result)
+    if not op:
+        return jsonify({'valid': False, 'reason': 'Outpass not found'}), 404
+        
+    student = User.query.get(op.student_id)
+    if not student:
+        return jsonify({'valid': False, 'reason': 'Student record missing'}), 404
+
+    if student.is_blacklisted:
+        return jsonify({'valid': False, 'reason': 'STUDENT IS BLACKLISTED'}), 403
+
+    if op.status not in ['approved', 'out', 'expired']:
+        return jsonify({'valid': False, 'reason': f'Status is {op.status.upper()}'}), 400
+
+    return jsonify({
+        'valid': True,
+        'outpass_id': op.id,
+        'sid': student.student_id,
+        'student_id': student.id,
+        'student_name': student.name,
+        'destination': op.destination,
+        'expected_return': op.expected_return.strftime('%Y-%m-%d %H:%M'),
+        'status': op.status
+    })
+
+@api_bp.route('/outpass/exit/<int:oid>', methods=['POST'])
+def mark_exit(oid):
+    op = Outpass.query.get_or_404(oid)
+    op.status = 'out'
+    op.exit_time = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True})
+
+@api_bp.route('/outpass/return/<int:oid>', methods=['POST'])
+def mark_return(oid):
+    op = Outpass.query.get_or_404(oid)
+    op.status = 'returned'
+    op.return_time = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True})

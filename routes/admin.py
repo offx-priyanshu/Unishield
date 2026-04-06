@@ -28,10 +28,15 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    
     total_students = User.query.filter_by(role='student').count()
-    currently_out = Outpass.query.filter_by(status='out').count()
+    currently_out = Outpass.query.filter(Outpass.status.in_(['out', 'expired'])).count()
     pending_approval = Outpass.query.filter_by(status='pending').count()
     blacklisted_count = User.query.filter_by(is_blacklisted=True).count()
+    
+    today_exits = Outpass.query.filter(Outpass.exit_time >= today).count()
+    today_returns = Outpass.query.filter(Outpass.return_time >= today).count()
     
     recent_logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(10).all()
     recent_outpasses = Outpass.query.order_by(Outpass.created_at.desc()).limit(5).all()
@@ -41,6 +46,8 @@ def dashboard():
                          currently_out=currently_out,
                          pending_approval=pending_approval,
                          blacklisted_count=blacklisted_count,
+                         today_exits=today_exits,
+                         today_returns=today_returns,
                          recent_logs=recent_logs,
                          recent_outpasses=recent_outpasses)
 
@@ -89,25 +96,43 @@ def add_student():
             return redirect(url_for('admin.add_student'))
 
         captured_image = request.form.get('captured_image') # base64 from webcam
+        id_card_image = request.form.get('id_card_image')   # base64 ID card
         face_image_file = request.files.get('face_image')
+        id_image_file = request.files.get('id_image')
         
         face_encoded = None
         photo_path = None
+        id_card_path = None
         
+        # Process Face Image
         if captured_image:
-            import base64
             header, encoded = captured_image.split(",", 1)
             image_bytes = base64.b64decode(encoded)
-            filename = secure_filename(f"{student_id}_orig.jpg")
+            filename = secure_filename(f"{student_id}_face.jpg")
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             with open(filepath, "wb") as f:
                 f.write(image_bytes)
             photo_path = filepath
         elif face_image_file:
-            filename = secure_filename(f"{student_id}.jpg")
+            filename = secure_filename(f"{student_id}_face.jpg")
             filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             face_image_file.save(filepath)
             photo_path = filepath
+
+        # Process ID Card Image
+        if id_card_image:
+            header, encoded = id_card_image.split(",", 1)
+            image_bytes = base64.b64decode(encoded)
+            filename = secure_filename(f"{student_id}_id.jpg")
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            with open(filepath, "wb") as f:
+                f.write(image_bytes)
+            id_card_path = filepath
+        elif id_image_file:
+            filename = secure_filename(f"{student_id}_id.jpg")
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            id_image_file.save(filepath)
+            id_card_path = filepath
             
         if photo_path:
             face_encoded_list = FaceUtils.get_encoding(photo_path)
@@ -115,7 +140,7 @@ def add_student():
                 import json
                 face_encoded = json.dumps(face_encoded_list)
             else:
-                flash('Face not detected in image. Please try again.', 'warning')
+                flash('Face not detected in the face scan. Please ensure clear visibility.', 'warning')
         
         new_student = User(
             username=student_id.lower(),
@@ -129,7 +154,8 @@ def add_student():
             year=int(year) if year else 1,
             hostel_room=hostel_room,
             face_encoded=face_encoded,
-            photo_path=photo_path
+            photo_path=photo_path,
+            id_card_photo=id_card_path
         )
         new_student.set_password('student123')
         db.session.add(new_student)
@@ -179,7 +205,8 @@ def analytics():
 @admin_required
 def reports():
     all_logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).all()
-    return render_template('admin/reports.html', logs=all_logs)
+    all_outpasses = Outpass.query.order_by(Outpass.created_at.desc()).all()
+    return render_template('admin/reports.html', logs=all_logs, outpasses=all_outpasses)
 
 @admin_bp.route('/sms_test', methods=['GET', 'POST'])
 @login_required
@@ -190,13 +217,13 @@ def sms_test():
         msg_type = request.form.get('type')
         
         if msg_type == 'exit':
-            success, msg = SMSService.notify_exit("Test Student", phone, "Local Market", "22:00")
+            success, msg = SMSService.notify_exit("Test Student", phone, phone, "Local Market", "22:00")
         elif msg_type == 'return':
-            success, msg = SMSService.notify_return("Test Student", phone)
+            success, msg = SMSService.notify_return("Test Student", phone, phone)
         elif msg_type == 'overdue':
-            success, msg = SMSService.notify_overdue("Test Student", phone, "21:00")
+            success, msg = SMSService.notify_overdue("Test Student", phone, phone, "21:00")
         elif msg_type == 'blacklist':
-            success, msg = SMSService.notify_blacklisted("Test Student", phone)
+            success, msg = SMSService.notify_blacklisted("Test Student", phone, phone)
         else:
             success, msg = SMSService.send_fast2sms(request.form.get('custom'), phone)
             
@@ -225,16 +252,43 @@ def notif_count():
 @login_required
 @admin_required
 def export(type):
+    format = request.args.get('format', 'csv')
+    
     if type == 'students':
         students = User.query.filter_by(role='student').all()
-        headers = ['ID', 'Student ID', 'Name', 'Email', 'Phone', 'Department', 'Violations', 'Blacklisted']
-        data = [[s.id, s.student_id, s.name, s.email, s.phone, s.department, s.violations, s.is_blacklisted] for s in students]
-        return ExportService.export_csv(headers, data, 'students_list')
+        headers = ['ID', 'Student ID', 'Name', 'Email', 'Phone', 'Parent Phone', 'Department', 'Violations', 'Blacklisted']
+        data = [[s.id, s.student_id, s.name, s.email, s.phone, s.parent_phone, s.department, s.violations, s.is_blacklisted] for s in students]
+        filename = 'students_list'
     elif type == 'logs':
         logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).all()
-        headers = ['ID', 'Action', 'Severity', 'IP Address', 'Timestamp']
-        data = [[l.id, l.action, l.severity, l.ip_address, l.timestamp] for l in logs]
-        return ExportService.export_csv(headers, data, 'activity_logs')
+        headers = ['ID', 'Action', 'Severity', 'IP Address', 'Description', 'Timestamp']
+        data = [[l.id, l.action, l.severity, l.ip_address, l.description, l.timestamp] for l in logs]
+        filename = 'activity_logs'
+    elif type == 'outpasses':
+        ops = Outpass.query.order_by(Outpass.created_at.desc()).all()
+        headers = ['ID', 'Student Name', 'Student ID', 'Purpose', 'Destination', 'Status', 'Exit Time', 'Return Time', 'Duration (Hrs)']
+        data = []
+        for op in ops:
+            student = User.query.get(op.student_id)
+            data.append([
+                op.id, 
+                student.name if student else 'Unknown', 
+                student.student_id if student else 'N/A',
+                op.purpose,
+                op.destination,
+                op.status,
+                op.exit_time.strftime('%Y-%m-%d %H:%M') if op.exit_time else 'N/A',
+                op.return_time.strftime('%Y-%m-%d %H:%M') if op.return_time else 'N/A',
+                op.time_limit_hours
+            ])
+        filename = f"outpass_report_{datetime.now().strftime('%Y%m%d')}"
+    else:
+        flash('Invalid export type', 'danger')
+        return redirect(url_for('admin.reports'))
+
+    if format == 'excel':
+        return ExportService.export_excel(headers, data, filename)
+    return ExportService.export_csv(headers, data, filename)
 @admin_bp.route('/guards', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -319,5 +373,20 @@ def delete_user(user_id):
     
     Logger.log(current_user.id, f'Admin purged user: {name} ({username})', severity='warning')
     flash(f"User {name} has been permanently purged from the registry.", 'info')
+    
+    return redirect(request.referrer or url_for('admin.dashboard'))
+
+@admin_bp.route('/reset_user_password/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def reset_user_password(user_id):
+    user = User.query.get_or_404(user_id)
+    new_temp_password = request.form.get('new_password', 'reset123') 
+
+    user.set_password(new_temp_password)
+    db.session.commit()
+    
+    Logger.log(current_user.id, f'Admin reset password for user: {user.username}', severity='warning')
+    flash(f"Password for {user.name} has been reset successfully.", 'success')
     
     return redirect(request.referrer or url_for('admin.dashboard'))

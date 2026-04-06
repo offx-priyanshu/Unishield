@@ -1,10 +1,25 @@
 # SNOX | Smart AI-Based Outpass Management System 🚀
 
 ![SNOX Banner](https://img.shields.io/badge/Status-Stable-success?style=for-the-badge)
-![AI-Vision](https://img.shields.io/badge/AI--Powered-Face%20Recognition-blue?style=for-the-badge)
-![Python-Flask](https://img.shields.io/badge/Built%20With-Python%20%26%20Flask-3776AB?style=for-the-badge&logo=python)
+![Security](https://img.shields.io/badge/Security-QR%20Enabled-00e5ff?style=for-the-badge)
+![Backend](https://img.shields.io/badge/Backend-Python%20%26%20Flask-3776AB?style=for-the-badge&logo=python)
+![Theme](https://img.shields.io/badge/Theme-Dark%20Glassmorphism-black?style=for-the-badge)
 
-**SNOX** stands for **Secure Network Outpass X-System**. It is a next-generation institution management tool that replaces traditional paper outpasses with a fully automated, AI-driven facial recognition pipeline. 
+**SNOX** stands for **Secure Network Outpass X-System**. It is a next-generation institution management tool that modernizes campus security using dynamic QR Codes, an AI-powered face/ID matching engine, and intelligent communication protocols.
+
+---
+
+## 🔥 Newly Integrated Features
+
+*   **AI-Powered Face Recognition**: Mandatory face scanning during both Exit and Return. Uses neural encodings to verify identity with a configurable tolerance engine.
+*   **Physical ID Card Verification**: Mandatory ID card scan during student enrollment. The system stores both the face encoding and the physical card image for cross-verification.
+*   **Dual-Recipient SMS Alerts**: Real-time automated SMS notifications sent simultaneously to both the **Student** and their **Parent/Guardian** during all critical events (Exit, Return, Overdue, Blacklist).
+*   **Professional Reporting & Excel Export**: Generate comprehensive student and movement reports with one-click **Excel (.xlsx)** and CSV exporting capabilities using Pandas/OpenPyxl.
+*   **Security Credential Management**: 
+    *   **Self-Service**: All roles (Student, Guard, Admin) can securely update their own passwords via the "Edit Credentials" portal.
+    *   **Administrative Reset**: Admins can override and reset any user's password directly from the management directory.
+*   **Immediate Auto-Blacklisting**: Built-in security logic that automatically blocks student access and notifies parents instantly if face verification fails at the gate or if return limits are exceeded.
+*   **Dynamic QR-Code Outpasses**: Students receive a secure, countdown-enabled QR token immediately upon approval for secondary verification.
 
 ---
 
@@ -13,35 +28,22 @@
 This system is built with a strictly role-based access control (RBAC) mechanism.
 
 ### 1. Administrative Node (Admin)
-*   **Total Oversight**: Monitor real-time campus statistics and movement.
-*   **User Management**: Enroll new students with AI-face calibration, add security guards, and create sub-admins.
-*   **Approval Authority**: Single-click approval/rejection of digital outpass requests.
-*   **Intelligence Reports**: Export movement logs and security violations in CSV format.
-*   **Blacklist Management**: Permanently or temporarily block students from leaving the campus.
+*   **Total Oversight**: Live analytics dashboard to monitor students currently out and pending requests.
+*   **Departure Control**: Single-click approval/rejection of digital outpass requests from the main departure board.
+*   **SMS Testing & Configuration**: Configure API keys and test SMS templates dynamically from the UI.
+*   **Intelligent Blacklisting**: Permanently or temporarily block students manually or configure the auto-blacklist system based on violation count.
 
 ### 2. Security Guard Node (Guard)
-*   **Live Vision Matcher**: A high-speed scanning interface to verify student identities.
-*   **SID Authentication**: SID-based lookup integrated with live camera frames.
-*   **Dual Mode Operation**:
-    *   **EXIT**: Verifies if the student has an approved outpass and records the time.
-    *   **RETURN**: Marks the student's safe return to campus.
-*   **Violation Logging**: Automated alerts if an unauthorized face is detected for an ID.
+*   **Live Vision Scanner**: A web-based camera scanner (using jsQR) to verify student outpass validity.
+*   **Gate Control**:
+    *   **EXIT**: Validates the unexpired QR Code and marks the student out.
+    *   **RETURN**: Scans token and marks the student's safe return to campus.
+*   **Manual Entry Validation**: Allows manual entry of tokens in case the camera fails to lock onto a QR code.
 
 ### 3. Student Node (Student)
-*   **Personal Dashboard**: View violation status, outpass history, and active approvals.
-*   **Outpass Requests**: Submit detailed outpass requests (Destination, Reason, Expected Return).
-*   **Notification Node**: In-app alerts for approval, rejection, or security warnings.
-
----
-
-## 🧠 Neural Processing Flow
-
-1.  **Request**: Student submits a digital request.
-2.  **Validation**: Admin reviews and approves the request.
-3.  **Authentication**: At the gate, the Guard enters the SID.
-4.  **Face Search**: System fetches the stored **128-dimensional face-encoding** for that ID.
-5.  **Matching**: Live camera input is compared against the database.
-6.  **Notification**: On successful Exit/Return, a **Secure SMS** is fired to the registered parent's number.
+*   **Personal Dashboard**: View violation standing and track digital outpass requests.
+*   **Request Outpass**: Submit requests via Fetch API to the core backend engine.
+*   **Live Boarding Pass (QR)**: Watch real-time countdown clocks marking exact expected return times associated with the generated QR token.
 
 ---
 
@@ -50,8 +52,7 @@ This system is built with a strictly role-based access control (RBAC) mechanism.
 ### System Prerequisites
 Ensure your machine has the following installed:
 - Python 3.9+
-- CMake (Required for `dlib` compilation)
-- VS Build Tools (Windows) / XCode Command Line Tools (macOS)
+- CMake (Required for any neural vision engines processing)
 
 ### Step-by-Step Installation
 1.  **Initialize Environment**:
@@ -64,42 +65,10 @@ Ensure your machine has the following installed:
     ```bash
     pip install -r requirements.txt
     ```
-3.  **Configure API Services**:
-    Edit `config.py` and add your **Fast2SMS API Key** or **Twilio** credentials to enable automated messaging.
-
-4.  **Database Migration**:
-    The system uses SQLite. To re-initialize, delete `snox.db` and run the app; tables will auto-generate.
-
----
-
-## 📝 Database Architecture
-
-*   **Users Table**: Identity details, role, and **JSON-stored face encodings**.
-*   **Outpasses Table**: Links students to their requests, timestamps, and guard verification status.
-*   **Logs Table**: Comprehensive records of every admin/guard action for audit trails.
-*   **Notifications Table**: User-specific alerts and messages.
-
----
-
-## 📂 Project Organization
-
-```
-SNOX/
-├── app.py              # Main Flask Application Object
-├── config.py           # Configuration (Database, SMS, JWT, Secrets)
-├── models/             # Database Models (SQLAlchemy Classes)
-│   ├── db.py           # DB Instance
-│   ├── user.py         # User & Auth Model
-│   └── outpass.py      # Request & Flow Model
-├── routes/             # Controller Logic (Blueprints)
-│   ├── auth.py         # Login/Logout & Sessions
-│   ├── admin.py        # Admin Operations & Management
-│   └── guard.py        # Face Scanning & Gate Control
-├── services/           # Backend Business Logic
-│   └── face_service.py # Neural Matching & Calibration
-├── templates/          # Modern UI (Jinja2 Components)
-└── utils/              # Utility Scripts (SMS, Export, Logging)
-```
+3.  **Run Application**:
+    ```bash
+    python app.py
+    ```
 
 ---
 
@@ -107,10 +76,9 @@ SNOX/
 
 To access the system locally, use the following default credentials. **Change them in Production.**
 
-*   **New Master Admin**:
+*   **Master Admin**:
     *   **Username**: `priyanshugse`
     *   **Password**: `vipul@123`
-    *   **Email**: `priyanshugse@gmail.com`
 *   **Default Guard**:
     *   **Username**: `guard1`
     *   **Password**: `guard123`
@@ -122,7 +90,7 @@ To access the system locally, use the following default credentials. **Change th
 For production deployment, it is recommended to use:
 - **Web Server**: Gunicorn (for Linux)
 - **Proxy**: Nginx (with SSL enabled)
-- **Database**: PostgreSQL (Recommended if scaling beyond 1000 users)
+- **Note**: QR scanning logic via device cameras using WebRTC mandates secure contexts (`https://` or `localhost`). 
 
 ---
 

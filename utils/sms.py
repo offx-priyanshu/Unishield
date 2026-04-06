@@ -36,21 +36,25 @@ class SMSService:
             return False, str(e)
 
     @staticmethod
-    def notify_exit(student_name, parent_phone, destination, expected_return):
+    def notify_exit(student_name, parent_phone, student_phone, destination, expected_return):
         message = f"SNOX ALERT: Student {student_name} has left campus for {destination}. Expected return: {expected_return}."
-        return SMSService.send_fast2sms(message, parent_phone)
+        numbers = f"{parent_phone},{student_phone}" if student_phone else parent_phone
+        return SMSService.send_fast2sms(message, numbers)
 
     @staticmethod
-    def notify_return(student_name, parent_phone):
+    def notify_return(student_name, parent_phone, student_phone):
         message = f"SNOX ALERT: Student {student_name} has returned to campus safely."
-        return SMSService.send_fast2sms(message, parent_phone)
+        numbers = f"{parent_phone},{student_phone}" if student_phone else parent_phone
+        return SMSService.send_fast2sms(message, numbers)
 
     @staticmethod
-    def notify_overdue(student_name, parent_phone, expected_return):
+    def notify_overdue(student_name, parent_phone, student_phone, expected_return):
         message = f"SNOX CRITICAL: Student {student_name} is OVERDUE! Expected return was {expected_return}. Please contact immediately."
-        return SMSService.send_fast2sms(message, parent_phone)
+        numbers = f"{parent_phone},{student_phone}" if student_phone else parent_phone
+        return SMSService.send_fast2sms(message, numbers)
 
     @staticmethod
-    def notify_blacklisted(student_name, parent_phone):
+    def notify_blacklisted(student_name, parent_phone, student_phone):
         message = f"SNOX ALERT: Student {student_name} has been BLACKLISTED due to multiple violations. Access blocked."
-        return SMSService.send_fast2sms(message, parent_phone)
+        numbers = f"{parent_phone},{student_phone}" if student_phone else parent_phone
+        return SMSService.send_fast2sms(message, numbers)

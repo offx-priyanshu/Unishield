@@ -9,6 +9,7 @@ from utils.face_utils import FaceUtils
 from functools import wraps
 import os
 import base64
+from werkzeug.utils import secure_filename
 from datetime import datetime
 
 guard_bp = Blueprint('guard', __name__)
@@ -61,10 +62,20 @@ def process_scan():
     
     if not match:
         student.violations += 1
+        
+        # Check for auto-blacklist
+        from config import Config
+        if student.violations >= Config.VIOLATION_THRESHOLD:
+            student.is_blacklisted = True
+            SMSService.notify_blacklisted(student.name, student.parent_phone, student.phone)
+            Logger.log(current_user.id, f'Security: Student {student.name} AUTO-BLACKLISTED after face mismatch.', severity='critical')
+            msg = f'FACE MISMATCH: Student has been AUTO-BLACKLISTED due to reaching {student.violations} violations.'
+        else:
+            Logger.log(current_user.id, f'Security Alert: Face mismatch for {student.name}. Violation logged.', severity='warning')
+            msg = f'FACE MISMATCH: Identity could not be verified. Violation {student.violations} registered.'
+            
         db.session.commit()
-        Logger.log(current_user.id, f'Security Alert: Face mismatch for {student.name}. Violation logged.', severity='warning')
-        Logger.notify_admin(student.id, 'Face Mismatch Violation', f'Your face scan failed at the gate. Violation {student.violations}/3.', type='alert')
-        return jsonify({'success': False, 'message': f'FACE MISMATCH: Identity could not be verified. Violation {student.violations} registered.'}), 401
+        return jsonify({'success': False, 'message': msg}), 401
 
     op = Outpass.query.filter_by(student_id=student.id).order_by(Outpass.created_at.desc()).first()
     
@@ -84,7 +95,7 @@ def process_scan():
         op.face_verified_exit = True
         db.session.commit()
         
-        SMSService.notify_exit(student.name, student.parent_phone, op.destination, op.expected_return.strftime('%H:%M'))
+        SMSService.notify_exit(student.name, student.parent_phone, student.phone, op.destination, op.expected_return.strftime('%H:%M'))
         Logger.log(student.id, f'Student {student.name} exited campus')
         return jsonify({'success': True, 'message': f'ACCESS GRANTED: Student {student.name} exited campus.'})
         
@@ -98,7 +109,7 @@ def process_scan():
         op.face_verified_return = True
         db.session.commit()
         
-        SMSService.notify_return(student.name, student.parent_phone)
+        SMSService.notify_return(student.name, student.parent_phone, student.phone)
         Logger.log(student.id, f'Student {student.name} returned to campus')
         return jsonify({'success': True, 'message': f'ACCESS GRANTED: Student {student.name} returned to campus.'})
         

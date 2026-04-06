@@ -96,24 +96,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;mi
         <div class="card-title">VERIFICATION RESULT</div>
         <div class="result-box" id="result-box">
           <div class="result-title" id="result-title">—</div>
-          
-          <div id="face-scan-section" style="display:none; margin-bottom: 20px;">
-            <p style="font-size: 10px; color: var(--cyan); text-align: center; margin-bottom: 10px; letter-spacing: 2px;">MANDATORY FACE VERIFICATION</p>
-            <div style="width: 200px; height: 200px; background: #000; border-radius: 50%; margin: 0 auto; overflow: hidden; border: 3px solid var(--cyan); position: relative;">
-               <video id="face-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
-               <canvas id="face-canvas" style="display:none"></canvas>
-            </div>
-            <button class="btn btn-cyan" id="verify-face-btn" onclick="verifyFace()" style="max-width: 200px; margin: 15px auto; display: block;">VERIFY IDENTITY</button>
-          </div>
-
           <div class="result-grid" id="result-grid"></div>
-          
           <div class="action-btns" id="action-btns" style="display:none">
-            <button class="btn-exit" id="exit-btn" onclick="finalizeAction('EXIT')" style="display:none">AUTHORIZE EXIT</button>
-            <button class="btn-return" id="return-btn" onclick="finalizeAction('RETURN')" style="display:none">AUTHORIZE RETURN</button>
+            <button class="btn-exit" onclick="markAction('exit')">MARK EXIT</button>
+            <button class="btn-return" onclick="markAction('return')">MARK RETURN</button>
           </div>
         </div>
-        <div id="empty-result" style="text-align:center;color:var(--muted);padding:40px;font-size:13px">Scan Student QR Node</div>
+        <div id="empty-result" style="text-align:center;color:var(--muted);padding:40px;font-size:13px">Scan a QR code to verify</div>
       </div>
       <div class="card">
         <div class="card-title">RECENT SCANS</div>
@@ -123,9 +112,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;mi
   </div>
 </div>
 <script>
-const API=''; // Path relative to same host
-let videoStream=null,scanInterval=null,lastScan='',currentOutpassId=null,currentStudentId=null,currentStatus='',scanHistory=[];
-let faceStream=null;
+const API='http://127.0.0.1:5000';
+let videoStream=null,scanInterval=null,lastScan='',currentOutpassId=null,scanHistory=[];
 
 async function startCamera(){
   try{
@@ -156,9 +144,8 @@ function scanFrame(){
   if(code&&code.data!==lastScan){
     lastScan=code.data;
     const parts=code.data.split('|');
-    // If scanning SNOX ID or numeric oid
-    const token = parts[1] || parts[0];
-    verifyToken(token);
+    if(parts[0]==='SNOX'&&parts[1])verifyToken(parts[1]);
+    else showResult(false,null,'Invalid QR format');
     setTimeout(()=>{lastScan=''},3000);
   }
 }
@@ -173,75 +160,35 @@ function verifyManual(){
   const v=document.getElementById('manual-input').value.trim();
   if(v)verifyToken(v);
 }
-async function showResult(valid,data,reason){
+function showResult(valid,data,reason){
   document.getElementById('empty-result').style.display='none';
   const box=document.getElementById('result-box');
   box.className=`result-box ${valid?'verified':'invalid'}`;
   document.getElementById('result-title').textContent=valid?'VERIFIED — CLEAR':`REJECTED — ${reason.toUpperCase()}`;
-  
   if(valid&&data){
     currentOutpassId=data.outpass_id;
-    currentStudentId=data.sid;
-    currentStatus=data.status;
-    
     document.getElementById('result-grid').innerHTML=`
       <div class="result-field"><label>NAME</label><span>${data.student_name}</span></div>
       <div class="result-field"><label>SID</label><span>${data.sid}</span></div>
       <div class="result-field full"><label>DESTINATION</label><span>${data.destination}</span></div>
       <div class="result-field full"><label>RETURN BY</label><span style="color:var(--yellow)">${data.expected_return}</span></div>`;
-    
-    // Show face scan section
-    document.getElementById('face-scan-section').style.display='block';
-    if(!faceStream){
-      faceStream = await navigator.mediaDevices.getUserMedia({video:true});
-      document.getElementById('face-video').srcObject = faceStream;
-    }
+    document.getElementById('action-btns').style.display='grid';
   }else{
     currentOutpassId=null;
     document.getElementById('result-grid').innerHTML=`<div class="result-field full"><label>REASON</label><span style="color:var(--red)">${reason}</span></div>`;
-    document.getElementById('face-scan-section').style.display='none';
+    document.getElementById('action-btns').style.display='none';
   }
+  scanHistory.unshift({valid,name:data?.student_name||'Unknown',detail:valid?data?.destination:reason,time:new Date().toLocaleTimeString('en-IN')});
+  document.getElementById('scan-log').innerHTML=scanHistory.slice(0,15).map(s=>`
+    <div class="scan-item"><div class="scan-dot ${s.valid?'ok':'fail'}"></div>
+    <div class="scan-info"><div class="scan-name">${s.name}</div><div class="scan-detail">${s.detail}</div></div>
+    <div class="scan-time">${s.time}</div></div>`).join('');
 }
-
-async function verifyFace(){
-  const video = document.getElementById('face-video');
-  const canvas = document.getElementById('face-canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
-  ctx.drawImage(video, 0, 0);
-  const imgStr = canvas.toDataURL('image/jpeg');
-  
-  const mode = (currentStatus === 'approved') ? 'EXIT' : 'RETURN';
-  
-  document.getElementById('verify-face-btn').textContent = 'VERIFYING...';
-  
-  try{
-    const res = await fetch(`${API}/guard/process`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-            student_id: currentStudentId,
-            mode: mode,
-            image: imgStr
-        })
-    });
-    const d = await res.json();
-    if(d.success){
-        document.getElementById('result-title').textContent = mode + ' AUTHORIZED';
-        document.getElementById('face-scan-section').innerHTML = `<p style="color:var(--green);text-align:center;padding:20px;font-weight:700;">FACE IDENTITY VERIFIED ✓<br><span style='font-size:10px'>SMS Sent to Parents</span></p>`;
-        // In local flow, guard doesn't need to click again, process already did it.
-        setTimeout(()=>location.reload(), 3000);
-    } else {
-        alert(d.message);
-        document.getElementById('verify-face-btn').textContent = 'RETRY FACE SCAN';
-    }
-  }catch(e){ alert("Face server error"); }
-}
-
-function finalizeAction(type){
-  console.log("Action finalized by face scan route.");
+async function markAction(type){
+  if(!currentOutpassId)return;
+  await fetch(`${API}/api/outpass/${type==='exit'?'exit':'return'}/${currentOutpassId}`,{method:'POST',headers:{'Content-Type':'application/json'}});
+  alert(`Student ${type==='exit'?'EXIT':'RETURN'} recorded!`);
+  document.getElementById('action-btns').style.display='none';
 }
 </script>
 </body>

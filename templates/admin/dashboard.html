@@ -3,42 +3,42 @@
 {% block page_title %}Security Command Center{% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
     
     <div class="card" style="border-top: 4px solid var(--accent);">
         <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">TOTAL DIRECTORY</p>
-        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-            <h2 style="font-size: 2.25rem;">{{ total_students }}</h2>
-            <p style="font-size: 0.7rem; color: var(--success);"><i class="fas fa-arrow-up"></i> +2%</p>
-        </div>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Verified Student Profiles</p>
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;" id="total-students">{{ total_students }}</h2>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Verified Student Profiles</p>
     </div>
 
     <div class="card" style="border-top: 4px solid var(--success);">
         <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">CURRENTLY OUT</p>
-        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-            <h2 style="font-size: 2.25rem;">{{ currently_out }}</h2>
-            <p style="font-size: 0.7rem; color: var(--success);"><i class="fas fa-signal"></i> Live</p>
-        </div>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Students Outside Campus</p>
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;" id="currently-out">{{ currently_out }}</h2>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Active Outpasses (Live)</p>
     </div>
 
     <div class="card" style="border-top: 4px solid var(--warning);">
-        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">PENDING REQUESTS</p>
-        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-            <h2 style="font-size: 2.25rem;">{{ pending_approval }}</h2>
-            <p style="font-size: 0.7rem; color: var(--warning);"><i class="fas fa-clock"></i> Action Required</p>
-        </div>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Outpass Approval Queue</p>
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">PENDING REQS</p>
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;" id="pending">{{ pending_approval }}</h2>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Awaiting SID Authorization</p>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #00d2ff; background: rgba(0,210,255,0.02);">
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">TODAY'S DEPARTURES</p>
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;">{{ today_exits }}</h2>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Students left campus today</p>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #7000ff; background: rgba(112,0,255,0.02);">
+        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">TODAY'S ARRIVALS</p>
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;">{{ today_returns }}</h2>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Verified entries processed today</p>
     </div>
 
     <div class="card" style="border-top: 4px solid var(--danger);">
         <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px;">BLACKLISTED</p>
-        <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-            <h2 style="font-size: 2.25rem;">{{ blacklisted_count }}</h2>
-            <p style="font-size: 0.7rem; color: var(--danger);"><i class="fas fa-ban"></i> Restricted</p>
-        </div>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Access-Blocked Profiles</p>
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;">{{ blacklisted_count }}</h2>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Access-Blocked Profiles</p>
     </div>
 </div>
 
@@ -124,5 +124,13 @@
             }
         }
     });
+
+    // Dashboard stats:
+    fetch('http://127.0.0.1:5000/api/dashboard/stats')
+      .then(r=>r.json()).then(d=>{
+        if (document.getElementById('total-students')) document.getElementById('total-students').textContent = d.total_students;
+        if (document.getElementById('currently-out')) document.getElementById('currently-out').textContent = d.currently_out;
+        if (document.getElementById('pending')) document.getElementById('pending').textContent = d.pending_requests;
+      }).catch(e => console.log('Dashboard stats not available locally yet.'));
 </script>
 {% endblock %}

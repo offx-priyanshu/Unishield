@@ -47,3 +47,32 @@ def logout():
     logout_user()
     flash('Logged out successfully.', 'info')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not current_user.check_password(old_password):
+            flash('Invalid current password.', 'danger')
+            return redirect(url_for('auth.change_password'))
+            
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'danger')
+            return redirect(url_for('auth.change_password'))
+            
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters.', 'warning')
+            return redirect(url_for('auth.change_password'))
+            
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        Logger.log(current_user.id, f'User {current_user.username} changed their password')
+        flash('Password updated successfully!', 'success')
+        return redirect(url_for('auth.logout'))
+        
+    return render_template('auth/change_password.html')

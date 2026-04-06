@@ -22,6 +22,7 @@ class User(db.Model, UserMixin):
     face_encoded = db.Column(db.Text)          # JSON string of encoding
     face_image = db.Column(db.String(200))     # Full path to encoded photo
     photo_path = db.Column(db.String(200))     # Path to stored photo
+    id_card_photo = db.Column(db.String(200))  # Path to ID card scan
     
     is_blacklisted = db.Column(db.Boolean, default=False)
     violations = db.Column(db.Integer, default=0)

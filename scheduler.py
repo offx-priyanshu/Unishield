@@ -29,9 +29,9 @@ def check_overdue():
                 
                 if student.violations >= Config.VIOLATION_THRESHOLD:
                     student.is_blacklisted = True
-                    SMSService.notify_blacklisted(student.name, student.parent_phone)
+                    SMSService.notify_blacklisted(student.name, student.parent_phone, student.phone)
                 else:
-                    SMSService.notify_overdue(student.name, student.parent_phone, op.expected_return.strftime('%H:%M'))
+                    SMSService.notify_overdue(student.name, student.parent_phone, student.phone, op.expected_return.strftime('%H:%M'))
                 
                 log = ActivityLog(
                     user_id=student.id, 

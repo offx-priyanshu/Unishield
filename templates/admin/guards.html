@@ -55,10 +55,16 @@
                     </td>
                     <td class="mono" style="font-size: 0.8rem; color: var(--text-muted);">{{ g.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>
+                        <button onclick="promptReset('{{ g.id }}', '{{ g.name }}')" class="btn btn-ghost" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--accent);">
+                            <i class="fas fa-key"></i>
+                        </button>
                         <button onclick="confirmGuardDelete('{{ g.id }}', '{{ g.name }}')" class="btn btn-ghost" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--danger);">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                         <form id="delete_guard_{{ g.id }}" action="{{ url_for('admin.delete_user', user_id=g.id) }}" method="POST" style="display: none;"></form>
+                        <form id="reset_form_{{ g.id }}" action="{{ url_for('admin.reset_user_password', user_id=g.id) }}" method="POST" style="display: none;">
+                            <input type="hidden" name="new_password" id="reset_input_{{ g.id }}">
+                        </form>
                     </td>
                 </tr>
                 {% else %}
@@ -77,6 +83,14 @@
     function confirmGuardDelete(id, name) {
         if (confirm(`CRITICAL: Are you sure you want to permanently delete security guard ${name}? This action cannot be undone.`)) {
             $(`#delete_guard_${id}`).submit();
+        }
+    }
+
+    function promptReset(id, name) {
+        const pass = prompt(`Enter new temporary password for ${name}:`, "reset123");
+        if (pass) {
+            $(`#reset_input_${id}`).val(pass);
+            $(`#reset_form_${id}`).submit();
         }
     }
 </script>

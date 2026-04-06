@@ -43,7 +43,7 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem;">
+        <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem;" onclick="submitOutpass()">
             SEND FOR REVIEW <i class="fas fa-satellite-dish" style="margin-left: 0.75rem;"></i>
         </button>
     </form>
@@ -60,4 +60,29 @@
         color: var(--accent) !important;
     }
 </style>
+<script>
+function submitOutpass() {
+    const destination = document.querySelector('input[name="destination"]').value;
+    const purpose = document.querySelector('textarea[name="purpose"]').value;
+    const hours = document.querySelector('input[name="hours"]:checked').value;
+    
+    if(!destination || !purpose) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    const sid = "{{ current_user.student_id }}";
+    const student_name = "{{ current_user.name }}";
+
+    fetch('http://127.0.0.1:5000/api/outpass/submit', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({sid, student_name, destination, purpose, duration_hours: hours})
+    }).then(r=>r.json()).then(d => {
+      if(d.success) window.location = `/outpass_qr.html?id=${d.outpass_id}`;
+      else alert("Error submitting outpass");
+    }).catch(e => {
+        alert("Error connecting to server");
+    });
+}
+</script>
 {% endblock %}

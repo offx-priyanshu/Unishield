@@ -1,58 +1,56 @@
-# SNOX | Smart AI-Based Outpass Management System 🚀
+# UniShield | Smart AI-Based Campus Security System 🚀
 
-![SNOX Banner](https://img.shields.io/badge/Status-Stable-success?style=for-the-badge)
-![Security](https://img.shields.io/badge/Security-QR%20Enabled-00e5ff?style=for-the-badge)
+![UniShield Banner](https://img.shields.io/badge/Status-Stable-success?style=for-the-badge)
+![Security](https://img.shields.io/badge/Security-AI%20%26%20Biometrics-00e5ff?style=for-the-badge)
 ![Backend](https://img.shields.io/badge/Backend-Python%20%26%20Flask-3776AB?style=for-the-badge&logo=python)
 ![Theme](https://img.shields.io/badge/Theme-Dark%20Glassmorphism-black?style=for-the-badge)
 
-**SNOX** stands for **Secure Network Outpass X-System**. It is a next-generation institution management tool that modernizes campus security using dynamic QR Codes, an AI-powered face/ID matching engine, and intelligent communication protocols.
+**UniShield** is the official next-generation institution management and campus security platform, specifically tailored for seamless entry and outpass operations. It modernizes campus security using dynamic QR Codes, an AI-powered face/ID matching engine, multi-stage biometric registration flow, and intelligent communication protocols.
 
 ---
 
-## 🔥 Newly Integrated Features
+## 🔥 Key Features & Capabilities
 
-*   **AI-Powered Face Recognition**: Mandatory face scanning during both Exit and Return. Uses neural encodings to verify identity with a configurable tolerance engine.
-*   **Physical ID Card Verification**: Mandatory ID card scan during student enrollment. The system stores both the face encoding and the physical card image for cross-verification.
-*   **Dual-Recipient SMS Alerts**: Real-time automated SMS notifications sent simultaneously to both the **Student** and their **Parent/Guardian** during all critical events (Exit, Return, Overdue, Blacklist).
-*   **Professional Reporting & Excel Export**: Generate comprehensive student and movement reports with one-click **Excel (.xlsx)** and CSV exporting capabilities using Pandas/OpenPyxl.
-*   **Security Credential Management**: 
-    *   **Self-Service**: All roles (Student, Guard, Admin) can securely update their own passwords via the "Edit Credentials" portal.
-    *   **Administrative Reset**: Admins can override and reset any user's password directly from the management directory.
-*   **Immediate Auto-Blacklisting**: Built-in security logic that automatically blocks student access and notifies parents instantly if face verification fails at the gate or if return limits are exceeded.
-*   **Dynamic QR-Code Outpasses**: Students receive a secure, countdown-enabled QR token immediately upon approval for secondary verification.
+*   **AI-Powered Face Recognition**: High-performance, multi-angle face scanning during all entries and exits. Uses neural encodings to verify identity with a zero-delay tolerance engine for maximum accuracy.
+*   **Physical ID & Biometric Verification**: Mandatory ID card scan (QR/OCR) during automated student enrollment. The system securely pairs the student's face encodings with their physical ID to establish a highly reliable central source of truth.
+*   **Dual-Recipient SMS Alerts**: Real-time automated SMS notifications with failover logic sent simultaneously to both the **Student** and their **Parent/Guardian** during critical events (Exit, Return, Overdue, Blacklist).
+*   **Dynamic QR-Code Outpasses**: Students receive a secure, countdown-enabled dynamic QR token immediately upon outpass approval, ensuring reliable secondary-layer verification at the perimeter.
+*   **Intelligent Auto-Blacklisting**: Built-in security logic that instantly blocks student access and overrides permissions if face verification fails at the AI Gate or if outpass validity times are severely breached.
+*   **Professional Reporting & Audits**: Generate comprehensive student entry/exit and role movement logs with one-click **Excel (.xlsx)** and CSV exports using powerful Pandas mapping.
+*   **Role-Based Security Control Center (RBAC)**: Comprehensive permission structure across multi-tier admin, staff, student, and guard accounts with extensive oversight tracking.
 
 ---
 
 ## 🏛️ Comprehensive Role Architecture
 
-This system is built with a strictly role-based access control (RBAC) mechanism.
+This suite utilizes a strict Role-Based Access Control (RBAC) hierarchy.
 
-### 1. Administrative Node (Admin)
-*   **Total Oversight**: Live analytics dashboard to monitor students currently out and pending requests.
-*   **Departure Control**: Single-click approval/rejection of digital outpass requests from the main departure board.
-*   **SMS Testing & Configuration**: Configure API keys and test SMS templates dynamically from the UI.
-*   **Intelligent Blacklisting**: Permanently or temporarily block students manually or configure the auto-blacklist system based on violation count.
+### 1. Security Control Center (Admin & Management)
+*   **Command Overview**: Real-time, auto-updating live dashboard displaying campus occupancy limits and active outpass statuses.
+*   **Approval Console**: Complete oversight for single-click approvals/rejections of digital outpass requests.
+*   **Automated Provisioning Workflow**: Configure API keys, adjust SMS thresholds, and manage approval queues dynamically.
+*   **Blacklist Engine**: Perform absolute overrides on access privileges or automate intelligent temporary bans based on student infraction policies.
 
-### 2. Security Guard Node (Guard)
-*   **Live Vision Scanner**: A web-based camera scanner (using jsQR) to verify student outpass validity.
-*   **Gate Control**:
-    *   **EXIT**: Validates the unexpired QR Code and marks the student out.
-    *   **RETURN**: Scans token and marks the student's safe return to campus.
-*   **Manual Entry Validation**: Allows manual entry of tokens in case the camera fails to lock onto a QR code.
+### 2. AI Gate Terminal (Guard Node)
+*   **Live Vision Verification**: A high-performance split-screen WebRTC camera interface to securely lock onto faces and outpass QR tokens.
+*   **Gate Control & Logging**:
+    *   **EXIT**: Validates identity and unexpired QR Code, automatically logging the departure.
+    *   **RETURN**: Dual-scan logic for facial validation, allowing automatic logging of safe returns.
+*   **Registration Terminal**: Interface for security staff to securely onboard new students precisely matching their identity.
 
-### 3. Student Node (Student)
-*   **Personal Dashboard**: View violation standing and track digital outpass requests.
-*   **Request Outpass**: Submit requests via Fetch API to the core backend engine.
-*   **Live Boarding Pass (QR)**: Watch real-time countdown clocks marking exact expected return times associated with the generated QR token.
+### 3. Student Portal (Sandip University Portal Node)
+*   **Interactive Dashboard**: Premium dark-mode interface utilizing modern glassmorphism UI for viewing violation status and requesting outpasses.
+*   **Secure Submissions**: Interface with the system securely to manage their own tokens and access logs without delay.
+*   **Live Boarding Pass**: Interactive QR Outpass with accurate countdowns mapping the validity of their permitted external trip.
 
 ---
 
-## 🛠️ Installation & Setup (Full Procedure)
+## 🛠️ Installation & Setup
 
 ### System Prerequisites
-Ensure your machine has the following installed:
+Ensure your local environment provides:
 - Python 3.9+
-- CMake (Required for any neural vision engines processing)
+- CMake (Required for robust neural vision capabilities and the `dlib`/`face_recognition` engines)
 
 ### Step-by-Step Installation
 1.  **Initialize Environment**:
@@ -61,41 +59,55 @@ Ensure your machine has the following installed:
     source venv/bin/activate  # macOS/Linux
     .\venv\Scripts\activate   # Windows
     ```
-2.  **Install Essential Libraries**:
+2.  **Install Core Dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
-3.  **Run Application**:
+3.  **Environment Configuration**:
+    Rename `.env.example` to `.env` and assign your local SQL/Postgres URI, secure secrets, and applicable SMS webhook keys.
+4.  **Run Main Server Engine**:
     ```bash
     python app.py
     ```
+    *The system automatically boots SocketIO integrations and the database scaffolding on its first initialization.*
 
 ---
 
-## 🔐 Initial Access Credentials
+## 🔐 System Initialization Credentials
 
-To access the system locally, use the following default credentials. **Change them in Production.**
+Default credentials provided at core initialization. **Must be rotated immediately in Production.**
 
-*   **Master Admin**:
-    *   **Username**: `priyanshugse`
-    *   **Password**: `vipul@123`
-*   **Default Guard**:
-    *   **Username**: `guard1`
-    *   **Password**: `guard123`
-*   **Default Student Password**: `student123` (Username is their Student ID).
-
----
-
-## 🚀 Deployment Guide
-For production deployment, it is recommended to use:
-- **Web Server**: Gunicorn (for Linux)
-- **Proxy**: Nginx (with SSL enabled)
-- **Note**: QR scanning logic via device cameras using WebRTC mandates secure contexts (`https://` or `localhost`). 
+*   **Master Admin (Owner)**:
+    *   **Username**: As defined in `.env` (`ADMIN_USERNAME` / `ADMIN_EMAIL`)
+    *   **Password**: As defined in `.env` (`ADMIN_PASSWORD`)
+*   **Default Guard Nodes**:
+    *   Configurable via the management center upon setup.
+*   **Student Initialization**: Based on imported roster records and initial sync matching.
 
 ---
 
-Developed with ❤️ by the **SNOX Development Team**.
-*Focus: Security. Transparency. Automation.*
+## 🚀 Deployment Strategy
+For optimized production deployment:
+- **Application Server**: High-throughput WSGI/ASGI like Gunicorn/Uvicorn (Linux)
+- **Reverse Proxy**: Nginx with SSL strictly enabled
+- **Crucial Note for Hardware Cameras**: Browser security policies mandate that the `jsQR` and Face Scanning algorithms operate on an active secure context. The server **must** be deployed via `https://` or served locally over `localhost` for testing.
 
 ---
-© 2024 SNOX | Smart AI Dashboard
+
+## 🔮 Future Scope
+- Mobile App Integration
+- Cloud Deployment
+- Advanced AI Security Alerts
+- Multi-campus Support
+
+---
+
+## 👨‍💻 Author
+Priyanshu Kumar
+
+---
+
+*Designed and engineered as a premium, secure standard for campus safety.*
+
+---
+© 2024 UniShield | Sandip University

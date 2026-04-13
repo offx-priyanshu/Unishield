@@ -1,205 +1,359 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SNOX — SMS Center</title>
+{% extends "base.html" %}
+
+{% block page_title %}SMS Notification System{% endblock %}
+
+{% block extra_css %}
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0a0e1a;--card:#111827;--card2:#1a2236;--cyan:#00e5ff;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;--border:#1e2d40}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;padding:24px}
-.pt{font-size:24px;font-weight:800;margin-bottom:24px}
-.layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
-@media(max-width:800px){.layout{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
-.ct{font-size:12px;color:var(--cyan);letter-spacing:2px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.dot-a{width:8px;height:8px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.fl{font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;display:block;margin-top:12px}
-.fi,.fs{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;outline:none;font-family:inherit}
-.fi:focus,.fs:focus{border-color:var(--cyan)}
-.preview{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.6;min-height:60px;margin-top:6px;white-space:pre-wrap}
-.cnt{text-align:right;font-size:11px;color:var(--muted);margin-top:4px}
-.btn-send{width:100%;background:var(--cyan);color:#000;border:none;padding:14px;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:2px;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:10px}
-.btn-send:hover{background:#00b8cc}
-.spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .8s linear infinite;display:none}
-.btn-send.loading .spinner{display:block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.prov-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
-.prov-item:last-child{border-bottom:none}
-.prow-name{flex:1;font-size:13px;font-weight:600}
-.prow-det{font-size:11px;color:var(--muted);margin-top:2px}
-.pbar{width:100px;height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
-.pfill{height:100%;border-radius:3px}
-.arow{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card2);border-radius:8px;margin-bottom:8px}
-.alabel{font-size:13px}
-.toggle{position:relative;width:40px;height:22px}
-.toggle input{opacity:0;width:0;height:0}
-.tslider{position:absolute;inset:0;background:var(--border);border-radius:11px;cursor:pointer;transition:.3s}
-.tslider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
-.toggle input:checked+.tslider{background:var(--green)}
-.toggle input:checked+.tslider::before{transform:translateX(18px)}
-.api-row{display:flex;gap:10px;margin-top:6px}
-.api-input{flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:12px;font-family:monospace;outline:none}
-.api-input:focus{border-color:var(--cyan)}
-.btn-save{background:var(--cyan);color:#000;border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer}
-.lf{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.fb{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px}
-.fb.active{background:rgba(0,229,255,.1);border-color:var(--cyan);color:var(--cyan)}
-.lt{width:100%;border-collapse:collapse}
-.lt th{font-size:10px;color:var(--muted);letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
-.lt td{font-size:12px;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
-.lt tr:last-child td{border-bottom:none}
-.lt tr:hover td{background:var(--card2)}
-.st-sent{color:var(--green);font-weight:700}
-.st-failed{color:var(--red);font-weight:700}
-.lmsg{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
-.ptag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
-.ptag-fast2sms{background:rgba(0,229,255,.1);color:var(--cyan)}
-.ptag-twilio{background:rgba(16,185,129,.1);color:var(--green)}
-.ptag-none{background:rgba(239,68,68,.1);color:var(--red)}
-.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:1px;z-index:999;display:none}
-.toast.success{background:rgba(16,185,129,.9);color:#fff;border:1px solid var(--green)}
-.toast.error{background:rgba(239,68,68,.9);color:#fff;border:1px solid var(--red)}
+/* Layout */
+.sms-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 1.5rem;
+    height: calc(100vh - 120px);
+}
+
+/* Sidebar Feed (Right) */
+.sms-sidebar {
+    background: rgba(14, 18, 22, 0.6);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 12px 0 0 12px;
+}
+
+.feed-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.feed-title { font-size: 0.8rem; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
+
+.feed-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Feed Item */
+.feed-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.8rem;
+    animation: slide-in 0.4s ease-out;
+}
+
+@keyframes slide-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.feed-item .header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+.feed-item .phone { font-weight: 700; color: #fff; }
+.feed-item .time { font-size: 0.7rem; color: var(--text-muted); }
+.feed-item .msg { color: #ccc; line-height: 1.4; font-size: 0.75rem; margin-bottom: 0.5rem; }
+.feed-item .footer { display: flex; align-items: center; justify-content: space-between; }
+
+/* Status Badges */
+.status-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
+.status-tag.delivered { background: rgba(0, 245, 122, 0.1); color: var(--success); }
+.status-tag.sent { background: rgba(0, 200, 255, 0.1); color: #00c8ff; }
+.status-tag.failed { background: rgba(255, 59, 92, 0.1); color: var(--danger); }
+
+/* Main Content (Left) */
+.sms-main { overflow-y: auto; padding-right: 1rem; }
+
+/* Status Bar */
+.system-status-bar {
+    background: rgba(0, 245, 122, 0.05);
+    border: 1px solid rgba(0, 245, 122, 0.2);
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-active { display: flex; align-items: center; gap: 10px; color: var(--success); font-weight: 800; font-size: 0.8rem; }
+.pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+/* Panel Styling */
+.section-card {
+    background: rgba(14, 18, 22, 0.4);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-card h3 { font-size: 0.85rem; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1.5rem; }
+
+/* Protocols Grid */
+.protocol-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.protocol-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Custom Toggle */
+.switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--success); }
+input:checked + .slider:before { transform: translateX(22px); }
+
+/* Transmission Form */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
+.form-input { 
+    width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; color: #fff; padding: 0.8rem; font-size: 0.85rem; outline: none; transition: border-color 0.3s;
+}
+.form-input:focus { border-color: var(--accent); }
+
+.preview-area {
+    background: rgba(0, 200, 255, 0.05);
+    border: 1px dashed rgba(0, 200, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #00c8ff;
+    min-height: 60px;
+    margin-bottom: 1rem;
+}
+
+/* API Grid */
+.api-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 </style>
-</head>
-<body>
-<div class="pt">SMS Command Center</div>
-<div class="layout">
-  <div>
-    <div class="card">
-      <div class="ct">SIGNAL TEST PANEL</div>
-      <label class="fl">RECIPIENT PHONE</label>
-      <input type="tel" class="fi" id="phone" placeholder="+91-XXXXXXXXXX">
-      <label class="fl">SIGNAL TEMPLATE</label>
-      <select class="fs" id="tsel" onchange="updatePreview()">
-        <option value="EXIT_ALERT">EXIT ALERT</option>
-        <option value="RETURN_CONFIRM">RETURN CONFIRM</option>
-        <option value="OVERDUE_ALERT">OVERDUE ALERT</option>
-        <option value="OUTPASS_APPROVED">OUTPASS APPROVED</option>
-        <option value="OUTPASS_REJECTED">OUTPASS REJECTED</option>
-        <option value="VIOLATION_WARNING">VIOLATION WARNING</option>
-        <option value="BLACKLIST_ALERT">BLACKLIST ALERT</option>
-      </select>
-      <div class="fl">MESSAGE PREVIEW</div>
-      <div class="preview" id="preview">Select template...</div>
-      <div class="cnt" id="charcount">0 chars</div>
-      <button class="btn-send" id="sendbtn" onclick="sendSMS()"><div class="spinner"></div>INITIATE SIGNAL TRANSMISSION</button>
+{% endblock %}
+
+{% block content %}
+
+<div class="sms-layout">
+    <!-- Main Area (Left) -->
+    <div class="sms-main">
+        
+        <!-- System Status Bar -->
+        <div class="system-status-bar">
+            <div class="status-active">
+                <div class="pulse-dot"></div>
+                AUTO MODE ACTIVE – UNI-SHIELD PROTOCCAL
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                Encryption: AES-256 | Firewall: Enabled | Primary Node: Fast2SMS
+            </div>
+        </div>
+
+        <!-- Section 1: Automated Protocols -->
+        <div class="section-card">
+            <h3>Automated SMS Protocols</h3>
+            <div class="protocol-grid">
+                <div class="protocol-item">
+                    <div>
+                        <div style="font-weight:700; font-size:0.85rem;">Student Exit Alert</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted)">Notify parents on campus exit</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+                <div class="protocol-item">
+                    <div>
+                        <div style="font-weight:700; font-size:0.85rem;">Student Return Alert</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted)">Notify parents on safe return</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+                <div class="protocol-item">
+                    <div>
+                        <div style="font-weight:700; font-size:0.85rem;">Late Entry Warning</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted)">Alert if return threshold expires</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+                <div class="protocol-item">
+                    <div>
+                        <div style="font-weight:700; font-size:0.85rem;">Emergency Lockdown</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted)">Broadcast to all active outpasses</div>
+                    </div>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Manual Signal Test -->
+        <div class="section-card">
+            <h3>Manual Test Transmission</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Recipient Phone</label>
+                    <input type="text" id="target-phone" class="form-input" placeholder="+91 00000 00000">
+                </div>
+                <div class="form-group">
+                    <label>Transmission Type</label>
+                    <select id="type-select" class="form-input">
+                        <option value="EXIT">Exit Authorization</option>
+                        <option value="RETURN">Return Success</option>
+                        <option value="OVERDUE">Overdue Critical</option>
+                        <option value="CUSTOM">Custom Plaintext</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Signal Preview</label>
+                <div class="preview-area" id="preview-text">
+                    UniShield: Student Authorized for exit. Destination: {destination}. Please ensure safe return by {time}.
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btn-trigger" style="width: 100%;">START TRANSMISSION</button>
+        </div>
+
+        <!-- Section 3: Gateway Configuration -->
+        <div class="section-card">
+            <h3>Gateway Configuration</h3>
+            <form method="POST">
+                <input type="hidden" name="api_update" value="1">
+                <div class="api-grid">
+                    <div class="form-group">
+                        <label>Fast2SMS API Key</label>
+                        <input type="password" name="f2s_key" class="form-input" value="{{ configs.get('f2s_key', '') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Twilio SID</label>
+                        <input type="text" name="twilio_sid" class="form-input" value="{{ configs.get('twilio_sid', '') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Twilio Token</label>
+                        <input type="password" name="twilio_token" class="form-input" value="{{ configs.get('twilio_token', '') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Twilio Phone</label>
+                        <input type="text" name="twilio_phone" class="form-input" value="{{ configs.get('twilio_phone', '') }}">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-ghost" style="width: 100%; margin-top: 1rem;">SECURE GW SETTINGS</button>
+            </form>
+        </div>
+
     </div>
-    <div class="card">
-      <div class="ct">API CREDENTIALS</div>
-      <div class="fl">FAST2SMS API KEY</div><div class="api-row"><input type="password" class="api-input" id="f2s"><button class="btn-save" onclick="saveKey('fast2sms_key','f2s')">SAVE</button></div>
-      <div class="fl">TWILIO SID</div><div class="api-row"><input type="text" class="api-input" id="tsid" placeholder="AC..."><button class="btn-save" onclick="saveKey('twilio_sid','tsid')">SAVE</button></div>
-      <div class="fl">TWILIO TOKEN</div><div class="api-row"><input type="password" class="api-input" id="ttok"><button class="btn-save" onclick="saveKey('twilio_token','ttok')">SAVE</button></div>
-      <div class="fl">TWILIO FROM</div><div class="api-row"><input type="text" class="api-input" id="tfrm" placeholder="+1..."><button class="btn-save" onclick="saveKey('twilio_from','tfrm')">SAVE</button></div>
+
+    <!-- Sidebar Activity (Right) -->
+    <div class="sms-sidebar">
+        <div class="feed-header">
+            <div class="feed-title">LIVE ACTIVITY FEED</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Streaming <i class="fas fa-satellite-dish fa-fade"></i></div>
+        </div>
+        <div class="feed-content" id="sms-feed">
+            <!-- Feed items will be injected here -->
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.75rem;">Initializing live stream...</div>
+        </div>
     </div>
-    <div class="card">
-      <div class="ct">AUTO-TRANSMISSION</div>
-      <div class="arow"><span class="alabel">SMS on student exit</span><label class="toggle"><input type="checkbox" id="tog-exit" checked onchange="saveSetting('sms_auto_exit',this.checked?'1':'0')"><span class="tslider"></span></label></div>
-      <div class="arow"><span class="alabel">SMS on student return</span><label class="toggle"><input type="checkbox" id="tog-ret" checked onchange="saveSetting('sms_auto_return',this.checked?'1':'0')"><span class="tslider"></span></label></div>
-      <div class="arow"><span class="alabel">SMS on overdue alert</span><label class="toggle"><input type="checkbox" id="tog-ov" checked onchange="saveSetting('sms_auto_overdue',this.checked?'1':'0')"><span class="tslider"></span></label></div>
-    </div>
-  </div>
-  <div>
-    <div class="card">
-      <div class="ct"><span class="dot-a"></span>TRANSMISSION PROTOCOLS</div>
-      <div class="prov-item">
-        <div><div class="prow-name">Fast2SMS</div><div class="prow-det">Transactional Route — Primary</div></div>
-        <div><div style="font-size:10px;color:var(--muted);margin-bottom:4px">~0.5s delivery</div><div class="pbar"><div class="pfill" style="width:95%;background:var(--green)"></div></div></div>
-        <span style="font-size:11px;font-weight:700;color:var(--green)">ACTIVE</span>
-      </div>
-      <div class="prov-item">
-        <div><div class="prow-name">Twilio</div><div class="prow-det">Auto-Fallback — Secondary</div></div>
-        <div><div style="font-size:10px;color:var(--muted);margin-bottom:4px">~2-4s delivery</div><div class="pbar"><div class="pfill" style="width:60%;background:var(--muted)"></div></div></div>
-        <span style="font-size:11px;font-weight:700;color:var(--muted)">STANDBY</span>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6">• All signals logged in Activity Manifest<br>• Auto-fallback to Twilio if Fast2SMS fails<br>• Rate limit: max 3 SMS per student per hour</div>
-    </div>
-    <div class="card">
-      <div class="ct">TRANSMISSION LOG</div>
-      <div class="lf">
-        <button class="fb active" onclick="filterLog('ALL',this)">ALL</button>
-        <button class="fb" onclick="filterLog('SENT',this)">SENT</button>
-        <button class="fb" onclick="filterLog('FAILED',this)">FAILED</button>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="lt"><thead><tr><th>PHONE</th><th>TEMPLATE</th><th>MESSAGE</th><th>PROVIDER</th><th>STATUS</th><th>TIME</th></tr></thead>
-        <tbody id="logtbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">Loading...</td></tr></tbody></table>
-      </div>
-    </div>
-  </div>
 </div>
-<div class="toast" id="toast"></div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script>
-const API='http://127.0.0.1:5000';
-let allLogs=[],curFilter='ALL';
-const TMPL={
-  EXIT_ALERT:"SNOX ALERT: {name} (SID:{sid}) left campus at {time}. Dest: {dest}. Return by: {return_time}.",
-  RETURN_CONFIRM:"SNOX: {name} safely returned at {time}. -Campus Security",
-  OVERDUE_ALERT:"URGENT SNOX: {name} ({sid}) OVERDUE since {time}. Contact security immediately.",
-  OUTPASS_APPROVED:"SNOX: Outpass APPROVED for {dest}. Show QR at gate. Valid till {time}.",
-  OUTPASS_REJECTED:"SNOX: Outpass rejected. Reason: {reason}. Contact admin.",
-  VIOLATION_WARNING:"SNOX WARNING: {name} has {count} violations. Account may be suspended.",
-  BLACKLIST_ALERT:"SNOX: Your access is SUSPENDED after {count} violations. Contact admin immediately."
-};
-function updatePreview(){
-  const t=TMPL[document.getElementById('tsel').value]||'';
-  document.getElementById('preview').textContent=t;
-  document.getElementById('charcount').textContent=`${t.length} chars`;
-}
-async function sendSMS(){
-  const phone=document.getElementById('phone').value.trim().replace(/\D/g,'').slice(-10);
-  if(phone.length<10){showToast('Enter valid phone number','error');return}
-  const btn=document.getElementById('sendbtn');btn.classList.add('loading');btn.disabled=true;
-  const dv={name:'Test Student',sid:'TEST_SID',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),dest:'Test',return_time:'N/A',reason:'Test',count:'1'};
-  try{
-    const r=await fetch(`${API}/api/sms/send`,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phone,template:document.getElementById('tsel').value,variables:dv})});
-    const d=await r.json();
-    if(d.success){showToast(`SMS sent via ${d.provider}!`,'success');loadLogs()}
-    else showToast('SMS failed — check API key','error');
-  }catch{showToast('Server error — is Flask running?','error')}
-  btn.classList.remove('loading');btn.disabled=false;
-}
-async function loadLogs(){
-  try{
-    const r=await fetch(`${API}/api/sms/logs`);
-    allLogs=await r.json();renderLogs();
-  }catch{
-    allLogs=[
-      {recipient_phone:'9876543210',template_type:'EXIT_ALERT',message:'SNOX ALERT: Vipul...',provider:'fast2sms',status:'SENT',sent_at:new Date().toISOString()},
-      {recipient_phone:'9060956708',template_type:'OUTPASS_APPROVED',message:'SNOX: Your outpass...',provider:'fast2sms',status:'SENT',sent_at:new Date(Date.now()-3600000).toISOString()},
-      {recipient_phone:'9123456789',template_type:'OVERDUE_ALERT',message:'URGENT SNOX...',provider:'none',status:'FAILED',sent_at:new Date(Date.now()-7200000).toISOString()}
-    ];renderLogs();
-  }
-}
-function filterLog(f,btn){curFilter=f;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLogs()}
-function renderLogs(){
-  const fl=curFilter==='ALL'?allLogs:allLogs.filter(l=>l.status===curFilter);
-  const tb=document.getElementById('logtbody');
-  if(!fl.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No logs</td></tr>';return}
-  tb.innerHTML=fl.map(l=>`<tr>
-    <td style="font-family:monospace;color:var(--cyan)">${l.recipient_phone}</td>
-    <td style="font-size:10px;letter-spacing:1px">${l.template_type}</td>
-    <td><div class="lmsg">${l.message}</div></td>
-    <td><span class="ptag ptag-${l.provider}">${l.provider||'none'}</span></td>
-    <td><span class="st-${(l.status||'').toLowerCase()}">${l.status}</span></td>
-    <td style="font-family:monospace;font-size:11px;color:var(--muted)">${new Date(l.sent_at||'').toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-  </tr>`).join('');
-}
-async function saveKey(key,inputId){
-  const v=document.getElementById(inputId).value.trim();if(!v)return;
-  try{await fetch(`${API}/api/settings/update`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:v})})}catch{}
-  showToast('Saved!','success');
-}
-async function saveSetting(key,value){
-  try{await fetch(`${API}/api/settings/update`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:value})})}catch{}
-}
-function showToast(msg,type){
-  const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type}`;t.style.display='block';
-  setTimeout(()=>t.style.display='none',3000);
-}
-updatePreview();loadLogs();setInterval(loadLogs,30000);
+    const templates = {
+        EXIT: "UniShield: Student [Name] authorized for exit. Dest: [Market]. Please return by [Time].",
+        RETURN: "UniShield: Student [Name] has returned safely. Status: COMPLETED.",
+        OVERDUE: "CRITICAL: Student [Name] is OVERDUE. Expected was [Time]. Authorities notified.",
+        CUSTOM: "UniShield Security Notification: [Custom Message Content]"
+    };
+
+    const typeSelect = document.getElementById('type-select');
+    const previewArea = document.getElementById('preview-text');
+    
+    typeSelect.addEventListener('change', (e) => {
+        previewArea.innerText = templates[e.target.value];
+    });
+
+    // Manual Trigger
+    document.getElementById('btn-trigger').addEventListener('click', async () => {
+        const phone = document.getElementById('target-phone').value;
+        const type = typeSelect.value;
+        const msg = previewArea.innerText;
+
+        if(!phone) return alert('Phone required');
+
+        const btn = document.getElementById('btn-trigger');
+        btn.disabled = true;
+        btn.innerText = 'TRANSMITTING SIGNAL...';
+
+        try {
+            const res = await fetch('/api/sms/send', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone, template: type, message: msg })
+            });
+            const data = await res.json();
+            if(data.success) {
+                btn.innerText = 'SIGNAL DELIVERED';
+                btn.style.background = 'var(--success)';
+                fetchLogs(); // sync feed
+            }
+        } catch (e) { btn.innerText = 'TRANSMISSION FAILED'; }
+
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerText = 'START TRANSMISSION';
+            btn.style.background = 'var(--accent)';
+        }, 2000);
+    });
+
+
+    // Real-time Feed Logic
+    let lastLogId = 0;
+    async function fetchLogs() {
+        try {
+            const res = await fetch('/api/sms/logs/active');
+            const data = await res.json();
+            const feed = document.getElementById('sms-feed');
+            
+            if (data.length > 0) {
+                if (data[0].id > lastLogId) {
+                    // Refresh content
+                    feed.innerHTML = '';
+                    data.forEach(log => {
+                        const div = document.createElement('div');
+                        div.className = 'feed-item';
+                        div.innerHTML = `
+                            <div class="header">
+                                <span class="phone">${log.phone}</span>
+                                <span class="time">${log.timestamp}</span>
+                            </div>
+                            <div class="msg">${log.message}</div>
+                            <div class="footer">
+                                <span style="font-size:0.6rem; color:var(--accent)">Provider: ${log.provider.toUpperCase()}</span>
+                                <span class="status-tag ${log.status.toLowerCase()}">${log.status}</span>
+                            </div>
+                        `;
+                        feed.appendChild(div);
+                    });
+                    lastLogId = data[0].id;
+                }
+            } else {
+                feed.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.8rem;">No activity detected.</div>';
+            }
+        } catch (e) { console.error("Feed sync failed", e); }
+    }
+
+    // High frequency sync to feel like WebSocket
+    fetchLogs();
+    setInterval(fetchLogs, 3000);
 </script>
-</body>
-</html>
+{% endblock %}

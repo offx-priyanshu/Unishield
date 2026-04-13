@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SNOX - Smart Outpass System</title>
+    <title>UniShield - Smart Outpass System</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -22,18 +22,19 @@
         {% if current_user.is_authenticated %}
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <i class="fas fa-shield-alt"></i> SNOX<span>.AI</span>
+                <i class="fas fa-shield-alt"></i> UniShield<span>.AI</span>
             </div>
             <nav>
                 <ul>
                     {% if current_user.role == 'admin' %}
-                    <li><a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' }}"><i class="fas fa-grid-2"></i> <i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' }}"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('gate.terminal') }}" class="{{ 'active' if request.endpoint == 'gate.terminal' }}"><i class="fas fa-microchip"></i> AI Gate</a></li>
                     <li><a href="{{ url_for('admin.manage_students') }}" class="{{ 'active' if request.endpoint == 'admin.manage_students' }}"><i class="fas fa-user-graduate"></i> Students</a></li>
                     <li><a href="{{ url_for('admin.manage_staff') }}" class="{{ 'active' if request.endpoint == 'admin.manage_staff' }}"><i class="fas fa-user-shield"></i> Staff</a></li>
-                    <li><a href="#"><i class="fas fa-chart-bar"></i> Analytics</a></li>
                     {% elif current_user.role == 'guard' %}
-                    <li><a href="{{ url_for('guard.dashboard') }}" class="{{ 'active' if request.endpoint == 'guard.dashboard' }}"><i class="fas fa-camera"></i> Scan Center</a></li>
-                    <li><a href="#"><i class="fas fa-history"></i> Log View</a></li>
+                    <li><a href="{{ url_for('guard.dashboard') }}" class="{{ 'active' if request.endpoint == 'guard.dashboard' }}"><i class="fas fa-th-large"></i> Dashboard View</a></li>
+                    <li><a href="{{ url_for('gate.terminal') }}" class="{{ 'active' if request.endpoint == 'gate.terminal' }}"><i class="fas fa-microchip"></i> AI Gate Terminal</a></li>
+                    <li><a href="#"><i class="fas fa-history"></i> Log History</a></li>
                     {% elif current_user.role == 'student' %}
                     <li><a href="{{ url_for('student.dashboard') }}" class="{{ 'active' if request.endpoint == 'student.dashboard' }}"><i class="fas fa-id-card"></i> My Status</a></li>
                     <li><a href="{{ url_for('student.request_outpass') }}" class="{{ 'active' if request.endpoint == 'student.request_outpass' }}"><i class="fas fa-paper-plane"></i> Outpass Request</a></li>

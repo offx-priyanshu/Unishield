@@ -1,0 +1,802 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart AI Gate Control - UniShield{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --terminal-dark: #05070a;
+        --card-glass: rgba(13, 17, 23, 0.85);
+        --accent-glow: #00d2ff;
+        --success-glow: #00f57a;
+        --danger-glow: #ff3b5c;
+        --warning-glow: #ffb800;
+        --border-glass: rgba(255, 255, 255, 0.08);
+    }
+
+    body {
+        background-color: var(--terminal-dark);
+        color: #fff;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .smart-layout {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 20px;
+        padding: 20px;
+        height: calc(100vh - 80px);
+    }
+
+    /* Left: Scanner Panel */
+    .scanner-panel {
+        background: var(--card-glass);
+        backdrop-filter: blur(25px);
+        border: 1px solid var(--border-glass);
+        border-radius: 24px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .video-container {
+        position: relative;
+        width: 85%;
+        max-width: 800px;
+        max-height: 450px;
+        /* Prevent it from taking too much vertical space */
+        aspect-ratio: 16/9;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 60px rgba(0, 210, 255, 0.1);
+    }
+
+    #video-feed {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+
+    #canvas-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    /* Registration Overlay */
+    .reg-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(5, 7, 10, 0.95);
+        backdrop-filter: blur(30px);
+        z-index: 100;
+        display: none;
+        flex-direction: column;
+        padding: 40px;
+        overflow-y: auto;
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Right: Activity & Alerts */
+    .activity-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.2fr;
+        gap: 15px;
+    }
+
+    .stat-mini {
+        background: var(--card-glass);
+        padding: 20px;
+        border-radius: 18px;
+        border: 1px solid var(--border-glass);
+        text-align: center;
+    }
+
+    .register-btn {
+        background: var(--accent-glow) !important;
+        border: none !important;
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+        cursor: pointer;
+        padding: 10px !important;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .register-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 25px rgba(0, 210, 255, 0.5);
+    }
+
+    .register-btn i {
+        font-size: 1.5rem;
+        color: #000;
+        margin-bottom: 4px;
+    }
+
+    .register-btn div {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #000;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+    }
+
+    .stat-val {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--accent-glow);
+    }
+
+    .stat-lbl {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        color: #666;
+        letter-spacing: 1.5px;
+        margin-top: 5px;
+    }
+
+    .live-log {
+        flex: 1;
+        background: var(--card-glass);
+        border-radius: 20px;
+        border: 1px solid var(--border-glass);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .log-header {
+        padding: 15px 20px;
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .log-items {
+        padding: 15px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+    }
+
+    .log-item {
+        padding: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        display: flex;
+        gap: 12px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(10px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    /* Result Toast */
+    .result-toast {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        border: 1px solid var(--accent-glow);
+        border-radius: 100px;
+        padding: 15px 40px;
+        display: none;
+        align-items: center;
+        gap: 20px;
+        z-index: 50;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Modal Styling */
+    .modal-content {
+        background: #0f1218;
+        border: 1px solid #333;
+        color: #fff;
+        border-radius: 24px;
+    }
+
+    /* ID Scanning indicators */
+    .scan-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(to right, transparent, var(--accent-glow), transparent);
+        box-shadow: 0 0 15px var(--accent-glow);
+        animation: scanMove 3s infinite linear;
+    }
+
+    @keyframes scanMove {
+        0% {
+            top: 0;
+        }
+
+        100% {
+            top: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="smart-layout">
+    <!-- Left: Core Scanner -->
+    <div class="scanner-panel">
+        <div class="video-container" id="vid-wrap">
+            <video id="video-feed" autoplay playsinline muted></video>
+            <canvas id="canvas-overlay"></canvas>
+            <div id="id-scan-line" class="scan-line" style="display: none;"></div>
+        </div>
+
+        <!-- Floating Control HUD -->
+        <div class="mt-4 d-flex gap-3">
+            <div class="badge bg-dark border border-secondary p-2 px-3 rounded-pill">
+                <i class="fas fa-check-circle text-success me-2"></i> NEURAL ENGINE: <span
+                    class="text-success">ACTIVE</span>
+            </div>
+            <div class="badge bg-dark border border-secondary p-2 px-3 rounded-pill">
+                <i class="fas fa-fingerprint text-info me-2"></i> BIOMETRIC MODE: <span class="text-info">DAILY
+                    SCAN</span>
+            </div>
+        </div>
+
+        <!-- Result Quick Info -->
+        <div id="res-toast" class="result-toast">
+            <div id="res-icon" style="font-size: 1.5rem;"><i class="fas fa-check-circle text-success"></i></div>
+            <div style="text-align: left;">
+                <div id="res-name" style="font-weight: 800; font-size: 1.1rem;">PRADIP PAWAR</div>
+                <div id="res-msg" style="font-size: 0.7rem; letter-spacing: 1px; color: #aaa;">EXIT AUTHORIZED • 96.4%
+                    CONFIDENCE</div>
+            </div>
+        </div>
+
+        <!-- Registration Overlay (Integrated) -->
+        <div id="reg-panel" class="reg-overlay">
+            <div class="d-flex justify-content-between align-items-start mb-5">
+                <div>
+                    <h2 class="fw-bold mb-1">REGISTRATION PROTOCOL</h2>
+                    <p class="text-muted">Fill student details or scan ID card for auto-enrollment.</p>
+                </div>
+                <button onclick="closeRegistration()" class="btn btn-outline-danger rounded-circle"><i
+                        class="fas fa-times"></i></button>
+            </div>
+
+            <div id="reg-steps-container" class="w-100 h-100 d-flex flex-column">
+
+                <!-- STEP 1: Scan ID Card -->
+                <div id="step-1"
+                    class="h-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
+                    <i class="fas fa-id-card fa-4x text-info mb-4"></i>
+                    <h3 class="mb-3 fw-bold text-white">STEP 1: VALIDATE IDENTITY</h3>
+                    <p class="text-muted mb-5" style="max-width: 400px; margin: 0 auto; line-height: 1.6;">Show student
+                        ID card to the camera to extract PRN and details automatically.</p>
+                    <button id="btn-scan-id" onclick="triggerIdScan(this)"
+                        class="btn btn-info btn-lg px-5 py-3 fw-bold mb-3" style="width: 300px;">
+                        <i class="fas fa-qrcode me-2"></i> SCAN ID CARD NOW
+                    </button>
+                    <button onclick="skipScan()" class="btn btn-outline-secondary" style="width: 300px;">Skip & Fill
+                        Manually</button>
+                </div>
+
+                <!-- STEP 2: Auto-filled Form -->
+                <div id="step-2" style="display: none; flex:1;">
+                    <h4 class="mb-4 text-info"><i class="fas fa-user-edit me-2"></i> STEP 2: VERIFY DETAILS</h4>
+                    <form id="enroll-form">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-2 uppercase">Student ID / PRN</label>
+                                <input type="text" id="reg-sid"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="Enter ID">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-2 uppercase">Full Name</label>
+                                <input type="text" id="reg-name"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="Identify Student">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small text-muted mb-2 uppercase">Department</label>
+                                <input type="text" id="reg-dept"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="e.g. B.Tech CS">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small text-muted mb-2 uppercase">Course</label>
+                                <input type="text" id="reg-course"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="e.g. B.Tech">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small text-muted mb-2 uppercase">Session</label>
+                                <input type="text" id="reg-session"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="e.g. 2024-2028">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-2 uppercase">Student Phone</label>
+                                <input type="text" id="reg-sphone"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="+91 XXXX">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-2 uppercase">Parent Phone (Required for SMS)</label>
+                                <input type="text" id="reg-pphone"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="+91 XXXX">
+                            </div>
+                        </div>
+                    </form>
+                    <div class="mt-4 text-end">
+                        <button onclick="goToStep(3)" class="btn btn-info px-4 py-2 fw-bold">PROCEED TO BIOMETRICS <i
+                                class="fas fa-arrow-right ms-2"></i></button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: BIOMETRIC CAPTURE -->
+                <div id="step-3" style="display: none; flex:1;"
+                    class="justify-content-center align-items-center flex-column text-center">
+                    <h4 class="mb-4 text-info"><i class="fas fa-camera me-2"></i> STEP 3: FACE CAPTURE</h4>
+                    <div class="card bg-black border-secondary p-4 text-center d-flex flex-column justify-content-center"
+                        style="max-width:400px; width:100%;">
+                        <div id="capture-status">
+                            <i class="fas fa-camera fa-3x text-info mb-3"></i>
+                            <h4>Face Biometric Capture</h4>
+                            <p class="small text-muted">System will capture 5 angles automatically.</p>
+                            <button id="start-capture" onclick="startCaptureFlow()"
+                                class="btn btn-info w-100 py-3 mt-3 fw-bold">START CAPTURE</button>
+                        </div>
+                        <div id="capture-progress" style="display: none;">
+                            <div class="spinner-border text-info mb-3" role="status"></div>
+                            <h4 id="capture-count">Capturing 0/5</h4>
+                            <p class="small text-muted">Please rotate head slightly...</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 w-100 d-flex justify-content-between" style="max-width:400px;">
+                        <button onclick="goToStep(2)" class="btn btn-outline-secondary py-2"><i
+                                class="fas fa-arrow-left me-2"></i> BACK</button>
+                        <button id="finalize-reg" onclick="saveRegistration()" class="px-4 btn btn-primary py-2 fw-bold"
+                            disabled>FINALIZE ENROLLMENT <i class="fas fa-check ms-2"></i></button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Activity & Alerts -->
+    <div class="activity-panel">
+        <div class="stats-row">
+            <div class="stat-mini">
+                <div class="stat-val" id="stat-exits">0</div>
+                <div class="stat-lbl">Exits Today</div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-val" id="stat-out" style="color: var(--danger-glow);">0</div>
+                <div class="stat-lbl">Currently Out</div>
+            </div>
+            <button onclick="openRegistration('manual')" class="stat-mini register-btn">
+                <i class="fas fa-user-plus"></i>
+                <div>Register<br>Student</div>
+            </button>
+        </div>
+
+        <div class="live-log">
+            <div class="log-header">
+                <span>SECURITY EVENT STREAM</span>
+                <span class="badge bg-success">LIVE</span>
+            </div>
+            <div id="log-items" class="log-items">
+                <!-- Injected via Socket -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Unknown Face Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center py-5">
+            <div class="modal-body">
+                <div class="mb-4">
+                    <i class="fas fa-shield-virus text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="fw-bold">Unauthorized Face Detected</h3>
+                <p class="text-muted px-4">This identity exists outside the secure registry. Choose an action protocol
+                    below.</p>
+                <div class="mt-5 d-grid gap-2 px-4">
+                    <button onclick="openRegistration('unknown')" class="btn btn-info py-3 fw-bold"><i
+                            class="fas fa-user-plus me-2"></i> REGISTER NEW STUDENT</button>
+                    <button onclick="registerAsVisitor()" class="btn btn-outline-light py-2"><i
+                            class="fas fa-walking me-2"></i> REGISTER AS VISITOR</button>
+                    <button onclick="notifyControl()" class="btn btn-outline-danger py-2 mt-2"><i
+                            class="fas fa-broadcast-tower me-2"></i> NOTIFY CONTROL ROOM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio Assets -->
+<audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+<audio id="snd-alert" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3"></audio>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+    const socket = io('/gate');
+    const video = document.getElementById('video-feed');
+    const canvas = document.getElementById('canvas-overlay');
+    const ctx = canvas.getContext('2d');
+
+    let isRegOpen = false;
+    let isScanning = true;
+    let isCapturing = false;
+    let capturedImages = [];
+    let processingLock = false;
+
+    // Load face-api models for client-side bounding box
+    async function loadModels() {
+        const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        startVideo();
+    }
+
+    function startVideo() {
+        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    animateScanner();
+                    startAutoScanLoop();
+                };
+            });
+    }
+
+    // Client-side Bounding Box Animation
+    async function animateScanner() {
+        if (!isRegOpen) {
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            detections.forEach(det => {
+                const box = det.box;
+                ctx.strokeStyle = '#00d2ff';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+                // Corners
+                ctx.fillStyle = '#00d2ff';
+                const s = 20;
+                ctx.fillRect(box.x - 2, box.y - 2, s, 4); ctx.fillRect(box.x - 2, box.y - 2, 4, s); // TL
+                ctx.fillRect(box.x + box.width - s + 2, box.y - 2, s, 4); ctx.fillRect(box.x + box.width - 2, box.y - 2, 4, s); // TR
+            });
+        }
+        requestAnimationFrame(animateScanner);
+    }
+
+    // Backend Scan Loop (800ms)
+    function startAutoScanLoop() {
+        setInterval(async () => {
+            if (!isScanning || isRegOpen || processingLock) return;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            tempCanvas.getContext('2d').drawImage(video, 0, 0);
+            const b64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                const res = await fetch('/gate/auto-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: b64 })
+                });
+                const d = await res.json();
+                // Logic mostly handled via socket callbacks now for unified experience
+            } catch (e) { }
+        }, 1000);
+    }
+
+    // Socket Interactions
+    socket.on('gate_event', (data) => {
+        if (isRegOpen) return;
+
+        if (data.state === 'IDLE') return;
+
+        if (data.state === 'UNKNOWN') {
+            document.getElementById('snd-alert').play();
+            var alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+            alertModal.show();
+            isScanning = false;
+        } else {
+            showToast(data);
+            if (['EXIT', 'RETURN'].includes(data.state)) {
+                document.getElementById('snd-success').play();
+                processingLock = true;
+                setTimeout(() => processingLock = false, 4000); // 4s cooldown
+            }
+        }
+    });
+
+    socket.on('gate_log', (data) => {
+        const container = document.getElementById('log-items');
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `
+            <div style="color: #666; font-size: 0.7rem;">${data.time}</div>
+            <div style="flex:1;"><strong class="text-${data.type === 'SUCCESS' ? 'success' : 'info'}">[${data.type}]</strong> ${data.msg}</div>
+        `;
+        container.prepend(item);
+    });
+
+    function showToast(data) {
+        const toast = document.getElementById('res-toast');
+        const name = document.getElementById('res-name');
+        const msg = document.getElementById('res-msg');
+
+        name.innerText = data.name;
+        msg.innerText = `${data.state} • ${data.confidence}% CONFIDENCE`;
+        toast.style.display = 'flex';
+        toast.style.borderColor = data.state === 'DENIED' ? 'var(--danger-glow)' : 'var(--accent-glow)';
+
+        setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    // Registration Flow
+    function openRegistration(source) {
+        isRegOpen = true;
+        isScanning = false;
+        bootstrap.Modal.getInstance(document.getElementById('alertModal'))?.hide();
+        document.getElementById('reg-panel').style.display = 'flex';
+        goToStep(1);
+    }
+
+    function closeRegistration() {
+        document.getElementById('reg-panel').style.display = 'none';
+        isRegOpen = false;
+        isScanning = true;
+        capturedImages = [];
+        document.getElementById('enroll-form').reset();
+        document.getElementById('capture-status').style.display = 'block';
+        document.getElementById('capture-progress').style.display = 'none';
+        document.getElementById('finalize-reg').disabled = true;
+        document.getElementById('finalize-reg').innerHTML = 'FINALIZE ENROLLMENT <i class="fas fa-check ms-2"></i>';
+    }
+
+    function goToStep(step) {
+        document.getElementById('step-1').style.display = 'none';
+        document.getElementById('step-2').style.display = 'none';
+        document.getElementById('step-3').style.display = 'none';
+
+        if (step === 1) document.getElementById('step-1').style.display = 'flex';
+        if (step === 2) document.getElementById('step-2').style.display = 'block';
+        if (step === 3) document.getElementById('step-3').style.display = 'flex';
+    }
+
+    function skipScan() {
+        goToStep(2);
+    }
+
+    async function startCaptureFlow() {
+        isCapturing = true;
+        capturedImages = [];
+        document.getElementById('capture-status').style.display = 'none';
+        document.getElementById('capture-progress').style.display = 'block';
+
+        const captureCanvas = document.createElement('canvas');
+        captureCanvas.width = video.videoWidth;
+        captureCanvas.height = video.videoHeight;
+
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById('capture-count').innerText = `Capturing ${i}/5`;
+            await new Promise(r => setTimeout(r, 600));
+            captureCanvas.getContext('2d').drawImage(video, 0, 0);
+            capturedImages.push(captureCanvas.toDataURL('image/jpeg', 0.9));
+        }
+
+        isCapturing = false;
+        document.getElementById('capture-count').innerText = "✓ Capture Complete";
+        document.getElementById('capture-progress').querySelector('.spinner-border').className = 'fas fa-check-circle text-success fa-2x mb-3';
+        document.getElementById('finalize-reg').disabled = false;
+    }
+
+    async function saveRegistration() {
+        const btn = document.getElementById('finalize-reg');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SAVING...';
+        btn.disabled = true;
+
+        const studentData = {
+            student_id: document.getElementById('reg-sid').value,
+            name: document.getElementById('reg-name').value,
+            department: document.getElementById('reg-dept').value,
+            course: document.getElementById('reg-course').value,
+            session_year: document.getElementById('reg-session').value,
+            phone: document.getElementById('reg-sphone').value,
+            parent_phone: document.getElementById('reg-pphone').value
+        };
+
+        try {
+            const res = await fetch('/gate/enroll', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_data: studentData, images: capturedImages })
+            });
+            const d = await res.json();
+            if (d.success) {
+                alert("STUDENT REGISTERED SUCCESSFULLY!");
+                closeRegistration();
+            } else {
+                alert(d.message);
+                btn.innerHTML = 'FINALIZE ENROLLMENT <i class="fas fa-check ms-2"></i>';
+                btn.disabled = false;
+            }
+        } catch (e) {
+            alert("Server connection failed during enrollment.");
+            btn.innerHTML = 'FINALIZE ENROLLMENT <i class="fas fa-check ms-2"></i>';
+            btn.disabled = false;
+        }
+    }
+
+    // ID Scanning Flow
+    async function triggerIdScan(btn) {
+        const scanLine = document.getElementById('id-scan-line');
+        scanLine.style.display = 'block';
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> SCANNING...';
+
+        const scanCanvas = document.createElement('canvas');
+        scanCanvas.width = video.videoWidth;
+        scanCanvas.height = video.videoHeight;
+        const sctx = scanCanvas.getContext('2d');
+        sctx.drawImage(video, 0, 0);
+        const imgData = sctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+
+        let extractedRaw = null;
+
+        // 1. Try QR
+        const qr = jsQR(imgData.data, imgData.width, imgData.height);
+        if (qr && qr.data) {
+            extractedRaw = qr.data;
+        } else {
+            // 2. Try OCR Fallback
+            try {
+                const result = await Tesseract.recognize(scanCanvas, 'eng');
+                extractedRaw = result.data.text;
+            } catch (e) {
+                console.error("OCR Error:", e);
+            }
+        }
+
+        scanLine.style.display = 'none';
+        btn.innerHTML = origText;
+
+        if (extractedRaw) {
+            await processExtractedData(extractedRaw);
+        } else {
+            alert("Could not detect ID. Please align and try again, or skip to enter manually.");
+        }
+    }
+
+    async function processExtractedData(raw) {
+        console.log("Raw ID Data:", raw);
+        let sid = ""; let name = ""; let dept = ""; let course = "";
+
+        // Basic parser for NAME|SID|DEPT|COURSE format
+        const parts = raw.split('|');
+        if (parts.length >= 2) {
+            name = parts[0];
+            sid = parts[1];
+            if (parts[2]) dept = parts[2];
+            if (parts[3]) course = parts[3];
+        } else {
+            // Regex attempt for Sandip University IDs
+            const prnMatch = raw.match(/\d{10,14}/);
+            if (prnMatch) sid = prnMatch[0];
+            const nameMatch = raw.match(/Name:\s*([A-Z\s]+)/i);
+            if (nameMatch) name = nameMatch[1].trim();
+        }
+
+        if (!sid) {
+            alert("ID number not found in scan. Please scan again or input manually.");
+            return;
+        }
+
+        // Fetch Backend DB
+        try {
+            const res = await fetch(`/gate/check-student/${sid}`);
+            const data = await res.json();
+
+            if (data.exists && data.has_face) {
+                alert("STUDENT ALREADY REGISTERED: " + sid);
+                closeRegistration();
+                return;
+            }
+
+            // Auto-fill form
+            document.getElementById('reg-sid').value = sid;
+            document.getElementById('reg-name').value = data.exists ? data.data.name : name;
+            document.getElementById('reg-dept').value = data.exists ? data.data.department : dept;
+            document.getElementById('reg-course').value = data.exists ? data.data.course : course;
+
+            if (data.exists) {
+                document.getElementById('reg-session').value = data.data.session_year || '';
+                document.getElementById('reg-sphone').value = data.data.phone || '';
+                document.getElementById('reg-pphone').value = data.data.parent_phone || '';
+            }
+
+            alert("ID Extracted Successfully! Review details.");
+            goToStep(2);
+
+        } catch (e) {
+            console.error(e);
+            alert("Could not check student database.");
+        }
+    }
+
+    // Stats
+    async function updateStats() {
+        const res = await fetch('/gate/status');
+        const data = await res.json();
+        document.getElementById('stat-exits').innerText = data.exits_today;
+        document.getElementById('stat-out').innerText = data.currently_out;
+    }
+    setInterval(updateStats, 10000);
+    updateStats();
+
+    // Init
+    loadModels();
+
+</script>
+{% endblock %}

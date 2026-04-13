@@ -1,148 +1,512 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SNOX — Departure Board</title>
+{% extends "base.html" %}
+
+{% block page_title %}Outpass Control Center{% endblock %}
+
+{% block extra_css %}
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0a0e1a;--card:#111827;--card2:#1a2236;--cyan:#00e5ff;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;--border:#1e2d40}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;padding:24px}
-.page-title{font-size:24px;font-weight:800;margin-bottom:24px}
-.tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:20px;overflow-x:auto}
-.tab{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:1px;white-space:nowrap;color:var(--muted);border:none;background:transparent}
-.tab:hover{color:var(--text);background:var(--card2)}
-.tab.active[data-tab="PENDING"]{background:var(--yellow);color:#000}
-.tab.active[data-tab="APPROVED"]{background:var(--cyan);color:#000}
-.tab.active[data-tab="ACTIVE"]{background:var(--green);color:#000}
-.tab.active[data-tab="COMPLETED"]{background:var(--muted);color:#000}
-.tab.active[data-tab="REJECTED"]{background:var(--red);color:#fff}
-.cnt{min-width:20px;height:20px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;padding:0 6px;background:rgba(255,255,255,.1)}
-.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.row{display:grid;grid-template-columns:100px 150px 1fr 60px 130px 160px;padding:14px 20px;border-bottom:1px solid var(--border);align-items:center}
-.row.header{font-size:11px;color:var(--muted);letter-spacing:1px}
-.row:last-child{border-bottom:none}
-.row:not(.header):hover{background:var(--card2)}
-.sid{color:var(--cyan);font-weight:700;font-size:13px;cursor:pointer}
-.name{font-weight:600;font-size:13px}
-.sub{font-size:11px;color:var(--muted);margin-top:2px}
-.dur{font-size:13px;font-weight:700;color:var(--cyan)}
-.ts{font-size:12px;font-family:monospace;color:var(--muted)}
-.action-btns{display:flex;gap:6px}
-.btn-a{background:rgba(16,185,129,.15);border:1px solid var(--green);color:var(--green);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px}
-.btn-r{background:rgba(239,68,68,.1);border:1px solid var(--red);color:var(--red);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px}
-.empty{text-align:center;padding:60px;color:var(--muted);font-size:14px}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100}
-.modal-overlay.show{display:flex}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;width:440px}
-.modal h3{font-size:16px;font-weight:800;color:var(--red);letter-spacing:1px;margin-bottom:16px}
-.modal select,.modal textarea{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;font-family:inherit}
-.modal-btns{display:flex;gap:10px}
-.modal-btns button{flex:1;padding:12px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:13px;letter-spacing:1px}
-.btn-cancel{background:var(--card2);color:var(--text)}
-.btn-confirm{background:var(--red);color:#fff}
+/* Dashboard Summary Cards */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: rgba(14, 18, 22, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.summary-card .icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.summary-card.total .icon-wrap     { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.summary-card.outside .icon-wrap   { background: rgba(0, 210, 255, 0.1); color: var(--accent); }
+.summary-card.overdue .icon-wrap   { background: rgba(255, 59, 92, 0.1); color: var(--danger); }
+.summary-card.returned .icon-wrap  { background: rgba(0, 245, 122, 0.1); color: var(--success); }
+.summary-card.pending .icon-wrap   { background: rgba(255, 184, 0, 0.1); color: var(--warning); }
+
+.summary-value {
+    font-size: 2rem;
+    font-weight: 800;
+    font-family: 'Syne', sans-serif;
+    margin-bottom: 0.25rem;
+    line-height: 1;
+}
+
+.summary-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* Control Bar: Search & Actions */
+.control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    width: 300px;
+}
+
+.search-box input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-main);
+    width: 100%;
+    padding: 0;
+    margin-left: 10px;
+    font-size: 0.9rem;
+}
+
+.export-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    gap: 0.4rem;
+}
+
+/* Status Tabs */
+.status-tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0px;
+}
+
+.tab-link {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-link:hover {
+    color: var(--text-main);
+}
+
+.tab-link.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: linear-gradient(to top, rgba(0, 210, 255, 0.05) 0%, transparent 100%);
+}
+
+.tab-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+}
+
+.tab-link.active .tab-badge {
+    background: var(--accent);
+    color: #000;
+}
+
+/* Data Table Updates */
+.smart-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+}
+
+.smart-table th {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1rem;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.smart-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    vertical-align: middle;
+}
+
+.smart-table tr:hover td {
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.smart-table tr.overdue-row {
+    border-left: 3px solid var(--danger);
+    background: rgba(255, 59, 92, 0.02);
+}
+
+.profile-cell {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.std-name { font-weight: 600; color: #fff; }
+.std-id { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+.sub-reason { font-size: 0.75rem; color: var(--text-muted); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;}
+
+/* Countdown Timer */
+.countdown-pill {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.countdown-pill.safe { background: rgba(0, 245, 122, 0.1); color: var(--success); border: 1px solid rgba(0, 245, 122, 0.2); }
+.countdown-pill.warn { background: rgba(255, 184, 0, 0.1); color: var(--warning); border: 1px solid rgba(255, 184, 0, 0.2); }
+.countdown-pill.danger { background: rgba(255, 59, 92, 0.1); color: var(--danger); border: 1px solid var(--danger); animation: pulse 2s infinite; }
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 59, 92, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0); }
+}
+
+/* Status Badges */
+.status {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.status.pending { background: rgba(255, 184, 0, 0.1); color: var(--warning); border: 1px solid rgba(255,184,0,0.3); }
+.status.approved { background: rgba(0, 245, 122, 0.1); color: var(--success); border: 1px solid rgba(0,245,122,0.3); }
+.status.out { background: rgba(0, 210, 255, 0.15); color: var(--accent); border: 1px solid rgba(0,210,255,0.4); box-shadow: 0 0 10px rgba(0,210,255,0.1);}
+.status.returned { background: rgba(255, 255, 255, 0.05); color: #aaa; border: 1px solid rgba(255,255,255,0.1); }
+.status.rejected { background: rgba(255, 255, 255, 0.05); color: #666; text-decoration: line-through; }
+.status.late { background: rgba(255, 59, 92, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+/* Table Actions */
+.act-group { display: flex; gap: 6px; }
+.tbl-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.tbl-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.tbl-btn.approve:hover { background: var(--success); color: #000; border-color: var(--success); }
+.tbl-btn.reject:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.tbl-btn.blacklist:hover { background: #000; color: var(--danger); border-color: var(--danger); }
+.tbl-btn.view:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+.empty-icon {
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.05);
+    margin-bottom: 1.5rem;
+}
 </style>
-</head>
-<body>
-<div class="page-title">Security Departure Board</div>
-<div class="tabs">
-  <button class="tab active" data-tab="PENDING" onclick="switchTab('PENDING')">PENDING <span class="cnt" id="cnt-PENDING">0</span></button>
-  <button class="tab" data-tab="APPROVED" onclick="switchTab('APPROVED')">AUTHORIZED <span class="cnt" id="cnt-APPROVED">0</span></button>
-  <button class="tab" data-tab="ACTIVE" onclick="switchTab('ACTIVE')">ACTIVE <span class="cnt" id="cnt-ACTIVE">0</span></button>
-  <button class="tab" data-tab="COMPLETED" onclick="switchTab('COMPLETED')">COMPLETED <span class="cnt" id="cnt-COMPLETED">0</span></button>
-  <button class="tab" data-tab="REJECTED" onclick="switchTab('REJECTED')">REJECTED <span class="cnt" id="cnt-REJECTED">0</span></button>
-</div>
-<div class="table-card" id="table-card"><div class="empty">Loading...</div></div>
-<div class="modal-overlay" id="reject-modal">
-  <div class="modal">
-    <h3>REJECT OUTPASS</h3>
-    <input type="hidden" id="reject-id">
-    <select id="reject-reason-select" onchange="document.getElementById('reject-custom').value=this.value==='custom'?'':this.value">
-      <option value="">Select reason...</option>
-      <option>Insufficient academic performance</option>
-      <option>Previous violations on record</option>
-      <option>Outside permitted hours</option>
-      <option>Incomplete request information</option>
-      <option value="custom">Custom...</option>
-    </select>
-    <textarea id="reject-custom" rows="3" placeholder="Custom reason..."></textarea>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
-      <button class="btn-confirm" onclick="confirmReject()">CONFIRM REJECT</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Top Summary Cards -->
+<div class="summary-grid">
+    <div class="summary-card total">
+        <div class="icon-wrap"><i class="fas fa-file-invoice"></i></div>
+        <div class="summary-value">{{ total_today }}</div>
+        <div class="summary-label">Requests Today</div>
     </div>
-  </div>
+    
+    <div class="summary-card outside">
+        <div class="icon-wrap"><i class="fas fa-walking"></i></div>
+        <div class="summary-value">{{ currently_out }}</div>
+        <div class="summary-label">Currently Outside</div>
+        {% if currently_out > 0 %}
+        <div style="position: absolute; top: 1.5rem; right: 1.5rem; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent);"></div>
+        {% endif %}
+    </div>
+
+    <div class="summary-card overdue" style="{% if overdue > 0 %}border-color: rgba(255, 59, 92, 0.4);{% endif %}">
+        <div class="icon-wrap"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="summary-value">{{ overdue }}</div>
+        <div class="summary-label">Late / Overdue</div>
+    </div>
+
+    <div class="summary-card returned">
+        <div class="icon-wrap"><i class="fas fa-check-circle"></i></div>
+        <div class="summary-value">{{ returned_today }}</div>
+        <div class="summary-label">Returned Today</div>
+    </div>
+
+    <div class="summary-card pending">
+        <div class="icon-wrap"><i class="fas fa-clock"></i></div>
+        <div class="summary-value">{{ pending_reqs }}</div>
+        <div class="summary-label">Pending Approval</div>
+    </div>
 </div>
+
+<!-- Controls -->
+<div class="control-bar">
+    <form class="search-box" method="GET">
+        <input type="hidden" name="status" value="{{ current_status }}">
+        <i class="fas fa-search" style="color: var(--text-muted)"></i>
+        <input type="text" name="search" placeholder="Search by Student Name / ID..." value="{{ search }}" onchange="this.form.submit()">
+    </form>
+    
+    <div class="export-group">
+        <a href="#" class="btn btn-primary btn-sm" onclick="return confirm('Approve all pending requests?')"><i class="fas fa-check-double"></i> Bulk Approve</a>
+        <a href="{{ url_for('admin.export', type='outpasses', format='csv') }}" class="btn btn-ghost btn-sm"><i class="fas fa-file-csv"></i> Export CSV</a>
+    </div>
+</div>
+
+<!-- Main Table Card -->
+<div class="card" style="padding: 0;">
+    
+    <!-- Tabs -->
+    <div class="status-tabs">
+        <a href="?status=all" class="tab-link {% if current_status == 'all' %}active{% endif %}">All</a>
+        <a href="?status=pending" class="tab-link {% if current_status == 'pending' %}active{% endif %}">Pending <span class="tab-badge">{{ pending_reqs }}</span></a>
+        <a href="?status=approved" class="tab-link {% if current_status == 'approved' %}active{% endif %}">Approved</a>
+        <a href="?status=out" class="tab-link {% if current_status == 'out' %}active{% endif %}">Active (Outside) <span class="tab-badge" style="background:{% if currently_out>0 %}var(--accent);color:#000{% endif %}">{{ currently_out }}</span></a>
+        <a href="?status=returned" class="tab-link {% if current_status == 'returned' %}active{% endif %}">Completed</a>
+        <a href="?status=rejected" class="tab-link {% if current_status == 'rejected' %}active{% endif %}">Rejected</a>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="smart-table">
+            <thead>
+                <tr>
+                    <th>STUDENT IDENTITY</th>
+                    <th>DESTINATION & PURPOSE</th>
+                    <th>EXIT TIME</th>
+                    <th>EXPECTED / LIVE STATUS</th>
+                    <th>ACTUAL RETURN</th>
+                    <th>STATUS</th>
+                    <th>ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in outpasses %}
+                {% set student = op.student %}
+                
+                {% set is_overdue = false %}
+                {% if op.status == 'out' and now > op.expected_return %}
+                    {% set is_overdue = true %}
+                {% endif %}
+                
+                <tr class="{% if is_overdue %}overdue-row{% endif %}">
+                    <td>
+                        <div class="profile-cell">
+                            <div class="avatar">{{ student.name[0] | upper }}</div>
+                            <div>
+                                <div class="std-name">{{ student.name }}</div>
+                                <div class="std-id">#{{ student.student_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: #fff;">{{ op.destination }}</div>
+                        <span class="sub-reason" title="{{ op.purpose }}">{{ op.purpose }}</span>
+                    </td>
+                    <td class="mono" style="color: var(--text-muted); font-size: 0.8rem;">
+                        {{ op.exit_time.strftime('%b %d, %H:%M') if op.exit_time else '—' }}
+                    </td>
+                    <td>
+                        {% if op.status == 'out' %}
+                            <div class="countdown-pill" data-expected="{{ op.expected_return.isoformat() }}Z">
+                                <!-- JS fills this -->
+                                Loading live tracking...
+                            </div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Limit: {{ op.time_limit_hours }} Hrs</div>
+                        {% else %}
+                            <span class="mono" style="font-size: 0.8rem; color: #888;">{{ op.expected_return.strftime('%b %d, %H:%M') if op.expected_return else '—' }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono" style="color: var(--text-muted); font-size: 0.8rem;">
+                        {{ op.actual_return.strftime('%b %d, %H:%M') if op.actual_return else '—' }}
+                    </td>
+                    <td>
+                        {% if is_overdue %}
+                            <span class="status late">LATE</span>
+                        {% elif op.status == 'pending' %}
+                            <span class="status pending">PENDING</span>
+                        {% elif op.status == 'approved' %}
+                            <span class="status approved">APPROVED</span>
+                        {% elif op.status == 'out' %}
+                            <span class="status out">ACTIVE</span>
+                        {% elif op.status == 'returned' %}
+                            <span class="status returned">COMPLETED</span>
+                        {% elif op.status == 'rejected' %}
+                            <span class="status rejected">REJECTED</span>
+                        {% else %}
+                            <span class="status pending">{{ op.status | upper }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="act-group">
+                            {% if op.status == 'pending' %}
+                                <a href="?action=approve&op_id={{ op.id }}&status={{ current_status }}" class="tbl-btn approve" title="Approve"><i class="fas fa-check"></i></a>
+                                <a href="?action=reject&op_id={{ op.id }}&status={{ current_status }}" class="tbl-btn reject" title="Reject"><i class="fas fa-times"></i></a>
+                            {% elif op.status == 'out' %}
+                                <a href="#" class="tbl-btn" style="background: rgba(0, 245, 122, 0.1); color: var(--success); width: auto; padding: 0 10px; font-weight: 700;" title="Mark Returned"><i class="fas fa-arrow-down" style="margin-right:5px"></i> RETURNED</a>
+                            {% endif %}
+                            {% if op.status == 'out' and is_overdue %}
+                                <a href="?action=blacklist&op_id={{ op.id }}&status={{ current_status }}" class="tbl-btn blacklist" title="Blacklist Student" onclick="return confirm('Blacklist this student permanently?')"><i class="fas fa-ban"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-shield-alt"></i></div>
+                            <h3 style="color: #fff; margin-bottom: 0.5rem;">No Outpass Requests Yet</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">All students are currently inside the campus perimeters.</p>
+                            <button class="btn btn-ghost"><i class="fas fa-plus"></i> Create Manual Entry</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script>
-const API='http://127.0.0.1:5000';
-let currentTab='PENDING',allData={};
+    // Live Countdown Timer Engine
+    function updateCountdowns() {
+        const pills = document.querySelectorAll('.countdown-pill');
+        const now = new Date();
+        
+        pills.forEach(pill => {
+            const expectedStr = pill.getAttribute('data-expected');
+            if (!expectedStr) return;
+            
+            const expected = new Date(expectedStr);
+            const diffMs = expected - now;
+            
+            pill.className = 'countdown-pill'; // reset
+            
+            if (diffMs > 0) {
+                // Time remaining
+                const diffMins = Math.floor(diffMs / 60000);
+                const hrs = Math.floor(diffMins / 60);
+                const mins = diffMins % 60;
+                
+                if (hrs > 0) {
+                    pill.innerHTML = `<i class="fas fa-stopwatch"></i> ${hrs}h ${mins}m left`;
+                    pill.classList.add('safe');
+                } else {
+                    pill.innerHTML = `<i class="fas fa-stopwatch"></i> ${mins}m left`;
+                    pill.classList.add('warn');
+                }
+            } else {
+                // Overdue
+                const overdueMins = Math.abs(Math.floor(diffMs / 60000));
+                const hrs = Math.floor(overdueMins / 60);
+                const mins = overdueMins % 60;
+                
+                pill.innerHTML = `⚠️ OVERDUE by ${hrs > 0 ? hrs + 'h ' : ''}${mins}m`;
+                pill.classList.add('danger');
+                
+                // Add styling to parent row
+                const tr = pill.closest('tr');
+                if(!tr.classList.contains('overdue-row')){
+                    tr.classList.add('overdue-row');
+                    const statusCell = tr.querySelector('.status');
+                    if(statusCell) {
+                        statusCell.className = 'status late';
+                        statusCell.innerText = 'LATE';
+                    }
+                    
+                    // Add blacklist button if not already there
+                    const actionGroup = tr.querySelector('.act-group');
+                    if(actionGroup && !actionGroup.innerHTML.includes('fa-ban')) {
+                        // The user will need to refresh for the functional backend link, but UI wise we can show it
+                    }
+                }
+            }
+        });
+    }
 
-async function fetchAll(){
-  for(const s of ['PENDING','APPROVED','ACTIVE','COMPLETED','REJECTED']){
-    try{
-      const r=await fetch(`${API}/api/outpass/all?status=${s}`);
-      allData[s]=await r.json();
-      document.getElementById(`cnt-${s}`).textContent=allData[s].length;
-    }catch{allData[s]=[]}
-  }
-  renderTable(currentTab);
-}
-
-function switchTab(tab){
-  currentTab=tab;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-  renderTable(tab);
-}
-
-function renderTable(tab){
-  const data=allData[tab]||[];
-  const card=document.getElementById('table-card');
-  const headers=['SID','STUDENT','DESTINATION / PURPOSE','HRS','TIME','ACTION'];
-  let html=`<div class="row header">${headers.map(h=>`<div>${h}</div>`).join('')}</div>`;
-  if(!data.length){html+='<div class="empty">NO ACTIVITY IN QUEUE</div>';}
-  else data.forEach(r=>{
-    const time=r.requested_at||r.approved_at||'—';
-    const tFormatted=new Date((time||'').replace(' ','T')).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    html+=`<div class="row">
-      <div><span class="sid" onclick="window.location='/violation_history.html?sid=${r.sid}'">${r.sid}</span></div>
-      <div><div class="name">${r.student_name||'—'}</div></div>
-      <div><div>${r.destination||'—'}</div><div class="sub">${(r.purpose||'').substring(0,40)}</div></div>
-      <div class="dur">${r.duration_hours}H</div>
-      <div class="ts">${tFormatted}</div>
-      <div>${tab==='PENDING'?`<div class="action-btns"><button class="btn-a" onclick="approve(${r.id})">APPROVE</button><button class="btn-r" onclick="openReject(${r.id})">REJECT</button></div>`:
-        tab==='APPROVED'?`<span style="color:var(--cyan);font-size:11px;font-weight:700">QR READY</span>`:
-        tab==='ACTIVE'?`<span style="color:var(--green);font-size:11px;font-weight:700">OUT</span>`:
-        tab==='COMPLETED'?`<span style="color:var(--muted);font-size:11px">DONE</span>`:
-        `<span style="color:var(--red);font-size:11px">${(r.rejection_reason||'').substring(0,25)}</span>`}</div>
-    </div>`;
-  });
-  card.innerHTML=html;
-}
-
-async function approve(id){
-  if(!confirm('Approve this outpass?'))return;
-  const r=await fetch(`${API}/api/outpass/approve/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved_by:localStorage.getItem('admin_key')||'admin'})});
-  const d=await r.json();
-  if(d.success){fetchAll();showToast('Outpass approved!','green')}
-}
-
-function openReject(id){document.getElementById('reject-id').value=id;document.getElementById('reject-modal').classList.add('show')}
-function closeModal(){document.getElementById('reject-modal').classList.remove('show')}
-
-async function confirmReject(){
-  const id=document.getElementById('reject-id').value;
-  const reason=document.getElementById('reject-custom').value.trim()||document.getElementById('reject-reason-select').value;
-  if(!reason){alert('Enter a reason');return}
-  await fetch(`${API}/api/outpass/reject/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
-  closeModal();fetchAll();showToast('Outpass rejected','red');
-}
-
-function showToast(msg,color){
-  const t=document.createElement('div');
-  t.style.cssText=`position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--${color==='green'?'green':'red'});color:var(--${color==='green'?'green':'red'});padding:12px 20px;border-radius:8px;font-size:13px;font-weight:700;z-index:999;letter-spacing:1px`;
-  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
-}
-
-fetchAll();setInterval(fetchAll,15000);
+    // Run immediately and then every minute
+    updateCountdowns();
+    setInterval(updateCountdowns, 60000);
 </script>
-</body>
-</html>
+{% endblock %}

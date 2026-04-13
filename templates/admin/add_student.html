@@ -1,199 +1,92 @@
 {% extends "base.html" %}
 
-{% block page_title %}Security Enrollment Node{% endblock %}
+{% block page_title %}Student Enrollment{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 3rem; padding: 4rem;">
-    
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 3rem;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <i class="fas fa-user-plus" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+        <h1 style="color: white; margin-bottom: 0.5rem;">Manual Student Enrollment</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Populate registry with student credentials and biometric data.</p>
+    </div>
+
     <form method="POST" enctype="multipart/form-data">
-        <div style="margin-bottom: 2rem;">
-            <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2rem; letter-spacing: 1.5px; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Identity Credentials</p>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Full Name</label>
-                    <input type="text" name="name" placeholder="Legal Name" required>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Public SID</label>
-                    <input type="text" name="student_id" placeholder="SID_SNOX_XXXX" required>
-                </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" placeholder="Legal Name" required>
             </div>
-
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Recovery Email</label>
-                <input type="email" name="email" placeholder="identity@domain.edu" required>
+            <div class="form-group">
+                <label>Student ID / PRN</label>
+                <input type="text" name="student_id" placeholder="Official ID" required>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem;">
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Phone Index</label>
-                    <input type="text" name="phone" placeholder="+91-00000-00000" required>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Parent Phone Index</label>
-                    <input type="text" name="parent_phone" placeholder="+91-00000-00000" required>
-                </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" placeholder="student@example.com" required>
             </div>
-
-            <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2rem; letter-spacing: 1.5px; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Organization Index</p>
-            
-            <div style="display: grid; grid-template-columns: 1.5fr 0.8fr 1fr; gap: 1rem; margin-bottom: 3rem;">
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Department</label>
-                    <select name="department">
-                        <optgroup label="B.Tech. Branches">
-                            <option value="B.Tech. in Computer Science and Engineering (Cyber Security and Forensic) with IBM">B.Tech. in Computer Science and Engineering (Cyber Security and Forensic) with IBM</option>
-                            <option value="B.Tech. in Mechanical Engineering">B.Tech. in Mechanical Engineering</option>
-                            <option value="B.Tech. in Computer Science and Engineering (Cloud Technology and Information Security)">B.Tech. in Computer Science and Engineering (Cloud Technology and Information Security)</option>
-                            <option value="B.Tech. in Civil Engineering">B.Tech. in Civil Engineering</option>
-                            <option value="B.Tech. in Computer Science and Engineering">B.Tech. in Computer Science and Engineering</option>
-                            <option value="B.Tech. in Aerospace Engineering">B.Tech. in Aerospace Engineering</option>
-                            <option value="B.Tech. in Computer Science and Engineering (Artificial Intelligence and Machine Learning) with Xebia">B.Tech. in Computer Science and Engineering (Artificial Intelligence and Machine Learning) with Xebia</option>
-                            <option value="B.Tech. in Electrical Engineering">B.Tech. in Electrical Engineering</option>
-                            <option value="B.Tech. in Civil Engineering (Lateral Entry)">B.Tech. in Civil Engineering (Lateral Entry)</option>
-                        </optgroup>
-                        <optgroup label="B.Sc. & BCA">
-                            <option value="B.Sc. in Forensic Science">B.Sc. in Forensic Science</option>
-                            <option value="B.Sc. in Computer Science (AI, ML and VR)">B.Sc. in Computer Science (AI, ML and VR)</option>
-                            <option value="B.Sc. in Microbiology">B.Sc. in Microbiology</option>
-                            <option value="B.Sc. In Interior Design & Decoration">B.Sc. In Interior Design & Decoration</option>
-                            <option value="B.Sc. In Fashion & Apparel Design">B.Sc. In Fashion & Apparel Design</option>
-                            <option value="B.Sc. in Beauty Cosmetology">B.Sc. in Beauty Cosmetology</option>
-                            <option value="B.Sc. in Computational Mathematics and Data Science">B.Sc. in Computational Mathematics and Data Science</option>
-                            <option value="B.Sc. in Chemistry">B.Sc. in Chemistry</option>
-                            <option value="B.Sc. in Physics">B.Sc. in Physics</option>
-                            <option value="Bachelor of Computer Application (BCA)">Bachelor of Computer Application (BCA)</option>
-                        </optgroup>
-                        <optgroup label="MBA & MCA">
-                            <option value="MBA in Marketing Management">MBA in Marketing Management</option>
-                            <option value="MBA in Financial Management">MBA in Financial Management</option>
-                            <option value="MBA in Human Resource Management">MBA in Human Resource Management</option>
-                            <option value="MBA in Business Analytics">MBA in Business Analytics</option>
-                            <option value="MBA in Banking and Financial Services">MBA in Banking and Financial Services</option>
-                            <option value="MBA in International Business">MBA in International Business</option>
-                            <option value="Master of Computer Applications (MCA)">Master of Computer Applications (MCA)</option>
-                        </optgroup>
-                        <optgroup label="BBA Branches">
-                            <option value="BBA in International Business">BBA in International Business</option>
-                            <option value="BBA in Financial Management">BBA in Financial Management</option>
-                            <option value="BBA in Human Resource Management">BBA in Human Resource Management</option>
-                            <option value="BBA (Hons.) in Financial Management">BBA (Hons.) in Financial Management</option>
-                            <option value="BBA (Hons.) in Entrepreneurship">BBA (Hons.) in Entrepreneurship</option>
-                            <option value="BBA in Marketing Management">BBA in Marketing Management</option>
-                            <option value="BBA in Business Analytics">BBA in Business Analytics</option>
-                            <option value="BBA in Digital Marketing">BBA in Digital Marketing</option>
-                        </optgroup>
-                        <optgroup label="Law Branches">
-                            <option value="LL.B (Hons.)">LL.B (Hons.)</option>
-                            <option value="BBA LL.B. (Hons.)">BBA LL.B. (Hons.)</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Year Cycle</label>
-                    <input type="number" name="year" value="1" min="1" max="5">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Hostel Sector</label>
-                    <input type="text" name="hostel_room" placeholder="H3-402">
-                </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" name="phone" placeholder="+91 XXXX" required>
             </div>
+            <div class="form-group">
+                <label>Parent/Guardian Phone</label>
+                <input type="text" name="parent_phone" placeholder="+91 XXXX" required>
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" name="department" placeholder="e.g. B.Tech CS" required>
+            </div>
+            <div class="form-group">
+                <label>Year of Study</label>
+                <select name="year" required>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Hostel Room (Optional)</label>
+                <input type="text" name="hostel_room" placeholder="Block - Room">
+            </div>
+        </div>
 
-            <input type="hidden" name="captured_image" id="captured_image">
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1rem;">
-                INITIALIZE ENROLLMENT <i class="fas fa-fingerprint" style="margin-left: 0.5rem;"></i>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3.5rem;">
+            <div class="form-group">
+                <label>Biometric Face Scan (Upload File)</label>
+                <input type="file" name="face_image" accept="image/*">
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;"><i class="fas fa-info-circle"></i> High-resolution front-facing portrait required for neural encoding.</p>
+            </div>
+            <div class="form-group">
+                <label>ID Card Scan (Upload File)</label>
+                <input type="file" name="id_image" accept="image/*">
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;"><i class="fas fa-info-circle"></i> Verification backup for OCR redundancy.</p>
+            </div>
+        </div>
+        
+        <!-- HIDDEN WEBCAM INPUTS (Placeholder for future JS integration) -->
+        <input type="hidden" name="captured_image" id="captured_image">
+        <input type="hidden" name="id_card_image" id="id_card_image">
+
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 2; justify-content: center; padding: 1.25rem;">
+                INITIALIZE REGISTRATION <i class="fas fa-fingerprint" style="margin-left: 0.75rem;"></i>
             </button>
+            <a href="{{ url_for('admin.students') }}" class="btn btn-ghost" style="flex: 1; justify-content: center;">
+                CANCEL
+            </a>
         </div>
     </form>
-
-    
-    <div style="border-left: 1px solid var(--border); padding-left: 3rem;">
-        <p style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2rem; letter-spacing: 1.5px; text-align: center;">Vibrancy Calibration</p>
-        
-        <div id="camera_node" style="margin-bottom: 2rem;">
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.8rem; text-transform: uppercase; font-weight: 700;">1. Face Scan (System Verification)</p>
-            <div style="width: 100%; aspect-ratio: 1.2; background: var(--bg-dark); border-radius: 12px; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-bottom: 1rem;">
-                <video id="webcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none;"></video>
-                <canvas id="canvas" style="display: none;"></canvas>
-                <img id="photo_preview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                <div id="cam_trigger" style="text-align: center; cursor: pointer; color: var(--text-muted);">
-                    <i class="fas fa-user-circle" style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--accent);"></i>
-                    <p style="font-size: 0.7rem; font-weight: 600;">ACTIVATE LENS</p>
-                </div>
-            </div>
-
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.8rem; text-transform: uppercase; font-weight: 700;">2. ID Card Scan (Records)</p>
-            <div style="width: 100%; aspect-ratio: 1.6; background: var(--bg-dark); border-radius: 12px; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
-                <video id="webcam_id" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; display: none;"></video>
-                <img id="id_preview" src="" style="width: 100%; height: 100%; object-fit: contain; display: none;">
-                <div id="id_trigger" style="text-align: center; cursor: pointer; color: var(--text-muted);">
-                    <i class="fas fa-id-card" style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--success);"></i>
-                    <p style="font-size: 0.7rem; font-weight: 600;">SCAN ID CARD</p>
-                </div>
-            </div>
-            <input type="hidden" name="id_card_image" id="id_card_image">
-        </div>
-
-        <div style="margin-bottom: 2rem;">
-            <p style="text-align: center; color: var(--text-muted); font-size: 0.7rem; margin-bottom: 1.5rem;">-- OR UPLOAD ANALOG SOURCE --</p>
-            <div style="display: flex; gap: 0.5rem; flex-direction: column;">
-                <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Face Image</label>
-                <input type="file" name="face_image" style="font-size: 0.7rem; margin-bottom: 0.5rem;">
-                <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">ID Card Image</label>
-                <input type="file" name="id_image" style="font-size: 0.7rem;">
-            </div>
-        </div>
-
-        <div class="card" style="background: rgba(0,200,255,0.03); border-color: rgba(0,200,255,0.1);">
-            <p style="font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> Enrollment Policy</p>
-            <p style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.5;">Ensure student is facing the camera directly. Neural calibration requires neutral background and clear visibility of ocular landmarks.</p>
-        </div>
-    </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    const setupCam = (triggerId, videoId, previewId, inputId, isMirror = true) => {
-        const trigger = document.getElementById(triggerId);
-        const video = document.getElementById(videoId);
-        const preview = document.getElementById(previewId);
-        const input = document.getElementById(inputId);
-        const canvas = document.getElementById('canvas');
-        let stream = null;
-
-        trigger.onclick = async () => {
-            if (!stream) {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    video.srcObject = stream;
-                    video.style.display = 'block';
-                    preview.style.display = 'none';
-                    trigger.innerHTML = `<i class="fas fa-dot-circle" style="font-size: 2rem; color: var(--danger);"></i><p style="font-size: 0.7rem; font-weight: 700;">CAPTURE</p>`;
-                } catch (err) { alert("Camera access denied."); }
-            } else {
-                const context = canvas.getContext('2d');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                if (isMirror) {
-                    context.translate(canvas.width, 0);
-                    context.scale(-1, 1);
-                }
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg');
-                preview.src = dataUrl;
-                preview.style.display = 'block';
-                video.style.display = 'none';
-                input.value = dataUrl;
-                stream.getTracks().forEach(t => t.stop());
-                stream = null;
-                trigger.innerHTML = `<i class="fas fa-sync" style="font-size: 1.5rem; color: var(--accent);"></i><p style="font-size: 0.7rem; font-weight: 700;">RETAKE</p>`;
-            }
-        };
-    };
-
-    setupCam('cam_trigger', 'webcam', 'photo_preview', 'captured_image', true);
-    setupCam('id_trigger', 'webcam_id', 'id_preview', 'id_card_image', false);
-</script>
+<style>
+    .form-group label {
+        display: block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+    }
+</style>
 {% endblock %}

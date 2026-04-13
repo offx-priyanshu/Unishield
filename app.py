@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager
 from models.db import db
 from models.user import User
 from config import Config
+from extensions import socketio
 import os
 from datetime import datetime
 
@@ -12,6 +13,7 @@ def create_app():
     app.config.from_object(Config)
 
     db.init_app(app)
+    socketio.init_app(app)
     
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
@@ -31,12 +33,14 @@ def create_app():
     from routes.student import student_bp
     from routes.guard import guard_bp
     from routes.api import api_bp
+    from routes.gate import gate_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(student_bp, url_prefix='/student')
     app.register_blueprint(guard_bp, url_prefix='/guard')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(gate_bp, url_prefix='/gate')
 
     @app.route('/')
     def index():
@@ -46,7 +50,7 @@ def create_app():
     def inject_global_vars():
         return {
             'now': datetime.utcnow(),
-            'app_name': 'SNOX',
+            'app_name': 'UniShield',
             'Config': Config
         }
 
@@ -55,23 +59,27 @@ def create_app():
         admin_user = User.query.filter_by(role='admin').first()
         if not admin_user:
             admin = User(
-                username='priyanshugse',
-                email='priyanshugse@gmail.com',
+                username=Config.ADMIN_USERNAME,
+                email=Config.ADMIN_EMAIL,
                 role='admin',
-                name='Super Admin',
-                student_id='ADMIN001'
+                name='UniShield Owner',
+                student_id='OWNER001',
+                admin_role='OWNER',
+                status='ACTIVE',
+                permissions='["ALL"]'
             )
-            admin.set_password('vipul@123')
+            admin.set_password(Config.ADMIN_PASSWORD)
             db.session.add(admin)
+
             db.session.commit()
         else:
-            admin_user.username = 'priyanshugse'
-            admin_user.email = 'priyanshugse@gmail.com'
-            admin_user.set_password('vipul@123')
+            admin_user.username = Config.ADMIN_USERNAME
+            admin_user.email    = Config.ADMIN_EMAIL
+            admin_user.set_password(Config.ADMIN_PASSWORD)
             db.session.commit()
 
     return app
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, port=5000)
+    socketio.run(app, debug=True, port=8000)

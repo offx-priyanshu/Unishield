@@ -11,7 +11,6 @@
     
     <div style="display: flex; gap: 1rem;">
         <a href="{{ url_for('admin.export', type='students') }}" class="btn btn-ghost"><i class="fas fa-file-csv"></i> Export CSV</a>
-        <a href="{{ url_for('admin.add_student') }}" class="btn btn-primary"><i class="fas fa-user-plus"></i> Enroll Student</a>
     </div>
 </div>
 
@@ -19,11 +18,11 @@
     <table>
         <thead>
             <tr>
-                <th>SID</th>
-                <th>Full Identity</th>
-                <th>Contact Index</th>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Contact Number</th>
                 <th>Department</th>
-                <th>Violations</th>
+                <th>Rule Violations</th>
                 <th>Security Access</th>
                 <th>Action Node</th>
             </tr>

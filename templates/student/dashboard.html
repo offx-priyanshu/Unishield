@@ -1,57 +1,287 @@
 {% extends "base.html" %}
 
-{% block page_title %}Student Identity Dashboard{% endblock %}
+{% block page_title %}Student System Core{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 2rem;
+    }
+    
+    .profile-card {
+        text-align: center;
+        position: relative;
+    }
+    
+    .profile-img-wrap {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        margin: 0 auto 1.5rem;
+        position: relative;
+        z-index: 1;
+        padding: 4px;
+        background: linear-gradient(135deg, var(--accent), var(--success));
+    }
+
+    .profile-img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-card);
+    }
+    
+    /* Radar animation for profile pic */
+    .profile-img-wrap::before {
+        content: '';
+        position: absolute;
+        top: -10px; left: -10px; right: -10px; bottom: -10px;
+        border: 1px solid var(--accent);
+        border-radius: 50%;
+        opacity: 0;
+        animation: radarPing 3s infinite ease-out;
+        z-index: -1;
+    }
+
+    @keyframes radarPing {
+        0% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .status-panel {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        text-align: left;
+    }
+
+    .status-item {
+        margin-bottom: 1rem;
+    }
+    
+    .status-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .status-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+        letter-spacing: 1px;
+    }
+
+    .status-value {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .risk-level {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .risk-bar {
+        flex: 1;
+        height: 6px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .risk-fill {
+        height: 100%;
+        transition: width 0.5s;
+    }
+
+    /* Tracker section */
+    .tracker-card {
+        background: linear-gradient(135deg, rgba(0, 210, 255, 0.05) 0%, rgba(13, 13, 13, 0.8) 100%);
+        border: 1px solid var(--accent);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tracker-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        animation: scanline 4s linear infinite;
+    }
+
+    @keyframes scanline {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .countdown-timer {
+        font-size: 3rem;
+        font-weight: 800;
+        font-family: 'IBM Plex Mono', monospace;
+        letter-spacing: -2px;
+        color: var(--accent);
+        text-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        margin: 1rem 0;
+    }
+
+    .apply-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 1rem;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-top: 2rem;
+    }
+    
+    .apply-btn:disabled {
+        background: rgba(255,255,255,0.1);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        border: 1px dashed var(--border);
+    }
+    
+    @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+<div class="dashboard-grid">
     
+    <!-- LEFT: PROFILE & CORE STATUS -->
     <div>
-        <div class="card" style="text-align: center; padding: 3rem;">
-            <div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent); margin: 0 auto 1.5rem; overflow: hidden; background: var(--bg-dark);">
-                <img src="{{ url_for('static', filename='uploads/' + current_user.photo_path.split('/')[-1]) if current_user.photo_path else 'https://via.placeholder.com/150' }}" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="card profile-card">
+            <div class="profile-img-wrap">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.photo_path.split('/')[-1]) if current_user.photo_path else 'https://via.placeholder.com/150' }}" class="profile-img" onerror="this.src='https://via.placeholder.com/150'">
             </div>
-            <h2 style="margin-bottom: 0.25rem;">{{ current_user.name }}</h2>
-            <p class="mono" style="color: var(--accent); font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 2rem;">SID #{{ current_user.student_id }}</p>
+            <h2 style="margin-bottom: 0.25rem; font-size: 1.4rem;">{{ current_user.name }}</h2>
+            <p class="mono" style="color: var(--accent); font-size: 0.8rem; letter-spacing: 1px;">STUDENT ID #{{ current_user.student_id }}</p>
 
-            <div style="text-align: left; background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-                <div style="margin-bottom: 1rem;">
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Department Index</p>
-                    <p style="font-weight: 600;">{{ current_user.department }} (Year {{ current_user.year }})</p>
+            <div class="status-panel">
+                <div class="status-item">
+                    <div class="status-label">Academic Index</div>
+                    <div class="status-value">{{ current_user.department }} (Yr {{ current_user.year }})</div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Violation Score</p>
-                    <p style="font-weight: 800; color: {{ 'var(--danger)' if current_user.violations > 0 else 'var(--success)' }};">{{ current_user.violations }} Critical Alerts</p>
+                
+                <div class="status-item">
+                    <div class="status-label">Current Location Status</div>
+                    {% if active_outpass and active_outpass.status == 'out' %}
+                        <div class="status-value" style="color: var(--warning); display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-sign-out-alt"></i> OUTSIDE CAMPUS
+                        </div>
+                    {% else %}
+                        <div class="status-value" style="color: var(--success); display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-shield-alt"></i> INSIDE CAMPUS
+                        </div>
+                    {% endif %}
                 </div>
-                <div>
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Security Status</p>
+
+                <div class="status-item">
+                    <div class="status-label">Rule Violations Tracker</div>
+                    {% set risk_pct = (current_user.violations / 5) * 100 if current_user.violations <= 5 else 100 %}
+                    <div class="risk-level">
+                        <span style="color: {{ 'var(--danger)' if current_user.violations > 0 else 'var(--success)' }}; font-weight: 800;">{{ current_user.violations }}</span>
+                        <div class="risk-bar">
+                            <div class="risk-fill" style="width: {{ risk_pct }}%; background: {{ 'var(--danger)' if current_user.violations > 2 else ('var(--warning)' if current_user.violations > 0 else 'var(--success)') }};"></div>
+                        </div>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">{{ 'HIGH RISK' if current_user.violations > 2 else ('WARNING' if current_user.violations > 0 else 'CLEAR') }}</span>
+                    </div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-label">Clearance Flag</div>
                     <span class="st-badge {{ 'st-expired' if current_user.is_blacklisted else 'st-approved' }}">
-                        {{ 'BLACKLISTED' if current_user.is_blacklisted else 'CLEARED' }}
+                        {{ 'BLACKLISTED' if current_user.is_blacklisted else 'CLEARED FOR TRANSIT' }}
                     </span>
                 </div>
             </div>
-        </div>
 
+            <!-- Smart Apply Button -->
+            {% if active_outpass %}
+                <button class="btn apply-btn" disabled title="Cannot apply while active outpass exists">
+                    <i class="fas fa-lock"></i> REQUEST UNAVAILABLE (ACTIVE)
+                </button>
+            {% elif current_user.is_blacklisted %}
+                <button class="btn apply-btn" disabled title="Blacklisted by Admin">
+                    <i class="fas fa-ban"></i> REQUEST UNAVAILABLE (RESTRICTED)
+                </button>
+            {% else %}
+                <a href="{{ url_for('student.request_outpass') }}" class="btn btn-primary apply-btn">
+                    INITIATE OUTPASS REQUEST <i class="fas fa-satellite-dish" style="margin-left: 0.5rem;"></i>
+                </a>
+            {% endif %}
+        </div>
         
+        <!-- Signal Replication -->
         <div class="card">
-            <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">SIGNAL REPLICATION</h3>
-            {% for n in notifications %}
-            <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem;">
-                <p style="font-weight: 700; font-size: 0.75rem; color: var(--text-main); margin-bottom: 0.25rem;">{{ n.title }}</p>
-                <p style="font-size: 0.7rem; color: var(--text-muted);">{{ n.message }}</p>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.9rem; margin: 0;"><i class="fas fa-rss" style="color: var(--accent); margin-right: 0.5rem;"></i> SIGNAL REPLICATION</h3>
             </div>
+            {% for n in notifications %}
+            <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem; background: rgba(0,0,0,0.2);">
+                <p style="font-weight: 700; font-size: 0.75rem; color: var(--text-main); margin-bottom: 0.25rem;">{{ n.title }}</p>
+                <p style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">{{ n.message }}</p>
+            </div>
+            {% else %}
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 2rem;">No communication signals received.</div>
             {% endfor %}
         </div>
     </div>
 
-    
+    <!-- RIGHT: TRACKERS & MANIFEST -->
     <div>
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h3>MANIFEST HISTORY</h3>
-                <a href="{{ url_for('student.request_outpass') }}" class="btn btn-primary" style="font-size: 0.75rem;">INITIATE DEPARTURE <i class="fas fa-paper-plane" style="margin-left: 0.5rem;"></i></a>
+        {% if active_outpass %}
+        <div class="card tracker-card" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-crosshairs fa-spin" style="font-size: 1rem;"></i> ACTIVE TRACKING
+                    </h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Destination: <strong style="color: white;">{{ active_outpass.destination }}</strong></p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Status: <span class="st-badge st-{{ active_outpass.status }}">{{ active_outpass.status | upper }}</span></p>
+                </div>
+                {% if active_outpass.status == 'approved' or active_outpass.status == 'pending' %}
+                    <div style="text-align: right;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ active_outpass.id }}" style="border-radius: 8px; border: 2px solid var(--accent); background: white; padding: 4px;">
+                    </div>
+                {% endif %}
             </div>
 
-            <table>
+            {% if active_outpass.status == 'out' and active_outpass.expected_return %}
+                <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid rgba(0,210,255,0.2); padding-top: 1.5rem;">
+                    <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: var(--warning);">Expected Return In</p>
+                    <div id="countdown" class="countdown-timer" data-time="{{ active_outpass.expected_return.isoformat() }}Z">--:--:--</div>
+                    <div id="late-alert" style="display: none; color: var(--danger); font-size: 0.8rem; font-weight: 700; background: rgba(255,59,92,0.1); padding: 0.5rem; border-radius: 4px;">
+                        <i class="fas fa-exclamation-triangle"></i> LATE RETURN ALERT TRIGGERED
+                    </div>
+                </div>
+            {% elif active_outpass.status == 'pending' %}
+                <div style="margin-top: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+                    Awaiting authorization from Security Control.
+                </div>
+            {% elif active_outpass.status == 'approved' %}
+                <div style="margin-top: 1.5rem; text-align: center; color: var(--success); font-size: 0.9rem;">
+                    Authorized. Escort to AI Gate Terminal for physical departure.
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h3><i class="fas fa-history" style="margin-right: 0.5rem; color: var(--text-muted);"></i> MANIFEST HISTORY</h3>
+            </div>
+
+            <table style="width: 100%; font-size: 0.85rem;">
                 <thead>
                     <tr>
                         <th>Manifest #</th>
@@ -63,39 +293,39 @@
                 </thead>
                 <tbody>
                     {% for op in history %}
-                    <tr style="cursor: pointer;" onclick="toggleDetails('details_{{ op.id }}')">
+                    <tr style="cursor: pointer; border-bottom: 1px solid var(--border);" onclick="toggleDetails('details_{{ op.id }}')">
                         <td class="mono" style="color: var(--accent); font-weight: 700;">DP_{{ op.id }}</td>
                         <td>
                             <div style="font-weight: 600;">{{ op.destination }}</div>
-                            <div style="font-size: 0.7rem; color: var(--text-muted);">{{ op.purpose }}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">{{ op.purpose | truncate(30) }}</div>
                         </td>
                         <td>
                             <span class="st-badge st-{{ op.status }}">{{ op.status | upper }}</span>
                         </td>
                         <td class="mono" style="font-size: 0.75rem;">
-                            {{ op.exit_time.strftime('%H:%M %d/%m') if op.exit_time else '--:--' }}<br>
-                            {{ op.return_time.strftime('%H:%M %d/%m') if op.return_time else '--:--' }}
+                            <span style="color: {{ 'var(--warning)' if op.exit_time else 'var(--text-muted)' }}">{{ op.exit_time.strftime('%H:%M %d/%m') if op.exit_time else '--:--' }}</span><br>
+                            <span style="color: {{ 'var(--success)' if op.return_time else 'var(--text-muted)' }}">{{ op.return_time.strftime('%H:%M %d/%m') if op.return_time else '--:--' }}</span>
                         </td>
-                        <td>
+                        <td style="text-align: center;">
                             <div style="display: flex; gap: 0.5rem;">
                                 <i class="fas fa-camera" title="Vision Exit" style="color: {{ 'var(--success)' if op.face_verified_exit else 'rgba(255,255,255,0.05)' }};"></i>
                                 <i class="fas fa-camera" title="Vision Return" style="color: {{ 'var(--success)' if op.face_verified_return else 'rgba(255,255,255,0.05)' }};"></i>
                             </div>
                         </td>
                     </tr>
-                    <tr id="details_{{ op.id }}" style="display: none; background: rgba(0,0,0,0.1);">
-                        <td colspan="5" style="padding: 2rem;">
+                    <tr id="details_{{ op.id }}" style="display: none; background: rgba(0,0,0,0.3);">
+                        <td colspan="5" style="padding: 2rem; border-bottom: 2px solid var(--accent);">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                                 <div>
                                     <p style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Exit Verification Source</p>
                                     <div style="width: 100%; height: 160px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--border);">
-                                        <img src="{{ url_for('static', filename='uploads/' + op.exit_photo.split('/')[-1]) if op.exit_photo else '' }}" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) opacity(0.5);" onerror="this.src='https://via.placeholder.com/400x200?text=NO+IMAGE'">
+                                        <img src="{{ url_for('static', filename='uploads/' + op.exit_photo.split('/')[-1]) if op.exit_photo else '' }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" onerror="this.src='https://via.placeholder.com/400x200/000000/00d2ff?text=NO+IMAGE'">
                                     </div>
                                 </div>
                                 <div>
                                     <p style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Return Verification Source</p>
                                     <div style="width: 100%; height: 160px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--border);">
-                                        <img src="{{ url_for('static', filename='uploads/' + op.return_photo.split('/')[-1]) if op.return_photo else '' }}" style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) opacity(0.5);" onerror="this.src='https://via.placeholder.com/400x200?text=NO+IMAGE'">
+                                        <img src="{{ url_for('static', filename='uploads/' + op.return_photo.split('/')[-1]) if op.return_photo else '' }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" onerror="this.src='https://via.placeholder.com/400x200/000000/00d2ff?text=NO+IMAGE'">
                                     </div>
                                 </div>
                             </div>
@@ -117,6 +347,39 @@
 <script>
     function toggleDetails(id) {
         $(`#${id}`).fadeToggle(200);
+    }
+    
+    // Countdown Timer logic if active outpass is out
+    const countdownEl = document.getElementById('countdown');
+    if (countdownEl) {
+        const expectedTimeStr = countdownEl.getAttribute('data-time');
+        const expectedTime = new Date(expectedTimeStr).getTime();
+        
+        function updateTimer() {
+            const now = new Date().getTime();
+            const diff = expectedTime - now;
+            
+            if (diff < 0) {
+                // Late
+                countdownEl.style.color = "var(--danger)";
+                document.getElementById('late-alert').style.display = "block";
+                
+                const absDiff = Math.abs(diff);
+                const h = Math.floor(absDiff / (1000 * 60 * 60));
+                const m = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((absDiff % (1000 * 60)) / 1000);
+                
+                countdownEl.innerText = `-${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            } else {
+                const h = Math.floor(diff / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+                countdownEl.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+        }
+        
+        updateTimer();
+        setInterval(updateTimer, 1000);
     }
 </script>
 {% endblock %}

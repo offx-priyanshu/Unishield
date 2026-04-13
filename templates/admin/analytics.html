@@ -1,145 +1,262 @@
 {% extends "base.html" %}
 
-{% block page_title %}Security Intelligence Hub{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
 
-{% block content %}
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-    
-    <div class="card" style="height: 450px;">
-        <h3 style="margin-bottom: 2rem;">30-DAY DEPARTURE TREND</h3>
-        <div style="height: 350px;">
-            <canvas id="trendChart"></canvas>
-        </div>
-    </div>
+{% block extra_css %}
+<style>
+/* Dashboard Layout */
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.title-section h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+.filters-wrapper { display: flex; gap: 1rem; align-items: center; }
+.filter-select { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); color: var(--text-main); padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.85rem; outline: none; cursor: pointer; transition: border-color 0.3s; }
+.filter-select:hover { border-color: rgba(255, 255, 255, 0.15); }
 
-    
-    <div class="card" style="height: 450px; text-align: center;">
-        <h3 style="margin-bottom: 2rem;">DISTRIBUTION BY STATUS</h3>
-        <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
-            <canvas id="statusChart"></canvas>
-        </div>
-    </div>
-</div>
+/* Minimal Top Stats (3 cards) */
+.minimal-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+.stat-card { background: rgba(14, 18, 22, 0.4); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; transition: box-shadow 0.3s, transform 0.3s; }
+.stat-card .icon-box { width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 200, 255, 0.1); color: #00c8ff; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; }
+.stat-card.c-trend .icon-box { background: rgba(0, 245, 122, 0.1); color: #00e87a; }
+.stat-card.c-risk .icon-box { background: rgba(255, 184, 0, 0.1); color: #ffb800; }
+.stat-info .value { font-size: 1.8rem; font-weight: 800; font-family: 'Syne', sans-serif; line-height: 1; margin-bottom: 0.25rem; }
+.stat-info .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 
-<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; margin-bottom: 2rem;">
-    
-    <div class="card">
-        <h3 style="margin-bottom: 2.5rem; color: var(--danger);">SUSPICIOUS NODES (TOP 5)</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Identity</th>
-                    <th>Count</th>
-                    <th>Risk Factor</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>SID_SNOX_4021</td><td>4</td><td style="color: var(--danger);">CRITICAL</td></tr>
-                <tr><td>SID_SNOX_0092</td><td>3</td><td style="color: var(--danger);">CRITICAL</td></tr>
-                <tr><td>SID_SNOX_8821</td><td>1</td><td style="color: var(--warning);">WARNING</td></tr>
-            </tbody>
-        </table>
-    </div>
+/* Real-time Glow Effect */
+@keyframes glow-flash {
+    0% { box-shadow: 0 0 0 0 rgba(0, 200, 255, 0); }
+    50% { box-shadow: 0 0 20px 2px rgba(0, 200, 255, 0.3); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 200, 255, 0); }
+}
+.sync-glow { animation: glow-flash 1s ease-out; }
 
-    
-    <div class="card">
-        <h3 style="margin-bottom: 2rem;">DEPARTMENT ACTIVITY PROFILE</h3>
-        <div style="height: 300px;">
-            <canvas id="deptChart"></canvas>
-        </div>
-    </div>
-</div>
+/* Main layout rows */
+.dash-row-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.dash-row-2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem; }
 
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
-    <div class="card" style="text-align: center;">
-        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">AVG EXIT SESSION</p>
-        <h2 style="font-size: 2rem; color: var(--success);">4.2 <span style="font-size: 0.8rem; font-weight: 300;">HRS</span></h2>
-    </div>
-    <div class="card" style="text-align: center;">
-        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">ENROLLMENT %</p>
-        <h2 style="font-size: 2rem; color: var(--accent);">94.8 <span style="font-size: 0.8rem; font-weight: 300;">%</span></h2>
-    </div>
-    <div class="card" style="text-align: center;">
-        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">IDENTITY RECALL</p>
-        <h2 style="font-size: 2rem; color: var(--success);">0.18 <span style="font-size: 0.8rem; font-weight: 300;">MS</span></h2>
-    </div>
-    <div class="card" style="text-align: center;">
-        <p style="color: var(--text-muted); font-size: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">MONTHLY DELTA</p>
-        <h2 style="font-size: 2rem; color: var(--success);">+12.4 <span style="font-size: 0.8rem; font-weight: 300;">%</span></h2>
-    </div>
-</div>
+/* Chart Cards */
+.chart-card { background: rgba(14, 18, 22, 0.4); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+.chart-card h3 { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 1.5rem; text-transform: uppercase; }
+
+/* AI Insights */
+.ai-insights { background: linear-gradient(145deg, rgba(0, 200, 255, 0.05) 0%, rgba(14, 18, 22, 0.8) 100%); border: 1px solid rgba(0, 200, 255, 0.2); }
+.ai-insights h3 { color: #00c8ff; font-weight: 700; }
+.insight-item { display: flex; gap: 12px; margin-bottom: 1rem; align-items: flex-start; }
+.insight-item i { color: #00c8ff; margin-top: 3px; font-size: 0.8rem; }
+.insight-item p { font-size: 0.8rem; color: #e2e8f0; line-height: 1.5; margin: 0; }
+
+/* Comparison Widget */
+.comparison-stat { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+.badge-up { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(0, 245, 122, 0.1); color: var(--success); font-weight: 700;}
+.badge-down { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(255, 59, 92, 0.1); color: var(--danger); font-weight: 700;}
+
+/* Heatmap Grid */
+.heatmap-container { display: flex; flex-direction: column; gap: 4px; }
+.heatmap-row { display: flex; gap: 4px; align-items: center; }
+.hm-label { width: 35px; font-size: 0.65rem; color: var(--text-muted); text-align: right; margin-right: 5px; }
+.hm-cell { height: 20px; flex: 1; border-radius: 2px; }
+.hm-1 { background: rgba(0, 200, 255, 0.1); }
+.hm-2 { background: rgba(0, 200, 255, 0.3); }
+.hm-3 { background: rgba(0, 200, 255, 0.6); }
+.hm-4 { background: rgba(0, 200, 255, 0.9); }
+.hm-header { display: flex; padding-left: 40px; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-bottom: 5px; }
+</style>
 {% endblock %}
 
-{% block scripts %}
+{% block content %}
+
+<!-- Header & Filters -->
+<div class="dashboard-header">
+    <div class="title-section">
+        <p style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 0.2rem;">Real-time Monitoring</p>
+    </div>
+    <div class="filters-wrapper">
+        <select class="filter-select">
+            <option>Last 30 Days</option>
+            <option>Last 7 Days</option>
+        </select>
+        <select class="filter-select">
+            <option>All Departments</option>
+        </select>
+    </div>
+</div>
+
+<!-- Minimal Stats -->
+<div class="minimal-stats-grid">
+    <div class="stat-card" id="card-population">
+        <div class="icon-box"><i class="fas fa-users-viewfinder"></i></div>
+        <div class="stat-info">
+            <div class="value" id="total-population-val">{{ total_students }}</div>
+            <div class="label">Total Student Population</div>
+        </div>
+    </div>
+    <div class="stat-card c-trend" id="card-exits">
+        <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-info">
+            <div class="value" id="weekly-exits-val">0</div>
+            <div class="label">Exits This Week</div>
+            <div class="comparison-stat"><span class="badge-up">REAL-TIME</span></div>
+        </div>
+    </div>
+    <div class="stat-card c-risk" id="card-avg">
+        <div class="icon-box"><i class="fas fa-clock-rotate-left"></i></div>
+        <div class="stat-info">
+            <div class="value" id="avg-time-val">0.0h</div>
+            <div class="label">Average Time Outside</div>
+            <div class="comparison-stat"><span class="badge-up">LIVE</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Line Chart & Pie Chart -->
+<div class="dash-row-1">
+    <div class="chart-card">
+        <h3>Daily Outpass Trend (30 Days)</h3>
+        <div style="height: 280px;"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+        <h3>Status Distribution</h3>
+        <div style="height: 240px; position: relative;">
+            <canvas id="statusChart"></canvas>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Live</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #fff;" id="pie-center-val">---</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Dept Chart, Heatmap, AI Insights -->
+<div class="dash-row-2">
+    <div class="chart-card">
+        <h3>Department Movement</h3>
+        <div style="height: 250px;"><canvas id="deptChart"></canvas></div>
+    </div>
+    
+    <div class="chart-card">
+        <h3>Peak Exit Times</h3>
+        <div class="heatmap-container" style="margin-top: 10px;">
+            <div class="hm-header"><span>Mon</span><span>Wed</span><span>Fri</span><span>Sun</span></div>
+            <div class="heatmap-row"><div class="hm-label">8 AM</div> <div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-4"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-1"></div></div>
+            <div class="heatmap-row"><div class="hm-label">12 PM</div><div class="hm-cell hm-1"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-4"></div></div>
+            <div class="heatmap-row"><div class="hm-label">4 PM</div> <div class="hm-cell hm-4"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-4"></div><div class="hm-cell hm-4"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-1"></div></div>
+            <div class="heatmap-row"><div class="hm-label">8 PM</div> <div class="hm-cell hm-1"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-4"></div><div class="hm-cell hm-3"></div></div>
+        </div>
+    </div>
+
+    <div class="chart-card ai-insights">
+        <h3><i class="fas fa-brain"></i> AI Smart Insights</h3>
+        <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 8px;">
+            <div class="insight-item"><i class="fas fa-circle-notch"></i><p id="ai-insight-1">Detecting campus movement patterns...</p></div>
+            <div class="insight-item"><i class="fas fa-circle-notch"></i><p id="ai-insight-2">Analyzing peak hour data points...</p></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const COLORS = ['#00c8ff', '#00e87a', '#ffb800', '#ff3b5c', '#94a3b8'];
-    const CHART_OPT = {
-        responsive: true,
-        maintainAspectRatio: false,
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    const baseOpt = {
+        responsive: true, maintainAspectRatio: false, 
+        animation: { duration: 1000, easing: 'easeOutQuart' },
         plugins: { legend: { display: false } },
-        scales: { 
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, 
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
-        }
+        scales: { x: { grid: { display:false } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero:true } }
     };
 
-    // Trend Chart
-    new Chart(document.getElementById('trendChart'), {
+    const charts = {};
+
+    // 1. Daily Trend
+    const ctxT = document.getElementById('trendChart').getContext('2d');
+    const grad = ctxT.createLinearGradient(0, 0, 0, 300);
+    grad.addColorStop(0, 'rgba(0, 200, 255, 0.3)'); grad.addColorStop(1, 'rgba(0, 200, 255, 0.0)');
+    charts.trend = new Chart(ctxT, {
         type: 'line',
-        data: {
-            labels: Array.from({length: 30}, (_, i) => i+1),
-            datasets: [{ 
-                label: 'Exits', 
-                data: [12,15,4,2,3,10,25,30,12,14,5,6,3,12,4,20,31,12,15,4,2,3,10,25,30,12,14,5,6,3], 
-                borderColor: '#00c8ff', 
-                tension: 0.4, 
-                fill: true, 
-                backgroundColor: 'rgba(0,200,255,0.05)',
-                pointRadius: 0
-            }]
-        },
-        options: CHART_OPT
+        data: { labels: Array.from({length:30}, (_,i)=>i+1), datasets: [{ label: 'Exits', data: Array(30).fill(0), borderColor: '#00c8ff', backgroundColor: grad, borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0 }] },
+        options: { ...baseOpt, interaction: { intersect: false, mode: 'index' } }
     });
 
-    // Doughnut
-    new Chart(document.getElementById('statusChart'), {
+    // 2. Status Pie
+    charts.status = new Chart(document.getElementById('statusChart').getContext('2d'), {
         type: 'doughnut',
-        data: {
-            labels: ['Approved', 'Out', 'Returned', 'Rejected', 'Expired'],
-            datasets: [{ 
-                data: [12, 19, 3, 5, 2], 
-                backgroundColor: COLORS, 
-                borderColor: '#0e1216',
-                borderWidth: 5
-            }]
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false,
-            cutout: '80%',
-            plugins: { 
-                legend: { 
-                    position: 'bottom', 
-                    labels: { color: '#94a3b8', font: { family: 'Inter', size: 10 }, padding: 20 } 
-                } 
-            } 
-        }
+        data: { labels: ['Approved', 'Completed', 'Active', 'Rejected'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#00e87a', '#94a3b8', '#00c8ff', '#ff3b5c'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '82%', plugins: { legend: { position: 'right', labels: { boxWidth:10, font:{size:11} } } } }
     });
 
-    // Dept bar
-    new Chart(document.getElementById('deptChart'), {
+    // 3. Dept Bar
+    charts.dept = new Chart(document.getElementById('deptChart').getContext('2d'), {
         type: 'bar',
-        data: {
-            labels: ['CSE', 'ECE', 'ME', 'CE', 'IT'],
-            datasets: [{ 
-                data: [42, 35, 12, 8, 22], 
-                backgroundColor: COLORS, 
-                borderRadius: 8,
-                maxBarThickness: 40
-            }]
-        },
-        options: CHART_OPT
+        data: { labels: ['CSE', 'ECE', 'ME', 'IT'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#00c8ff', '#475569', '#475569', '#475569'], borderRadius: 4, barPercentage: 0.6 }] },
+        options: baseOpt
     });
+
+    // --- Real-time Sync Engine ---
+    function animateValue(id, start, end, duration, isFloat=false) {
+        if (start === end) return;
+        const obj = document.getElementById(id);
+        const range = end - start;
+        let current = start;
+        const stepTime = 20;
+        const steps = duration / stepTime;
+        const increment = range / steps;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                current = end;
+                clearInterval(timer);
+            }
+            obj.innerHTML = isFloat ? current.toFixed(1) + 'h' : Math.round(current).toLocaleString();
+        }, stepTime);
+        
+        // Glow effect
+        const card = obj.closest('.stat-card');
+        card.classList.remove('sync-glow');
+        void card.offsetWidth; // trigger reflow
+        card.classList.add('sync-glow');
+    }
+
+    async function syncDashboard() {
+        try {
+            const res = await fetch('/api/stats/summary');
+            const data = await res.json();
+            
+            // Update Card: Total Population
+            const oldPop = parseInt(document.getElementById('total-population-val').innerText.replace(/,/g, '')) || 0;
+            if (data.total_students !== oldPop) animateValue('total-population-val', oldPop, data.total_students, 1000);
+
+            // Update Card: Weekly Exits
+            const oldExits = parseInt(document.getElementById('weekly-exits-val').innerText.replace(/,/g, '')) || 0;
+            if (data.exits_this_week !== oldExits) animateValue('weekly-exits-val', oldExits, data.exits_this_week, 1000);
+
+            // Update Card: Avg Time
+            const oldAvg = parseFloat(document.getElementById('avg-time-val').innerText) || 0;
+            if (data.avg_time !== oldAvg) animateValue('avg-time-val', oldAvg, data.avg_time, 1000, true);
+
+            // Update Trend Chart
+            charts.trend.data.datasets[0].data = data.trend_data;
+            charts.trend.update('none'); // silent update
+
+            // Update Status Chart
+            charts.status.data.datasets[0].data = data.status_dist;
+            charts.status.update();
+            const totalStatus = data.status_dist.reduce((a, b) => a + b, 0);
+            document.getElementById('pie-center-val').innerText = totalStatus;
+
+            // Update Dept Chart
+            charts.dept.data.datasets[0].data = data.dept_movement;
+            charts.dept.update();
+
+            // AI Insights update
+            document.getElementById('ai-insight-1').innerText = `Peak activity: ${data.exits_this_week} exits tracked this week across campus perimeter.`;
+            document.getElementById('ai-insight-2').innerText = `Smart Analysis: Avg session is ${data.avg_time}h. Systems optimizing gate throughput.`;
+
+        } catch (e) { console.error("Sync error:", e); }
+    }
+
+    // Initial sync and poll
+    syncDashboard();
+    setInterval(syncDashboard, 3000); // 3 second high-frequency poll
 </script>
 {% endblock %}

@@ -23,7 +23,7 @@ class ExportService:
         df = pd.DataFrame(data, columns=headers)
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='SNOX Manifest')
+            df.to_excel(writer, index=False, sheet_name='UniShield Manifest')
         
         response = make_response(output.getvalue())
         response.headers["Content-Disposition"] = f"attachment; filename={filename}.xlsx"

@@ -4,11 +4,12 @@ from models.db import db
 from models.user import User
 from models.outpass import Outpass
 from utils.logger import Logger
-from utils.sms import SMSService
+from services.sms_service import SMSService
 from utils.face_utils import FaceUtils
 from functools import wraps
 import os
 import base64
+import numpy as np
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
@@ -29,88 +30,106 @@ def guard_required(f):
 def dashboard():
     return render_template('guard/dashboard.html')
 
-@guard_bp.route('/scan')
-@login_required
-@guard_required
-def scan():
-    return render_template('guard/scan.html')
+from utils.id_card import extract_id_card_data
 
-@guard_bp.route('/process', methods=['POST'])
+@guard_bp.route('/scan-id', methods=['POST'])
 @login_required
 @guard_required
-def process_scan():
+def scan_id_card():
+    data  = request.get_json() or {}
+    b64   = data.get('id_card_image', '')
+
+    if not b64:
+        return jsonify({'success': False, 'message': 'No image provided.'}), 400
+
+    result = extract_id_card_data(b64)
+
+    if result['success']:
+        Logger.log(current_user.id, f"ID card scanned via {result['method'].upper()}. Name: {result['data'].get('name', 'Unknown')}")
+        return jsonify({
+            'success': True,
+            'method':  result['method'],
+            'data':    result['data'],
+            'message': f"Data extracted via {result['method'].upper()}"
+        })
+    else:
+        Logger.log(current_user.id, 'ID card scan failed — QR and OCR both failed.', severity='warning')
+        return jsonify({
+            'success': False,
+            'method':  'failed',
+            'data':    {},
+            'message': 'Could not read ID card. Please enter data manually.'
+        })
+
+@guard_bp.route('/enroll', methods=['POST'])
+@login_required
+@guard_required
+def enroll_student():
     data = request.json
     student_id = data.get('student_id')
-    mode = data.get('mode') # EXIT | RETURN
-    base64_frame = data.get('image')
+    name = data.get('name')
+    department = data.get('department')
+    phone = data.get('phone')
+    parent_phone = data.get('parent_phone')
+    base64_face = data.get('face_image')
+    base64_id = data.get('id_image')
     
+    if not all([student_id, name, base64_face]):
+        return jsonify({'success': False, 'message': 'Missing required fields or face.'}), 400
+        
     student = User.query.filter_by(student_id=student_id).first()
+    if student:
+        return jsonify({'success': False, 'message': 'Student ID already exists.'}), 400
+        
+    # Process face
+    header, encoded = base64_face.split(",", 1)
+    match, result_msg = FaceUtils.compare_faces([], base64_face, tolerance=0.5)
+    # compare_faces against empty array will return "No face detected" if empty
+    if result_msg == "No face detected":
+         return jsonify({'success': False, 'message': 'No face detected in camera.'}), 400
+         
+    # We just need the encoding
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp:
+        temp.write(base64.b64decode(encoded))
+        temp_path = temp.name
+        
+    encodings = FaceUtils.get_encoding(temp_path)
+    if not encodings:
+        os.remove(temp_path)
+        return jsonify({'success': False, 'message': 'Failed to extract face encoding.'}), 400
+        
+    encoded_json = FaceUtils.encode_to_json(np.array(encodings))
     
-    if not student:
-        return jsonify({'success': False, 'message': f'Student ID {student_id} not found!'}), 404
-        
-    if student.is_blacklisted:
-        Logger.log(current_user.id, f'Security: Blacklisted student {student.name} attempted to exit', severity='critical')
-        return jsonify({'success': False, 'message': 'ACCESS DENIED: Student is BLACKLISTED!'}), 403
-        
-    if not student.face_encoded:
-        return jsonify({'success': False, 'message': 'Face encoding not found. Contact Admin for enrollment.'}), 400
-        
-    import json
-    known_encoding_list = json.loads(student.face_encoded)
-    match, result_msg = FaceUtils.compare_faces(known_encoding_list, base64_frame, tolerance=current_app.config.get('FACE_TOLERANCE', 0.5))
+    # Save photos
+    face_filename = secure_filename(f"{student_id}_face_{datetime.now().strftime('%Y%m%d')}.jpg")
+    face_path = os.path.join(current_app.config['UPLOAD_FOLDER'], face_filename)
+    os.rename(temp_path, face_path)
     
-    if not match:
-        student.violations += 1
-        
-        # Check for auto-blacklist
-        from config import Config
-        if student.violations >= Config.VIOLATION_THRESHOLD:
-            student.is_blacklisted = True
-            SMSService.notify_blacklisted(student.name, student.parent_phone, student.phone)
-            Logger.log(current_user.id, f'Security: Student {student.name} AUTO-BLACKLISTED after face mismatch.', severity='critical')
-            msg = f'FACE MISMATCH: Student has been AUTO-BLACKLISTED due to reaching {student.violations} violations.'
-        else:
-            Logger.log(current_user.id, f'Security Alert: Face mismatch for {student.name}. Violation logged.', severity='warning')
-            msg = f'FACE MISMATCH: Identity could not be verified. Violation {student.violations} registered.'
+    id_path = None
+    if base64_id:
+        id_header, id_encoded = base64_id.split(",", 1)
+        id_filename = secure_filename(f"{student_id}_id_{datetime.now().strftime('%Y%m%d')}.jpg")
+        id_path = os.path.join(current_app.config['UPLOAD_FOLDER'], id_filename)
+        with open(id_path, "wb") as f:
+            f.write(base64.b64decode(id_encoded))
             
-        db.session.commit()
-        return jsonify({'success': False, 'message': msg}), 401
-
-    op = Outpass.query.filter_by(student_id=student.id).order_by(Outpass.created_at.desc()).first()
+    new_student = User(
+        username=student_id,
+        email=f"{student_id}@institute.edu",
+        role='student',
+        name=name,
+        student_id=student_id,
+        department=department,
+        phone=phone,
+        parent_phone=parent_phone,
+        face_encoded=encoded_json,
+        face_image=face_path,
+        id_card_photo=id_path
+    )
+    new_student.set_password(student_id) # Default password is ID
+    db.session.add(new_student)
+    db.session.commit()
     
-    filename = secure_filename(f"{student_id}_{mode.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-    photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    header, encoded = base64_frame.split(",", 1)
-    with open(photo_path, "wb") as f:
-        f.write(base64.b64decode(encoded))
-        
-    if mode == 'EXIT':
-        if not op or op.status != 'approved':
-            return jsonify({'success': False, 'message': 'NO APPROVED OUTPASS. Exit blocked.'}), 400
-            
-        op.status = 'out'
-        op.exit_time = datetime.utcnow()
-        op.exit_photo = photo_path
-        op.face_verified_exit = True
-        db.session.commit()
-        
-        SMSService.notify_exit(student.name, student.parent_phone, student.phone, op.destination, op.expected_return.strftime('%H:%M'))
-        Logger.log(student.id, f'Student {student.name} exited campus')
-        return jsonify({'success': True, 'message': f'ACCESS GRANTED: Student {student.name} exited campus.'})
-        
-    elif mode == 'RETURN':
-        if not op or op.status not in ['out', 'expired']:
-            return jsonify({'success': False, 'message': 'System Error: Student already on campus.'}), 400
-            
-        op.status = 'returned'
-        op.return_time = datetime.utcnow()
-        op.return_photo = photo_path
-        op.face_verified_return = True
-        db.session.commit()
-        
-        SMSService.notify_return(student.name, student.parent_phone, student.phone)
-        Logger.log(student.id, f'Student {student.name} returned to campus')
-        return jsonify({'success': True, 'message': f'ACCESS GRANTED: Student {student.name} returned to campus.'})
-        
-    return jsonify({'success': False, 'message': 'Invalid mode.'}), 400
+    Logger.log(current_user.id, f'Security: Enrolled new student {name} at gate.')
+    return jsonify({'success': True, 'message': f'{name} successfully registered at gate!'})

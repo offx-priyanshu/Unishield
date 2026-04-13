@@ -1,88 +1,289 @@
 {% extends "base.html" %}
 
-{% block page_title %}Initiate Security Departure Request{% endblock %}
+{% block page_title %}Outpass Request Control{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        max-width: 650px;
+        margin: 0 auto;
+        padding: 3rem;
+        background: rgba(14, 18, 22, 0.8);
+        border: 1px solid var(--accent);
+        box-shadow: 0 0 30px rgba(0, 210, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .form-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .form-group {
+        margin-bottom: 2rem;
+    }
+
+    label {
+        display: block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+    }
+
+    .futuristic-input {
+        width: 100%;
+        padding: 1rem;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: white;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .futuristic-input:focus {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.1);
+    }
+
+    .hr-choice-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.5rem;
+    }
+
+    .hr-choice input:checked + span {
+        background: rgba(0, 210, 255, 0.15) !important;
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+    }
+
+    .hr-choice span {
+        display: block;
+        text-align: center;
+        padding: 0.75rem 0.25rem;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 700;
+        transition: all 0.3s;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        background: rgba(255,255,255,0.02);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+    }
+    
+    .checkbox-wrapper:hover {
+        background: rgba(255,255,255,0.04);
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent);
+        cursor: pointer;
+        margin-top: 2px;
+    }
+
+    .auto-calc-time {
+        text-align: right;
+        font-size: 0.75rem;
+        color: var(--accent);
+        font-family: 'IBM Plex Mono', monospace;
+        margin-top: 0.5rem;
+    }
+
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 600px; margin: 0 auto; padding: 4rem;">
-    <div style="text-align: center; margin-bottom: 3.5rem;">
-        <i class="fas fa-paper-plane" style="font-size: 3rem; color: var(--accent); margin-bottom: 1.5rem; opacity: 0.8;"></i>
-        <h1 style="color: white; margin-bottom: 0.5rem;">Manifest Request</h1>
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Specify departure parameters for authorization.</p>
+<div class="card form-card">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <i class="fas fa-satellite-dish" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+        <h1 style="color: white; margin-bottom: 0.5rem; font-size: 1.8rem;">Initialize Outpass Protocol</h1>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Secure campus departure authorization system.</p>
     </div>
 
-    <form method="POST">
-        <div style="margin-bottom: 2rem;">
-            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Travel Destination</label>
-            <input type="text" name="destination" placeholder="External Sector / Address" required>
+    <form method="POST" id="outpass-form" action="{{ url_for('student.request_outpass') }}">
+        
+        <!-- HIDDEN FIELDS FOR BACKEND COMPATIBILITY -->
+        <input type="hidden" name="destination" id="final_destination">
+        <input type="hidden" name="purpose" id="final_purpose">
+        <input type="hidden" name="hours" id="final_hours" value="2">
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;" class="form-group">
+            <div>
+                <label>Destination Type</label>
+                <select id="dest_type" class="futuristic-input" onchange="handleDestType()">
+                    <option value="Local Transit">Local Transit</option>
+                    <option value="Home/Resident">Home Address</option>
+                    <option value="Emergency Alert">Emergency</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label>Exact Drop Address</label>
+                <input type="text" id="dest_address" class="futuristic-input" placeholder="Location string..." required>
+            </div>
         </div>
         
-        <div style="margin-bottom: 2rem;">
-            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px; color: var(--text-muted);">Purpose of Departure</label>
-            <textarea name="purpose" placeholder="Manifest intent / necessity..." style="min-height: 120px;" required></textarea>
-        </div>
-
-        <div style="margin-bottom: 3rem;">
-            <label style="display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 1px; color: var(--text-muted);">Expected Absence Cycle (Hours)</label>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
-                <label class="hr-choice">
-                    <input type="radio" name="hours" value="2" checked style="display: none;">
-                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">2H</span>
-                </label>
-                <label class="hr-choice">
-                    <input type="radio" name="hours" value="4" style="display: none;">
-                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">4H</span>
-                </label>
-                <label class="hr-choice">
-                    <input type="radio" name="hours" value="8" style="display: none;">
-                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">8H</span>
-                </label>
-                <label class="hr-choice">
-                    <input type="radio" name="hours" value="24" style="display: none;">
-                    <span style="display: block; text-align: center; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700;">24H</span>
-                </label>
+        <div class="form-group">
+            <label>Primary Intent (Purpose)</label>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                <select id="purpose_type" class="futuristic-input">
+                    <option value="Shopping/Supplies">Shopping/Supplies</option>
+                    <option value="Medical Facility">Medical Facility</option>
+                    <option value="Home Visit">Home Visit</option>
+                    <option value="Internship/Work">Internship/Work</option>
+                    <option value="Other Protocol">Other / Custom</option>
+                </select>
+                <input type="text" id="purpose_desc" class="futuristic-input" placeholder="Optional details...">
             </div>
         </div>
 
-        <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem;" onclick="submitOutpass()">
-            SEND FOR REVIEW <i class="fas fa-satellite-dish" style="margin-left: 0.75rem;"></i>
+        <div class="form-group">
+            <label>Absence Duration Cycle</label>
+            <div class="hr-choice-grid">
+                <label class="hr-choice">
+                    <input type="radio" name="ui_hours" value="2" checked style="display: none;" onchange="updateCalcTime()">
+                    <span>2H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="ui_hours" value="4" style="display: none;" onchange="updateCalcTime()">
+                    <span>4H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="ui_hours" value="8" style="display: none;" onchange="updateCalcTime()">
+                    <span>8H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="ui_hours" value="24" style="display: none;" onchange="updateCalcTime()">
+                    <span>24H</span>
+                </label>
+                <label class="hr-choice">
+                    <input type="radio" name="ui_hours" value="custom" style="display: none;" onclick="document.getElementById('custom_hr').focus()" onchange="updateCalcTime()">
+                    <input type="number" id="custom_hr" placeholder="?" style="width: 100%; border:none; background:transparent; color:#fff; text-align:center; font-weight:700; font-size:0.85rem;" oninput="document.querySelector('input[value=custom]').checked=true; updateCalcTime()" min="1" max="168">
+                </label>
+            </div>
+            <div class="auto-calc-time" id="return_estimate">Expected Return: --:--</div>
+        </div>
+
+        <div class="form-group" style="margin-top: 3rem;">
+            <label class="checkbox-wrapper">
+                <input type="checkbox" checked id="parent_notify">
+                <div>
+                    <strong style="color: var(--text-main); font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">Parent/Guardian Notification Sync</strong>
+                    <span style="color: var(--text-muted); font-size: 0.7rem; line-height: 1.3;">System will automatically dispatch SMS telemetry to registered emergency contact.</span>
+                </div>
+            </label>
+
+            <label class="checkbox-wrapper">
+                <input type="checkbox" required>
+                <div>
+                    <strong style="color: var(--text-main); font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">Face Scan Exit Protocol Agreement</strong>
+                    <span style="color: var(--text-muted); font-size: 0.7rem; line-height: 1.3;">I acknowledge that physical exit and return verification will be conducted via AI Facial Recognition at the Gate Terminal.</span>
+                </div>
+            </label>
+            
+            <label class="checkbox-wrapper" style="border-color: rgba(255,59,92,0.3);">
+                <input type="checkbox" required>
+                <div>
+                    <strong style="color: var(--danger); font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">Strict Rules Adherence</strong>
+                    <span style="color: var(--text-muted); font-size: 0.7rem; line-height: 1.3;">Late returns beyond the expected timeframe will trigger Level 1 Violation logs and automatic suspension of future transit rights.</span>
+                </div>
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem; font-size: 1rem; letter-spacing: 1px;" onclick="return mergeData()">
+            TRANSMIT FOR APPROVAL <i class="fas fa-fingerprint" style="margin-left: 0.75rem;"></i>
         </button>
     </form>
     
-    <div style="margin-top: 2.5rem; text-align: center;">
-        <a href="{{ url_for('student.dashboard') }}" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; font-weight: 600;"><i class="fas fa-arrow-left"></i> RETURN TO DASHBOARD</a>
+    <div style="margin-top: 2rem; text-align: center;">
+        <a href="{{ url_for('student.dashboard') }}" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; font-weight: 600; transition: color 0.3s;"><i class="fas fa-arrow-left"></i> ABORT & RETURN</a>
     </div>
 </div>
 
-<style>
-    .hr-choice input:checked + span {
-        background: rgba(0,200,255,0.1) !important;
-        border-color: var(--accent) !important;
-        color: var(--accent) !important;
-    }
-</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
-function submitOutpass() {
-    const destination = document.querySelector('input[name="destination"]').value;
-    const purpose = document.querySelector('textarea[name="purpose"]').value;
-    const hours = document.querySelector('input[name="hours"]:checked').value;
-    
-    if(!destination || !purpose) {
-        alert("Please fill all fields");
-        return;
+    function handleDestType() {
+        const type = document.getElementById('dest_type').value;
+        const addr = document.getElementById('dest_address');
+        if (type === 'Home/Resident') {
+            addr.value = 'Registered Home Address';
+            addr.readOnly = true;
+            addr.style.opacity = '0.5';
+        } else {
+            if(addr.value === 'Registered Home Address') addr.value = '';
+            addr.readOnly = false;
+            addr.style.opacity = '1';
+        }
     }
 
-    const sid = "{{ current_user.student_id }}";
-    const student_name = "{{ current_user.name }}";
+    function updateCalcTime() {
+        let hrs = document.querySelector('input[name="ui_hours"]:checked').value;
+        if (hrs === 'custom') {
+            hrs = parseInt(document.getElementById('custom_hr').value) || 0;
+        } else {
+            hrs = parseInt(hrs);
+        }
+        
+        if (hrs > 0) {
+            let d = new Date();
+            d.setHours(d.getHours() + hrs);
+            document.getElementById('return_estimate').innerText = "Expected Return: " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " (" + d.toLocaleDateString() + ")";
+        }
+    }
 
-    fetch('http://127.0.0.1:5000/api/outpass/submit', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({sid, student_name, destination, purpose, duration_hours: hours})
-    }).then(r=>r.json()).then(d => {
-      if(d.success) window.location = `/outpass_qr.html?id=${d.outpass_id}`;
-      else alert("Error submitting outpass");
-    }).catch(e => {
-        alert("Error connecting to server");
-    });
-}
+    function mergeData() {
+        const destType = document.getElementById('dest_type').value;
+        const destAddr = document.getElementById('dest_address').value;
+        document.getElementById('final_destination').value = `[${destType}] ${destAddr}`;
+
+        const purpType = document.getElementById('purpose_type').value;
+        const purpDesc = document.getElementById('purpose_desc').value;
+        
+        let pText = purpType;
+        if(purpDesc.trim() !== '') pText += ` - ${purpDesc}`;
+        if(document.getElementById('parent_notify').checked) {
+            pText += ' (Parent SMS: ENABLED)';
+        }
+        document.getElementById('final_purpose').value = pText;
+
+        let hrs = document.querySelector('input[name="ui_hours"]:checked').value;
+        if (hrs === 'custom') {
+            hrs = document.getElementById('custom_hr').value;
+            if(!hrs || hrs < 1) {
+                alert("Please enter a valid custom duration.");
+                return false;
+            }
+        }
+        document.getElementById('final_hours').value = hrs;
+
+        return true;
+    }
+
+    // Run once on load
+    updateCalcTime();
 </script>
 {% endblock %}

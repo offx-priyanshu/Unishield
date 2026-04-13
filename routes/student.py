@@ -27,9 +27,12 @@ def dashboard():
     
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
     
+    active_outpass = next((op for op in outpass_history if op.status in ['pending', 'approved', 'out']), None)
+    
     return render_template('student/dashboard.html', 
                          history=outpass_history, 
                          notifications=notifications,
+                         active_outpass=active_outpass,
                          current_time=datetime.utcnow())
 
 @student_bp.route('/request_outpass', methods=['GET', 'POST'])

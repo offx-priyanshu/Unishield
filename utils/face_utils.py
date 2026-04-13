@@ -21,30 +21,52 @@ class FaceUtils:
             return None
 
     @staticmethod
-    def compare_faces(known_encoding_list, base64_frame, tolerance=0.5):
-        """Compares a base64 frame against a known encoding list."""
+    def compare_faces(known_encodings, unknown_encoding, tolerance=0.5):
+        """Compares a list of known encodings against a single unknown encoding."""
+        if not known_encodings:
+            return []
+        return face_recognition.compare_faces(known_encodings, unknown_encoding, tolerance=tolerance)
+
+    @staticmethod
+    def get_face_distance(known_encodings, unknown_encoding):
+        """Returns the Euclidean distance between encodings."""
+        if not known_encodings:
+            return []
+        return face_recognition.face_distance(known_encodings, unknown_encoding)
+
+    @staticmethod
+    def check_spoof(frame):
+        """Anti-spoofing via Laplacian variance (blur detection)."""
         try:
-            header, encoded = base64_frame.split(",", 1)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+            return variance > 100, variance # Returns True if real, False if likely a photo/screen
+        except:
+            return False, 0
+
+    @staticmethod
+    def decode_base64_frame(base64_frame):
+        """Decodes base64 string to OpenCV BGR frame."""
+        try:
+            if "," in base64_frame:
+                header, encoded = base64_frame.split(",", 1)
+            else:
+                encoded = base64_frame
             image_bytes = base64.b64decode(encoded)
-            image = Image.open(BytesIO(image_bytes))
-            
-            rgb_frame = np.array(image.convert('RGB'))
-            
-            unknown_encodings = face_recognition.face_encodings(rgb_frame)
-            if not unknown_encodings:
-                return False, "No face detected"
-            
-            results = face_recognition.compare_faces([np.array(known_encoding_list)], unknown_encodings[0], tolerance=tolerance)
-            if results[0]:
-                return True, "Match found"
-            return False, "Face mismatch"
-        except Exception as e:
-            return False, f"Error comparing faces: {str(e)}"
-            
+            img_array = np.frombuffer(image_bytes, np.uint8)
+            frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+            return frame
+        except:
+            return None
+
     @staticmethod
     def encode_to_json(numpy_array):
         return json.dumps(numpy_array.tolist())
     
     @staticmethod
     def decode_from_json(json_string):
-        return np.array(json.loads(json_string))
+        if not json_string: return None
+        try:
+            return np.array(json.loads(json_string))
+        except:
+            return None

@@ -16,6 +16,8 @@ class User(db.Model, UserMixin):
     phone = db.Column(db.String(15))
     parent_phone = db.Column(db.String(15))
     department = db.Column(db.String(200))
+    course = db.Column(db.String(100))
+    session_year = db.Column(db.String(50))
     year = db.Column(db.Integer)
     hostel_room = db.Column(db.String(20))
     
@@ -26,11 +28,27 @@ class User(db.Model, UserMixin):
     
     is_blacklisted = db.Column(db.Boolean, default=False)
     violations = db.Column(db.Integer, default=0)
+    
+    # Advanced Admin Fields
+    admin_role = db.Column(db.String(30), default='VIEWER') # OWNER | SUPER_ADMIN | SECURITY_ADMIN | VIEWER
+    permissions = db.Column(db.Text) # JSON list of permissions
+    status = db.Column(db.String(20), default='PENDING') # PENDING | ACTIVE | INACTIVE
+    last_login = db.Column(db.DateTime)
+    last_action = db.Column(db.String(200)) # Last readable action performed
+    
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
         
     def check_password(self, passwordhash):
         return check_password_hash(self.password_hash, passwordhash)
+
+    def has_perm(self, perm):
+        import json
+        if not self.permissions: return False
+        try:
+            perms_list = json.loads(self.permissions)
+            return perm in perms_list or 'ALL' in perms_list
+        except: return False

@@ -1,4 +1,6 @@
 :root {
+    --ui-scale: 0.9;
+    --ui-scale-inv: 111.11%;
     --primary: #3b82f6;           
     --primary-glow: rgba(59, 130, 246, 0.5);
     --primary-hover: #2563eb;
@@ -14,6 +16,16 @@
     --border-radius: 12px;
 }
 
+html {
+    transform: scale(var(--ui-scale));
+    transform-origin: top left;
+    width: var(--ui-scale-inv);
+    height: var(--ui-scale-inv);
+    overflow: hidden; /* Lock root to prevent fixed element drift */
+}
+
+
+
 * {
     margin: 0;
     padding: 0;
@@ -27,9 +39,15 @@ body {
         radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
         radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
     color: var(--text-main);
-    min-height: 100vh;
+    height: 100vh;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
     overflow-x: hidden;
 }
+
+
 
 .glass-card {
     background: var(--card-bg);
@@ -48,7 +66,8 @@ body {
 .btn {
     background: var(--primary);
     color: white;
-    padding: 0.75rem 1.5rem;
+    padding: 6px 12px;
+    font-size: 14px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
@@ -60,6 +79,7 @@ body {
     justify-content: center;
     gap: 0.5rem;
 }
+
 
 .btn:hover {
     background: var(--primary-hover);
@@ -368,12 +388,14 @@ header.main-header {
     width: 100%;
     background: rgba(15, 23, 42, 0.5);
     border: 1px solid var(--glass-border);
-    padding: 0.75rem 1rem;
+    padding: 6px 10px;
+    font-size: 14px;
     border-radius: 8px;
     color: white;
     outline: none;
     transition: 0.3s;
 }
+
 
 .form-input:focus {
     border-color: var(--primary);

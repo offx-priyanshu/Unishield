@@ -95,6 +95,7 @@ def auto_scan():
     socketio.emit('gate_event', result_data, namespace='/gate')
     return jsonify({'success': True, 'data': result_data})
 
+
 @gate_bp.route('/enroll', methods=['POST'])
 @login_required
 def enroll():
@@ -145,3 +146,51 @@ def get_stats():
         'returns_today': returns,
         'currently_out': out
     })
+
+@gate_bp.route('/today-report')
+@login_required
+def today_report():
+    today = datetime.utcnow().date()
+    # Fetch all outpasses that were either exited or returned today
+    movements = Outpass.query.filter(
+        (db.func.date(Outpass.exit_time) == today) | 
+        (db.func.date(Outpass.return_time) == today)
+    ).all()
+    
+    report_data = []
+    for m in movements:
+        report_data.append({
+            'name': m.student.name,
+            'sid': m.student.student_id,
+            'exit_time': m.exit_time.strftime('%H:%M') if m.exit_time else '-',
+            'return_time': m.return_time.strftime('%H:%M') if m.return_time else '-',
+            'status': m.status.upper()
+        })
+    
+    return jsonify(report_data)
+
+@gate_bp.route('/export/excel')
+@login_required
+def export_excel():
+    from utils.export import ExportService
+    today = datetime.utcnow().date()
+    movements = Outpass.query.filter(
+        (db.func.date(Outpass.exit_time) == today) | 
+        (db.func.date(Outpass.return_time) == today)
+    ).all()
+    
+    headers = ['Student Name', 'Student ID', 'Purpose', 'Destination', 'Status', 'Exit Time', 'Return Time']
+    data = []
+    for m in movements:
+        data.append([
+            m.student.name,
+            m.student.student_id,
+            m.purpose,
+            m.destination,
+            m.status.upper(),
+            m.exit_time.strftime('%H:%M') if m.exit_time else '-',
+            m.return_time.strftime('%H:%M') if m.return_time else '-'
+        ])
+    
+    filename = f"Guard_Report_{datetime.now().strftime('%Y%m%d')}"
+    return ExportService.export_excel(headers, data, filename)

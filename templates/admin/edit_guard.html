@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block page_title %}Edit Security Professional: {{ guard.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --neon: #00d2ff;
+        --panel-bg: rgba(7, 10, 15, 0.85);
+        --glass-border: rgba(255, 255, 255, 0.08);
+    }
+
+    .edit-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .edit-card {
+        background: var(--panel-bg);
+        backdrop-filter: blur(30px);
+        border: 1px solid var(--glass-border);
+        border-radius: 28px;
+        padding: 2.5rem;
+        box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .edit-card::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+        background: linear-gradient(90deg, transparent, var(--neon), transparent);
+        opacity: 0.3;
+    }
+
+    .profile-summary {
+        display: flex; align-items: center; gap: 20px; margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .p-avatar {
+        width: 80px; height: 80px; border-radius: 20px;
+        object-fit: cover; border: 2px solid var(--neon);
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
+    }
+
+    .p-info h2 { font-size: 1.5rem; color: #fff; margin-bottom: 4px; }
+    .p-info p { font-size: 0.75rem; color: #555; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
+
+    .sect-title {
+        font-size: 0.65rem; color: var(--neon); text-transform: uppercase;
+        letter-spacing: 3px; font-weight: 900; margin: 1.5rem 0 1rem;
+        display: flex; align-items: center; gap: 10px;
+    }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .field-box label { font-size: 0.6rem; color: #444; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem; display: block; }
+    
+    .field-box input, .field-box select {
+        width: 100%; background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+        padding: 0.8rem 1rem; color: #fff; font-size: 0.9rem;
+        transition: 0.3s;
+    }
+    .field-box input:focus { border-color: var(--neon); background: rgba(0, 210, 255, 0.03); }
+
+    .permission-box {
+        background: rgba(0,0,0,0.4); border-radius: 18px; padding: 1.25rem;
+        display: flex; flex-direction: column; gap: 12px;
+        border: 1px solid rgba(255,255,255,0.02);
+    }
+    .p-item {
+        display: flex; align-items: center; gap: 12px; font-size: 0.75rem; color: #777;
+        transition: 0.3s; cursor: pointer;
+    }
+    .p-item input { width: 16px; height: 16px; accent-color: var(--neon); }
+    .p-item:hover { color: var(--neon); }
+
+    .btn-group { display: flex; gap: 1rem; margin-top: 2rem; }
+    .save-btn {
+        flex: 2; padding: 1.1rem; border-radius: 14px;
+        background: linear-gradient(135deg, var(--neon), #0066ff);
+        color: #000; border: none; font-weight: 900; font-size: 0.9rem;
+        text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+    }
+    .cancel-btn {
+        flex: 1; padding: 1.1rem; border-radius: 14px;
+        background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1);
+        font-weight: 800; font-size: 0.8rem; text-transform: uppercase;
+        cursor: pointer; text-align: center; text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <div class="edit-card">
+        <div class="profile-summary">
+            {% if guard.photo_path %}
+                <img src="{{ url_for('static', filename='uploads/' + guard.photo_path) }}" class="p-avatar">
+            {% else %}
+                <div class="p-avatar" style="background: #111; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user-shield" style="font-size: 2rem; color: #333;"></i>
+                </div>
+            {% endif %}
+            <div class="p-info">
+                <h2>{{ guard.name }}</h2>
+                <p>Intelligence Guard • ID: {{ guard.username }}</p>
+                {% if guard.aadhar_document %}
+                <a href="{{ url_for('static', filename='uploads/' + guard.aadhar_document) }}" target="_blank" style="font-size: 0.65rem; color: var(--neon); letter-spacing: 1px; text-decoration: none;">
+                    <i class="fas fa-file-pdf"></i> VIEW VERIFIED AADHAR
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="sect-title"><i class="fas fa-image"></i> Update Documents</div>
+            <div class="field-grid">
+                <div class="field-box">
+                    <label>Update Profile Photo</label>
+                    <input type="file" name="profile_photo" accept="image/*">
+                </div>
+                <div class="field-box">
+                    <label>
+                        Update Aadhar Document 
+                        {% if guard.aadhar_document %}
+                        <a href="{{ url_for('static', filename='uploads/' + guard.aadhar_document) }}" target="_blank" style="text-transform: none; color: var(--neon); font-size: 0.55rem; margin-left: 10px;">(View Current)</a>
+                        {% endif %}
+                    </label>
+                    <input type="file" name="aadhar_document" accept=".jpg,.jpeg,.png,.pdf">
+                </div>
+            </div>
+
+            <div class="sect-title"><i class="fas fa-user"></i> Core Identity</div>
+            <div class="field-box" style="margin-bottom: 1.25rem;">
+                <label>Full Name</label>
+                <input type="text" name="name" value="{{ guard.name }}" required>
+            </div>
+            <div class="field-grid">
+                <div class="field-box">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" value="{{ guard.phone or '' }}">
+                </div>
+                <div class="field-box">
+                    <label>Emergency Contact</label>
+                    <input type="text" name="emergency_contact" value="{{ guard.emergency_contact or '' }}">
+                </div>
+            </div>
+
+            <div class="sect-title"><i class="fas fa-map-marker-alt"></i> Assignment Details</div>
+            <div class="field-grid">
+                <div class="field-box">
+                    <label>Assigned Gate</label>
+                    <select name="assigned_gate">
+                        <option value="Main Gate" {% if guard.assigned_gate == 'Main Gate' %}selected{% endif %}>Main Gate</option>
+                        <option value="Hostel Gate" {% if guard.assigned_gate == 'Hostel Gate' %}selected{% endif %}>Hostel Gate</option>
+                        <option value="Academic Block" {% if guard.assigned_gate == 'Academic Block' %}selected{% endif %}>Academic</option>
+                    </select>
+                </div>
+                <div class="field-box">
+                    <label>Shift Timing</label>
+                    <select name="shift_timing">
+                        <option value="Morning (6-2)" {% if guard.shift_timing == 'Morning (6-2)' %}selected{% endif %}>Morning (6-2)</option>
+                        <option value="Evening (2-10)" {% if guard.shift_timing == 'Evening (2-10)' %}selected{% endif %}>Evening (2-10)</option>
+                        <option value="Night (10-6)" {% if guard.shift_timing == 'Night (10-6)' %}selected{% endif %}>Night (10-6)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sect-title"><i class="fas fa-shield-alt"></i> Intelligence Access</div>
+            <div class="permission-box">
+                <label class="p-item"><input type="checkbox" name="perms" value="verify_student" {% if 'verify_student' in current_perms %}checked{% endif %}> Verification</label>
+                <label class="p-item"><input type="checkbox" name="perms" value="enroll_student" {% if 'enroll_student' in current_perms %}checked{% endif %}> Enrollment</label>
+                <label class="p-item"><input type="checkbox" name="perms" value="view_logs" {% if 'view_logs' in current_perms %}checked{% endif %}> Logs</label>
+                <label class="p-item"><input type="checkbox" name="perms" value="manage_alerts" {% if 'manage_alerts' in current_perms %}checked{% endif %}> Alerts</label>
+                <label class="p-item"><input type="checkbox" name="perms" value="manual_override" {% if 'manual_override' in current_perms %}checked{% endif %}> Override</label>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="save-btn">Apply Changes</button>
+                <a href="{{ url_for('admin.guards') }}" class="cancel-btn">Back</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

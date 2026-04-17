@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ current_user.role | capitalize }} Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-wrapper {
+    display: grid;
+    grid-template-columns: 290px 1fr;
+    gap: 2rem;
+    animation: fadeUp 0.4s ease-out;
+}
+
+/* Student: no left panel → full width */
+.profile-wrapper.student-view {
+    grid-template-columns: 1fr;
+}
+
+/* ── LEFT: Identity Card ─────────────────────────── */
+.id-card {
+    background: rgba(14,18,22,0.7);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 2.5rem 1.5rem 2rem;
+    text-align: center;
+    position: sticky;
+    top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+}
+
+.id-avatar-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin: 0 auto;
+}
+
+.id-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 32px;
+    background: linear-gradient(135deg, var(--accent), #0055ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 800;
+    color: #fff;
+    border: 4px solid rgba(255,255,255,.06);
+    box-shadow: 0 12px 30px rgba(0,210,255,.3);
+    overflow: hidden;
+    cursor: pointer;
+    transition: .35s cubic-bezier(.4,0,.2,1);
+}
+
+.id-avatar img { width:100%; height:100%; object-fit:cover; }
+.id-avatar:hover { transform: scale(1.05) rotate(2deg); }
+
+.id-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    border-radius: 32px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0;
+    transition: .3s;
+    pointer-events: none;
+}
+
+.id-avatar:hover .id-overlay { opacity: 1; }
+.id-overlay i { font-size: 1.3rem; }
+.id-overlay span { font-size: .55rem; font-weight:800; margin-top:4px; }
+
+.id-status-dot {
+    position: absolute; bottom:-3px; right:-3px;
+    width:18px; height:18px;
+    background: var(--success);
+    border: 3px solid #0d0d0d;
+    border-radius:50%;
+    box-shadow: 0 0 10px var(--success);
+}
+
+.id-name { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; color:#fff; line-height:1.2; }
+.id-handle { font-family:'IBM Plex Mono',monospace; font-size:.82rem; color:var(--accent); }
+.id-badge { display:inline-block; padding:5px 14px; background:rgba(0,210,255,.1); color:var(--accent); border:1px solid rgba(0,210,255,.2); border-radius:100px; font-size:.68rem; font-weight:800; letter-spacing:1.5px; }
+.id-org { font-size:.72rem; color:var(--text-muted); }
+
+/* Activity mini-cards */
+.act-stack { display:flex; flex-direction:column; gap:.75rem; }
+.act-row {
+    display:flex; align-items:center; gap:1rem;
+    background:rgba(255,255,255,.025);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:.9rem 1rem;
+    transition:.3s;
+}
+.act-row:hover { background:rgba(255,255,255,.05); transform:translateX(4px); }
+.act-ico { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.ico-blue  { background:rgba(0,210,255,.1);  color:var(--accent);  }
+.ico-amber { background:rgba(255,184,0,.1);  color:var(--warning); }
+.ico-red   { background:rgba(255,59,92,.1);  color:var(--danger);  }
+.act-val   { font-family:'Syne',sans-serif; font-size:1.25rem; font-weight:800; color:#fff; line-height:1; }
+.act-lbl   { font-size:.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+
+/* ── RIGHT: Access Panel ─────────────────────────── */
+.access-panel { display:flex; flex-direction:column; gap:1.5rem; }
+
+.blk {
+    background:rgba(14,18,22,.45);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:1.75rem;
+}
+
+.blk-title {
+    font-size:.85rem; font-weight:800; letter-spacing:1.5px;
+    text-transform:uppercase; color:#fff;
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:1.5rem;
+}
+.blk-title i { color:var(--accent); }
+
+.info-grid2 { display:grid; grid-template-columns:repeat(2,1fr); gap:1.5rem; }
+.df .lbl { font-size:.62rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; }
+.df .val { font-size:.92rem; color:#eee; font-weight:600; }
+
+/* Permissions */
+.tag-wrap { display:flex; flex-wrap:wrap; gap:8px; }
+.ptag {
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.08);
+    padding:5px 12px; border-radius:8px;
+    font-size:.72rem; color:#bbb;
+    display:flex; align-items:center; gap:7px;
+    transition:.2s;
+}
+.ptag i { color:var(--success); font-size:.65rem; }
+.ptag:hover { background:rgba(0,210,255,.07); color:#fff; border-color:var(--accent); }
+
+/* Security Status */
+.sec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; }
+.sec-item {
+    background:rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:14px; padding:1rem 1.2rem;
+    display:flex; justify-content:space-between; align-items:center;
+}
+.sec-lbl { font-size:.78rem; color:#aaa; }
+.sec-val { font-weight:700; font-size:.82rem; }
+.c-green { color:var(--success); }
+.c-muted { color:#666; }
+/* Toggle */
+.sw { position:relative; display:inline-block; width:38px; height:20px; }
+.sw input { opacity:0; width:0; height:0; }
+.sl { position:absolute; cursor:pointer; inset:0; background:#333; transition:.3s; border-radius:34px; }
+.sl:before { content:''; position:absolute; height:14px; width:14px; left:3px; bottom:3px; background:#fff; transition:.3s; border-radius:50%; }
+input:checked + .sl { background:var(--accent); }
+input:checked + .sl:before { transform:translateX(18px); }
+
+/* Action buttons */
+.action-row { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-top:.5rem; }
+.abtn {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:.9rem; border-radius:14px;
+    font-size:.78rem; font-weight:700; letter-spacing:1px;
+    text-decoration:none; cursor:pointer; transition:.3s;
+}
+.abtn-ghost { background:rgba(255,255,255,.05); border:1px solid var(--border); color:#fff; }
+.abtn-ghost:hover { background:rgba(255,255,255,.09); }
+.abtn-solid { background:var(--accent); color:#000; border:none; }
+.abtn-solid:hover { filter:brightness(1.1); transform:translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper{% if current_user.role == 'student' %} student-view{% endif %}">
+
+    <!-- ── LEFT PANEL (Admin/Guard only) ───────── -->
+    {% if current_user.role != 'student' %}
+    <div class="id-card">
+        <!-- Avatar -->
+        <div class="id-avatar-wrap" onclick="document.getElementById('p_upload').click()">
+            <div class="id-avatar">
+                {% if current_user.photo_path %}
+                    <img src="{{ url_for('static', filename='uploads/' + current_user.photo_path) }}" alt="Avatar">
+                {% else %}
+                    {{ current_user.name[0] | upper }}
+                {% endif %}
+                <div class="id-overlay">
+                    <i class="fas fa-camera"></i>
+                    <span>CHANGE</span>
+                </div>
+            </div>
+            <div class="id-status-dot"></div>
+        </div>
+
+        <form id="avatar-form" action="{{ url_for('auth.update_profile_photo') }}" method="POST" enctype="multipart/form-data" style="display:none">
+            <input type="file" name="profile_photo" id="p_upload" accept="image/*" onchange="document.getElementById('avatar-form').submit()">
+        </form>
+
+        <div>
+            <p class="id-name">{{ current_user.name }}</p>
+            <p class="id-handle" style="margin-top:4px;">@{{ current_user.username }}</p>
+        </div>
+
+        <div>
+            <div class="id-badge">
+                {% if current_user.role == 'admin' %}
+                    ADMIN · {{ current_user.admin_role | default('OFFICER') }}
+                {% else %}
+                    {{ current_user.role | upper }}
+                {% endif %}
+            </div>
+            <p class="id-org" style="margin-top:8px;">Sandip University, Sijoul</p>
+        </div>
+
+        {% if current_user.role == 'admin' %}
+        <div class="act-stack">
+            <div class="act-row">
+                <div class="act-ico ico-blue"><i class="fas fa-walking"></i></div>
+                <div>
+                    <p class="act-val">{{ active_students }}</p>
+                    <p class="act-lbl">Students Outside</p>
+                </div>
+            </div>
+            <div class="act-row">
+                <div class="act-ico ico-amber"><i class="fas fa-clock-rotate-left"></i></div>
+                <div>
+                    <p class="act-val">{{ pending_approvals }}</p>
+                    <p class="act-lbl">Pending Requests</p>
+                </div>
+            </div>
+            <div class="act-row">
+                <div class="act-ico ico-red"><i class="fas fa-user-clock"></i></div>
+                <div>
+                    <p class="act-val">{{ late_students }}</p>
+                    <p class="act-lbl">Late Returns</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── RIGHT PANEL ──────────────────────── -->
+    <div class="access-panel">
+
+        {% if current_user.role == 'student' %}
+        <!-- ══ STUDENT SIMPLIFIED VIEW ══ -->
+
+        <!-- Student Basic Info -->
+        <div class="blk">
+            <div class="blk-title"><i class="fas fa-id-card"></i> Student Information</div>
+            <div class="info-grid2">
+                <div class="df">
+                    <p class="lbl">Full Name</p>
+                    <p class="val">{{ current_user.name }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Student ID</p>
+                    <p class="val mono" style="color:var(--accent);">{{ current_user.student_id }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Department</p>
+                    <p class="val">{{ current_user.department if current_user.department else '—' }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Course</p>
+                    <p class="val">{{ current_user.course if current_user.course else '—' }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Phone</p>
+                    <p class="val">{{ current_user.phone if current_user.phone else '—' }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Branch</p>
+                    <p class="val">{{ current_user.session_year if current_user.session_year else '—' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Login Activity -->
+        <div class="blk">
+            <div class="blk-title"><i class="fas fa-clock-rotate-left"></i> Session Activity</div>
+            <div class="info-grid2">
+                <div class="df">
+                    <p class="lbl">Last Login</p>
+                    <p class="val mono" style="font-size:.85rem;">
+                        {{ current_user.last_login.strftime('%d %b %Y, %H:%M') if current_user.last_login else 'Active Now' }}
+                    </p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Account Created</p>
+                    <p class="val">{{ current_user.created_at.strftime('%d %B, %Y') if current_user.created_at else '—' }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Account Status</p>
+                    {% if current_user.is_blacklisted %}
+                        <p class="val" style="color:var(--danger);">🔒 BLACKLISTED</p>
+                    {% else %}
+                        <p class="val c-green">● ACTIVE</p>
+                    {% endif %}
+                </div>
+                <div class="df">
+                    <p class="lbl">Violations</p>
+                    <p class="val" style="color: {{ 'var(--danger)' if current_user.violations > 0 else '#aaa' }}">
+                        {{ current_user.violations if current_user.violations else '0' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Action Buttons -->
+        <div class="action-row" style="grid-template-columns: 1fr 1fr;">
+            <a href="{{ url_for('auth.change_password') }}" class="abtn abtn-ghost">
+                <i class="fas fa-key"></i> Change Password
+            </a>
+            <div class="abtn abtn-solid" onclick="openEditModal()">
+                <i class="fas fa-user-pen"></i> Edit Profile
+            </div>
+        </div>
+
+        <!-- Restricted notice -->
+        <div style="text-align:center; padding: 0.75rem; background: rgba(255,184,0,0.05); border: 1px solid rgba(255,184,0,0.15); border-radius: 12px; font-size: 0.72rem; color: var(--warning);">
+            <i class="fas fa-lock" style="margin-right:6px;"></i> Advanced security controls are restricted for student accounts.
+        </div>
+
+        {% else %}
+        <!-- ══ ADMIN / GUARD FULL VIEW ══ -->
+
+        <!-- Basic Info -->
+        <div class="blk">
+            <div class="blk-title"><i class="fas fa-shield-halved"></i> Account & Access Control</div>
+            <div class="info-grid2">
+                <div class="df">
+                    <p class="lbl">Designation</p>
+                    <p class="val">University {{ current_user.role | capitalize }} Authority</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Access Level</p>
+                    <p class="val" style="color:var(--accent);">
+                        {% if current_user.role == 'admin' %}{{ current_user.admin_role | default('STANDARD') }} — Full Control
+                        {% else %}Field Officer Access{% endif %}
+                    </p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Email Address</p>
+                    <p class="val">{{ current_user.email if current_user.email else 'Not Set' }}</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Account Created</p>
+                    <p class="val">{{ current_user.created_at.strftime('%d %B, %Y') if current_user.created_at else 'Active Session' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permissions -->
+        <div class="blk">
+            <div class="blk-title"><i class="fas fa-key"></i> System Permissions</div>
+            <div class="tag-wrap">
+                {% if current_user.role == 'admin' %}
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Student Management</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Guard Control</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Outpass Approval</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> AI Gate Control</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> SMS System Access</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Analytics Access</span>
+                {% else %}
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Terminal Access</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Gate Verify</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Login Activity -->
+        <div class="blk">
+            <div class="blk-title"><i class="fas fa-brain"></i> Login Activity</div>
+            <div class="info-grid2" style="grid-template-columns:1.2fr 1fr 1.5fr">
+                <div class="df">
+                    <p class="lbl">Last Login Signal</p>
+                    <p class="val mono" style="font-size:.8rem;">
+                        {{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') if current_user.last_login else 'Current Session' }}
+                    </p>
+                </div>
+                <div class="df">
+                    <p class="lbl">IP Trace</p>
+                    <p class="val mono" style="font-size:.8rem;">127.0.0.1</p>
+                </div>
+                <div class="df">
+                    <p class="lbl">Device</p>
+                    <p class="val" style="font-size:.78rem; color:#aaa;">Browser · macOS · Chrome</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Status (Admin/Guard only) -->
+        <div class="blk">
+            <div class="blk-title"><i class="fas fa-lock"></i> Security Status</div>
+            <div class="sec-grid">
+                <div class="sec-item">
+                    <span class="sec-lbl">Account Status</span>
+                    <span class="sec-val c-green">● ACTIVE</span>
+                </div>
+                {% if current_user.role == 'admin' %}
+                <div class="sec-item">
+                    <span class="sec-lbl">Two-Factor Auth</span>
+                    <label class="sw"><input type="checkbox"><span class="sl"></span></label>
+                </div>
+                {% endif %}
+                <div class="sec-item">
+                    <span class="sec-lbl">Last Password Change</span>
+                    <span class="sec-val c-muted" style="font-size:.78rem;">14 Days Ago</span>
+                </div>
+                <div class="sec-item">
+                    <span class="sec-lbl">Suspicious Activity</span>
+                    <span class="sec-val c-green" style="font-size:.78rem;">NONE DETECTED</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin/Guard Full Action Buttons -->
+        <div class="action-row">
+            <a href="{{ url_for('auth.change_password') }}" class="abtn abtn-ghost">
+                <i class="fas fa-key"></i> Change Password
+            </a>
+            {% if current_user.role == 'admin' %}
+            <div class="abtn abtn-ghost" onclick="alert('2FA Setup — Coming Soon')">
+                <i class="fas fa-shield-halved"></i> Enable 2FA
+            </div>
+            {% endif %}
+
+            <div class="abtn abtn-solid" onclick="openEditModal()">
+                <i class="fas fa-user-pen"></i> Edit Profile
+            </div>
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+
+<!-- ── EDIT PROFILE MODAL ─────────────────────── -->
+<div id="editModal" style="
+    position: fixed; inset: 0; z-index: 9999;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+">
+    <div style="
+        background: rgba(14,18,22,0.95);
+        border: 1px solid rgba(0,210,255,0.2);
+        border-radius: 28px;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+        animation: fadeUp 0.3s ease-out;
+        position: relative;
+    ">
+        <!-- Close button -->
+        <button onclick="closeEditModal()" style="
+            position:absolute; top:1.2rem; right:1.2rem;
+            background:rgba(255,255,255,0.05); border:1px solid var(--border);
+            color:#aaa; width:34px; height:34px; border-radius:10px;
+            cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center;
+            transition:.2s;
+        " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div style="margin-bottom:2rem;">
+            <h3 style="font-family:'Syne',sans-serif; font-size:1.3rem; color:#fff; margin-bottom:4px;">
+                <i class="fas fa-user-pen" style="color:var(--accent); margin-right:10px;"></i>Edit Profile
+            </h3>
+            <p style="font-size:0.75rem; color:var(--text-muted);">Update your display name and email address</p>
+        </div>
+
+        <form action="{{ url_for('auth.update_profile') }}" method="POST">
+            <div style="margin-bottom:1.5rem;">
+                <label style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; display:block; margin-bottom:8px;">Full Name</label>
+                <input type="text" name="name" value="{{ current_user.name }}" required
+                    style="width:100%; padding:0.85rem 1rem; background:rgba(255,255,255,0.05);
+                    border:1px solid var(--border); border-radius:10px; color:#fff;
+                    font-size:0.95rem; outline:none; transition:.2s;"
+                    onfocus="this.style.borderColor='var(--accent)'"
+                    onblur="this.style.borderColor='var(--border)'"
+                    placeholder="Enter your full name">
+            </div>
+
+            <div style="margin-bottom:1.5rem;">
+                <label style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; display:block; margin-bottom:8px;">Email Address</label>
+                <input type="email" name="email" value="{{ current_user.email if current_user.email else '' }}"
+                    style="width:100%; padding:0.85rem 1rem; background:rgba(255,255,255,0.05);
+                    border:1px solid var(--border); border-radius:10px; color:#fff;
+                    font-size:0.95rem; outline:none; transition:.2s;"
+                    onfocus="this.style.borderColor='var(--accent)'"
+                    onblur="this.style.borderColor='var(--border)'"
+                    placeholder="Enter your email">
+            </div>
+
+            <div style="display:flex; gap:1rem; margin-top:2rem;">
+                <button type="button" onclick="closeEditModal()" style="
+                    flex:1; padding:0.9rem;
+                    background:rgba(255,255,255,0.05); border:1px solid var(--border);
+                    color:#aaa; border-radius:12px; cursor:pointer; font-size:0.85rem;
+                    font-weight:700; transition:.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.09)'"
+                   onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    Cancel
+                </button>
+                <button type="submit" style="
+                    flex:2; padding:0.9rem;
+                    background:var(--accent); border:none;
+                    color:#000; border-radius:12px; cursor:pointer;
+                    font-size:0.85rem; font-weight:800; letter-spacing:1px;
+                    transition:.2s;
+                " onmouseover="this.style.filter='brightness(1.1)'"
+                   onmouseout="this.style.filter='brightness(1)'">
+                    <i class="fas fa-check" style="margin-right:8px;"></i> SAVE CHANGES
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer style="text-align:center; padding:2.5rem 0; font-size:.75rem; color:#444; margin-top:2rem;">
+    &copy; 2026 Sandip University · Authenticated UniShield AI Infrastructure
+</footer>
+
+{% block extra_js %}
+<script>
+function openEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+// Close on backdrop click
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditModal();
+});
+</script>
+{% endblock %}
+{% endblock %}

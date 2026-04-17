@@ -5,30 +5,35 @@
 *.swp
 *.swo
 
-# Python Cache
+# Python Cache & Builds
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+dist/
+build/
+*.egg-info/
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 .env
 
-# Database (SQLite)
+# Database
 *.db
+*.sqlite3
 instance/
+database/*.db
 
-# Application Specific
+# Application Specific (Media & Temps)
 static/uploads/*
 !static/uploads/.gitkeep
 static/faces/*
 !static/faces/.gitkeep
+faces/
+scratch/
+Unishield-clean/
 logs/
 *.log
-
-# Distribution / Build
-dist/
-build/
-*.egg-info/

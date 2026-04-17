@@ -5,8 +5,40 @@ from models.db import db
 from models.user import User
 from config import Config
 from extensions import socketio
+from apscheduler.schedulers.background import BackgroundScheduler
 import os
 from datetime import datetime
+
+def check_overdue_outpasses(app):
+    with app.app_context():
+        from models.outpass import Outpass
+        from models.user import User
+        from services.sms_service import SMSService
+        from models.db import db
+        
+        now = datetime.utcnow()
+        # Find all students who are "out" and late, and haven't been alerted yet
+        late_outpasses = Outpass.query.filter(
+            Outpass.status == 'out',
+            Outpass.expected_return < now,
+            Outpass.alert_sent == False
+        ).all()
+        
+        for op in late_outpasses:
+            student = User.query.get(op.student_id)
+            if student:
+                # 1. Send SMS Alert
+                SMSService.notify_overdue(student.name, student.parent_phone, student.phone, op.expected_return.strftime('%H:%M'))
+                
+                # 2. Add Violation
+                student.violations += 1
+                if student.violations >= 3:
+                    student.is_blacklisted = True
+                
+                # 3. Mark alert as sent
+                op.alert_sent = True
+        
+        db.session.commit()
 
 def create_app():
     app = Flask(__name__)
@@ -25,6 +57,15 @@ def create_app():
         
     jwt = JWTManager(app)
 
+    @app.template_filter('from_json')
+    def from_json(value):
+        import json
+        if not value: return []
+        try:
+            return json.loads(value)
+        except:
+            return []
+
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -41,6 +82,11 @@ def create_app():
     app.register_blueprint(guard_bp, url_prefix='/guard')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(gate_bp, url_prefix='/gate')
+
+    # Background Tasks
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=check_overdue_outpasses, trigger="interval", minutes=60, args=[app])
+    scheduler.start()
 
     @app.route('/')
     def index():

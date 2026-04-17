@@ -127,7 +127,7 @@ def enroll_student():
         face_image=face_path,
         id_card_photo=id_path
     )
-    new_student.set_password(student_id) # Default password is ID
+    new_student.set_password('student123') # Default password = student123
     db.session.add(new_student)
     db.session.commit()
     

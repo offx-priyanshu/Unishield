@@ -142,6 +142,8 @@ class FaceIntelligence:
                 student_id=student_id,
                 name=data.get('name'),
                 department=data.get('department'),
+                course=data.get('course'),
+                session_year=data.get('session_year'),
                 phone=data.get('phone'),
                 parent_phone=data.get('parent_phone')
             )

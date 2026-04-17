@@ -28,27 +28,7 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
-    now = datetime.utcnow()
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    # Live Status Counts
-    active_students = Outpass.query.filter_by(status='out').count()
-    late_students = Outpass.query.filter(Outpass.status == 'out', Outpass.expected_return < now).count()
-    pending_approvals = Outpass.query.filter_by(status='pending').count()
-    
-    # Live Activity Stream (Recent Events - excluding noise like session logs for cleaner dashboard)
-    activity_stream = ActivityLog.query.filter(~ActivityLog.action.ilike('%logged%')).order_by(ActivityLog.timestamp.desc()).limit(15).all()
-    
-    # Recent Pending Requests (Recent queue)
-    recent_requests = Outpass.query.filter_by(status='pending').order_by(Outpass.created_at.desc()).limit(10).all()
-    
-    return render_template('admin/dashboard.html', 
-                         active_students=active_students,
-                         late_students=late_students,
-                         pending_approvals=pending_approvals,
-                         activity_stream=activity_stream,
-                         recent_requests=recent_requests,
-                         now=now)
+    return redirect(url_for('auth.profile'))
 
 @admin_bp.route('/students', methods=['GET', 'POST'])
 @login_required
@@ -162,7 +142,7 @@ def add_student():
             photo_path=photo_path,
             id_card_photo=id_card_path
         )
-        new_student.set_password('student123')
+        new_student.set_password('student123')  # Default password = student123
         db.session.add(new_student)
         db.session.commit()
         
@@ -385,30 +365,169 @@ def export(type):
 @login_required
 @admin_required
 def guards():
+    import json
+    import os
+    from werkzeug.utils import secure_filename
+    from models.log import ActivityLog
+    from datetime import datetime, date, timedelta
+    
     if request.method == 'POST':
+        # ... [Form logic preserved]
         name = request.form.get('name')
         username = request.form.get('username')
         password = request.form.get('password')
+        assigned_gate = request.form.get('assigned_gate')
+        shift_timing = request.form.get('shift_timing')
+        phone = request.form.get('phone')
+        emergency_contact = request.form.get('emergency_contact')
+        perms = request.form.getlist('perms')
         
         if User.query.filter_by(username=username).first():
-            flash(f'Username {username} already exists!', 'danger')
+            flash(f'Guard ID/Username {username} already exists!', 'danger')
             return redirect(url_for('admin.guards'))
+            
+        # Handle File Uploads
+        profile_path = None
+        doc_path = None
+        
+        # Ensure subdirectories exist
+        upload_base = current_app.config['UPLOAD_FOLDER']
+        profile_dir = os.path.join(upload_base, 'profile')
+        doc_dir = os.path.join(upload_base, 'documents')
+        os.makedirs(profile_dir, exist_ok=True)
+        os.makedirs(doc_dir, exist_ok=True)
+
+        profile_file = request.files.get('profile_photo')
+        if profile_file and profile_file.filename != '':
+            filename = secure_filename(f"profile_{username}_{profile_file.filename}")
+            profile_file.save(os.path.join(profile_dir, filename))
+            profile_path = os.path.join('profile', filename)
+            
+        aadhar_file = request.files.get('aadhar_document')
+        if aadhar_file and aadhar_file.filename != '':
+            filename = secure_filename(f"doc_{username}_{aadhar_file.filename}")
+            aadhar_file.save(os.path.join(doc_dir, filename))
+            doc_path = os.path.join('documents', filename)
             
         new_guard = User(
             username=username,
             name=name,
-            role='guard'
+            role='guard',
+            assigned_gate=assigned_gate,
+            shift_timing=shift_timing,
+            phone=phone,
+            emergency_contact=emergency_contact,
+            permissions=json.dumps(perms),
+            status='ACTIVE',
+            photo_path=profile_path,
+            aadhar_document=doc_path
         )
         new_guard.set_password(password)
         db.session.add(new_guard)
         db.session.commit()
         
-        Logger.log(current_user.id, f'Admin added new guard: {name}')
-        flash(f'Guard {name} added successfully!', 'success')
+        Logger.log(current_user.id, f'Admin added new guard: {name} assigned to {assigned_gate}')
+        flash(f'Guard {name} registered and activated successfully!', 'success')
         return redirect(url_for('admin.guards'))
 
+    # Collect Real-time Stats
     all_guards = User.query.filter_by(role='guard').all()
-    return render_template('admin/guards.html', guards=all_guards)
+    active_count = User.query.filter_by(role='guard', status='ACTIVE').count()
+    
+    # Unique Gates
+    gates_set = set([g.assigned_gate for g in all_guards if g.assigned_gate])
+    gates_count = f"{len(gates_set):02d}"
+    
+    # Daily Verifications (from ActivityLog + Outpass Activity Today)
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    
+    log_count = ActivityLog.query.filter(
+        ActivityLog.timestamp >= today_start,
+        db.or_(ActivityLog.action.ilike('%verify%'), ActivityLog.action.ilike('%scan%'), ActivityLog.action.ilike('%gate%'))
+    ).count()
+    
+    from models.outpass import Outpass
+    outpass_count = Outpass.query.filter(
+        db.or_(Outpass.exit_time >= today_start, Outpass.actual_return >= today_start)
+    ).count()
+    
+    daily_verifications = log_count + outpass_count
+    
+    stats = {
+        'active': active_count,
+        'gates': gates_count,
+        'verifications': f"{daily_verifications:,}",
+        'response': "1.2m"
+    }
+
+    return render_template('admin/guards.html', guards=all_guards, stats=stats)
+
+@admin_bp.route('/guards/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_guard(user_id):
+    import json
+    from models.user import User
+    from models.db import db
+    
+    guard = User.query.get_or_404(user_id)
+    if guard.role != 'guard':
+        flash('Target user is not a security staff.', 'warning')
+        return redirect(url_for('admin.guards'))
+        
+    if request.method == 'POST':
+        guard.name = request.form.get('name')
+        guard.assigned_gate = request.form.get('assigned_gate')
+        guard.shift_timing = request.form.get('shift_timing')
+        guard.phone = request.form.get('phone')
+        guard.emergency_contact = request.form.get('emergency_contact')
+        
+        # Handle File Updates
+        upload_base = current_app.config['UPLOAD_FOLDER']
+        profile_dir = os.path.join(upload_base, 'profile')
+        doc_dir = os.path.join(upload_base, 'documents')
+        os.makedirs(profile_dir, exist_ok=True)
+        os.makedirs(doc_dir, exist_ok=True)
+
+        profile_file = request.files.get('profile_photo')
+        if profile_file and profile_file.filename != '':
+            filename = secure_filename(f"profile_{guard.username}_{profile_file.filename}")
+            profile_file.save(os.path.join(profile_dir, filename))
+            guard.photo_path = os.path.join('profile', filename)
+            
+        aadhar_file = request.files.get('aadhar_document')
+        if aadhar_file and aadhar_file.filename != '':
+            filename = secure_filename(f"doc_{guard.username}_{aadhar_file.filename}")
+            aadhar_file.save(os.path.join(doc_dir, filename))
+            guard.aadhar_document = os.path.join('documents', filename)
+
+        perms = request.form.getlist('perms')
+        guard.permissions = json.dumps(perms)
+        
+        db.session.commit()
+        flash(f'Guard {guard.name} updated successfully.', 'success')
+        return redirect(url_for('admin.guards'))
+        
+    try:
+        current_perms = json.loads(guard.permissions) if guard.permissions else []
+    except:
+        current_perms = []
+        
+    return render_template('admin/edit_guard.html', guard=guard, current_perms=current_perms)
+
+@admin_bp.route('/toggle_guard_duty/<int:user_id>')
+@login_required
+@admin_required
+def toggle_guard_duty(user_id):
+    guard = User.query.get_or_404(user_id)
+    if guard.role != 'guard':
+        flash('Invalid user role.', 'danger')
+    else:
+        guard.status = 'OFFLINE' if guard.status == 'ACTIVE' else 'ACTIVE'
+        db.session.commit()
+        Logger.log(current_user.id, f"Admin toggled duty for: {guard.name} (Now {guard.status})")
+        flash(f'Status updated for {guard.name}.', 'success')
+    return redirect(url_for('admin.guards'))
 
 @admin_bp.route('/manage_admins', methods=['GET', 'POST'])
 @login_required
@@ -516,3 +635,60 @@ def reset_user_password(user_id):
     flash(f"Password for {user.name} has been reset successfully.", 'success')
     
     return redirect(request.referrer or url_for('admin.dashboard'))
+
+
+@admin_bp.route('/api/stats/summary')
+@login_required
+@admin_required
+def stats_summary():
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+    last_30d = now - timedelta(days=30)
+    last_7d = now - timedelta(days=7)
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # 1. Total Population
+    total_students = User.query.filter_by(role='student').count()
+
+    # 2. Exits This Week
+    exits_this_week = Outpass.query.filter(Outpass.created_at >= last_7d).count()
+
+    # 3. Average Time Outside (in hours)
+    completed_ops = Outpass.query.filter(Outpass.status == 'returned', Outpass.exit_time != None, Outpass.actual_return != None).all()
+    if completed_ops:
+        total_hours = sum([(op.actual_return - op.exit_time).total_seconds() / 3600 for op in completed_ops])
+        avg_time = round(total_hours / len(completed_ops), 1)
+    else:
+        avg_time = 0.0
+
+    # 4. Trend Data (Last 30 days)
+    trend_data = []
+    for i in range(30):
+        day = last_30d + timedelta(days=i)
+        day_end = day + timedelta(days=1)
+        count = Outpass.query.filter(Outpass.created_at >= day, Outpass.created_at < day_end).count()
+        trend_data.append(count)
+
+    # 5. Status Distribution
+    status_dist = [
+        Outpass.query.filter_by(status='approved').count(),
+        Outpass.query.filter_by(status='returned').count(),
+        Outpass.query.filter_by(status='out').count(),
+        Outpass.query.filter_by(status='rejected').count()
+    ]
+
+    # 6. Department Movement (THE REQUESTED ONES)
+    depts = ['SOET-FE', 'SOET-ME', 'SOET-EE', 'SOET-CE', 'SOCSE', 'SOCMS', 'SOAS', 'SNJSOE', 'SOLIS', 'SOL']
+    dept_movement = []
+    for d in depts:
+        count = Outpass.query.join(User).filter(User.department == d).count()
+        dept_movement.append(count)
+
+    return jsonify({
+        'total_students': total_students,
+        'exits_this_week': exits_this_week,
+        'avg_time': avg_time,
+        'trend_data': trend_data,
+        'status_dist': status_dist,
+        'dept_movement': dept_movement
+    })

@@ -229,6 +229,76 @@
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     }
 
+    /* Autocomplete Styles */
+    .autocomplete-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        margin-top: 8px;
+        background: #0f1218;
+        border: 1px solid var(--border-glass);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        max-height: 250px;
+        overflow-y: auto;
+        display: none;
+        flex-direction: column;
+        padding: 8px;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        /* Hide scrollbar for clean UI */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .autocomplete-dropdown.show {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .autocomplete-item {
+        padding: 12px 16px;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.active {
+        background: rgba(0, 210, 255, 0.1);
+        color: var(--accent-glow);
+        padding-left: 20px;
+    }
+
+    .autocomplete-no-results {
+        padding: 12px 16px;
+        color: #888;
+        font-size: 0.9rem;
+        text-align: center;
+    }
+
     /* Modal Styling */
     .modal-content {
         background: #0f1218;
@@ -340,15 +410,21 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="small text-muted mb-2 uppercase">Department</label>
-                                <input type="text" id="reg-dept"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="e.g. B.Tech CS">
+                                <div class="autocomplete-wrapper" id="dept-autocomplete-wrapper">
+                                    <input type="text" id="reg-dept"
+                                        class="form-control bg-dark border-secondary text-white py-3 rounded-3"
+                                        placeholder="e.g. SOCSE" autocomplete="off">
+                                    <div id="dept-dropdown" class="autocomplete-dropdown"></div>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="small text-muted mb-2 uppercase">Course</label>
-                                <input type="text" id="reg-course"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="e.g. B.Tech">
+                                <div class="autocomplete-wrapper" id="course-autocomplete-wrapper">
+                                    <input type="text" id="reg-course"
+                                        class="form-control bg-dark border-secondary text-white py-3 rounded-3"
+                                        placeholder="e.g. B.Tech" autocomplete="off">
+                                    <div id="course-dropdown" class="autocomplete-dropdown"></div>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="small text-muted mb-2 uppercase">Session</label>
@@ -358,15 +434,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Student Phone</label>
-                                <input type="text" id="reg-sphone"
+                                <input type="tel" id="reg-sphone"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="+91 XXXX">
+                                    placeholder="+91 XXXXX XXXXX" maxlength="10"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Parent Phone (Required for SMS)</label>
-                                <input type="text" id="reg-pphone"
+                                <input type="tel" id="reg-pphone"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="+91 XXXX">
+                                    placeholder="+91 XXXXX XXXXX" maxlength="10"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                         </div>
                     </form>
@@ -415,13 +493,25 @@
                 <div class="stat-lbl">Exits Today</div>
             </div>
             <div class="stat-mini">
+                <div class="stat-val" id="stat-returns" style="color: var(--success-glow);">0</div>
+                <div class="stat-lbl">Returns Today</div>
+            </div>
+            <div class="stat-mini">
                 <div class="stat-val" id="stat-out" style="color: var(--danger-glow);">0</div>
                 <div class="stat-lbl">Currently Out</div>
             </div>
-            <button onclick="openRegistration('manual')" class="stat-mini register-btn">
-                <i class="fas fa-user-plus"></i>
-                <div>Register<br>Student</div>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button onclick="openRegistration('manual')" class="btn btn-outline-info w-100 py-3 rounded-4 fw-bold">
+                <i class="fas fa-user-plus me-2"></i> REGISTER STUDENT
             </button>
+            <button onclick="generateDailyReport()" class="btn btn-outline-light w-100 py-3 rounded-4 fw-bold">
+                <i class="fas fa-print me-2"></i> ACTIVITY REPORT
+            </button>
+            <a href="/gate/export/excel" class="btn btn-outline-success w-100 py-3 rounded-4 fw-bold">
+                <i class="fas fa-file-excel me-2"></i> EXCEL EXPORT
+            </a>
         </div>
 
         <div class="live-log">
@@ -790,13 +880,252 @@
         const res = await fetch('/gate/status');
         const data = await res.json();
         document.getElementById('stat-exits').innerText = data.exits_today;
+        document.getElementById('stat-returns').innerText = data.returns_today;
         document.getElementById('stat-out').innerText = data.currently_out;
     }
     setInterval(updateStats, 10000);
     updateStats();
 
+    async function generateDailyReport() {
+        const res = await fetch('/gate/today-report');
+        const data = await res.json();
+
+        if (data.length === 0) {
+            alert("No movement recorded today yet.");
+            return;
+        }
+
+        // Create a printable window
+        const printWindow = window.open('', '_blank');
+        const today = new Date().toLocaleDateString();
+
+        let html = `
+            <html>
+            <head>
+                <title>UniShield - Daily Movement Report (${today})</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
+                    .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                    th { background-color: #f8f9fa; font-weight: bold; }
+                    tr:nth-child(even) { background-color: #fcfcfc; }
+                    .footer { margin-top: 50px; font-size: 0.8rem; text-align: right; border-top: 1px solid #eee; padding-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>UniShield Security System</h1>
+                    <h2>Daily Student Movement Report</h2>
+                    <p>Date: ${today} | Terminal ID: GATE-01</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Student ID</th>
+                            <th>Exit Time</th>
+                            <th>Return Time</th>
+                            <th>Final Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(m => `
+                            <tr>
+                                <td>${m.name}</td>
+                                <td>${m.sid}</td>
+                                <td>${m.exit_time}</td>
+                                <td>${m.return_time}</td>
+                                <td><strong>${m.status}</strong></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="footer">
+                    <p>Generated on ${new Date().toLocaleString()}</p>
+                    <p>Confirmed by Security Officer: __________________________</p>
+                </div>
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                <\/script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+    }
+
     // Init
     loadModels();
+
+    // Autocomplete Component (Reusable)
+    class Autocomplete {
+        constructor(inputId, dropdownId, wrapperId, options) {
+            this.input = document.getElementById(inputId);
+            this.dropdown = document.getElementById(dropdownId);
+            this.wrapper = document.getElementById(wrapperId);
+            this.options = options;
+            this.currentIndex = -1;
+
+            if (this.input) {
+                this.init();
+            }
+        }
+
+        init() {
+            this.input.addEventListener('input', () => this.handleInput());
+            this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
+            document.addEventListener('click', (e) => this.handleClickOutside(e));
+            this.input.addEventListener('focus', () => this.handleInput());
+        }
+
+        renderOptions(matches, val) {
+            this.dropdown.innerHTML = '';
+            this.currentIndex = -1;
+
+            if (matches.length === 0) {
+                const noRes = document.createElement('div');
+                noRes.className = 'autocomplete-no-results';
+                noRes.innerText = 'No results found';
+                this.dropdown.appendChild(noRes);
+            } else {
+                matches.forEach((match, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+
+                    // Highlight matching part
+                    if (val) {
+                        // Escape regex characters just in case
+                        const sanitizedVal = val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`(${sanitizedVal})`, "gi");
+                        item.innerHTML = match.replace(regex, "<span style='color: var(--accent-glow); font-weight: bold;'>$1</span>");
+                    } else {
+                        item.innerText = match;
+                    }
+
+                    item.dataset.value = match;
+                    item.addEventListener('click', () => this.selectOption(match));
+
+                    item.addEventListener('mouseenter', () => {
+                        this.removeActive();
+                        this.currentIndex = index;
+                        this.addActive(this.dropdown.children[this.currentIndex]);
+                    });
+
+                    this.dropdown.appendChild(item);
+                });
+            }
+
+            this.dropdown.classList.add('show');
+        }
+
+        handleInput() {
+            const val = this.input.value.trim();
+
+            let matches = [];
+            if (val === '') {
+                matches = this.options;
+            } else {
+                matches = this.options.filter(opt => opt.toLowerCase().includes(val.toLowerCase()));
+            }
+
+            this.renderOptions(matches, val);
+        }
+
+        handleKeyDown(e) {
+            let items = this.dropdown.getElementsByClassName('autocomplete-item');
+            if (!this.dropdown.classList.contains('show') || items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                this.currentIndex++;
+                if (this.currentIndex >= items.length) this.currentIndex = 0;
+                this.removeActive();
+                this.addActive(items[this.currentIndex]);
+                this.scrollToItem(items[this.currentIndex]);
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                this.currentIndex--;
+                if (this.currentIndex < 0) this.currentIndex = items.length - 1;
+                this.removeActive();
+                this.addActive(items[this.currentIndex]);
+                this.scrollToItem(items[this.currentIndex]);
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (this.currentIndex > -1) {
+                    if (items[this.currentIndex]) {
+                        this.selectOption(items[this.currentIndex].dataset.value);
+                    }
+                } else if (items.length === 1) {
+                    this.selectOption(items[0].dataset.value);
+                }
+            } else if (e.key === 'Escape') {
+                this.closeDropdown();
+            }
+        }
+
+        removeActive() {
+            const items = this.dropdown.getElementsByClassName('autocomplete-item');
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove('active');
+            }
+        }
+
+        addActive(item) {
+            if (!item) return;
+            item.classList.add('active');
+        }
+
+        scrollToItem(item) {
+            if (!item) return;
+            const dropdownRect = this.dropdown.getBoundingClientRect();
+            const itemRect = item.getBoundingClientRect();
+
+            if (itemRect.bottom > dropdownRect.bottom) {
+                this.dropdown.scrollTop += (itemRect.bottom - dropdownRect.bottom);
+            } else if (itemRect.top < dropdownRect.top) {
+                this.dropdown.scrollTop -= (dropdownRect.top - itemRect.top);
+            }
+        }
+
+        selectOption(value) {
+            this.input.value = value;
+            this.closeDropdown();
+        }
+
+        handleClickOutside(e) {
+            if (this.wrapper && !this.wrapper.contains(e.target)) {
+                this.closeDropdown();
+            }
+        }
+
+        closeDropdown() {
+            if (this.dropdown) {
+                this.dropdown.classList.remove('show');
+            }
+        }
+    }
+
+    // Required Department List
+    const DEPARTMENTS = [
+        "SOET-FE", "SOET-ME", "SOET-EE", "SOET-CE", "SOCSE",
+        "SOCMS", "SOAS", "SNJSOE", "SOLIS", "SOL"
+    ];
+
+    // Required Course List
+    const COURSES = [
+        "BA LLB", "BBA", "BBA LLB", "BCA", "B.Com", "B.Ed",
+        "B.Lib", "B.Sc Agriculture", "B.Tech AI & ML", "B.Tech CE",
+        "B.Tech CSE", "B.Tech EE", "B.Tech ME", "D.El.Ed", "Diploma",
+        "LLB", "LLM", "MBA", "MCA", "M.Lib", "M.Sc Agriculture",
+        "M.Tech Civil", "M.Tech CSE", "M.Tech Power Systems",
+        "M.Tech Thermal Engineering", "PhD Engineering", "PhD Management"
+    ];
+
+    // Initialize the auto-complete on the fields
+    new Autocomplete('reg-dept', 'dept-dropdown', 'dept-autocomplete-wrapper', DEPARTMENTS);
+    new Autocomplete('reg-course', 'course-dropdown', 'course-autocomplete-wrapper', COURSES);
 
 </script>
 {% endblock %}

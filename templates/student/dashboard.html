@@ -165,6 +165,17 @@
             </div>
             <h2 style="margin-bottom: 0.25rem; font-size: 1.4rem;">{{ current_user.name }}</h2>
             <p class="mono" style="color: var(--accent); font-size: 0.8rem; letter-spacing: 1px;">STUDENT ID #{{ current_user.student_id }}</p>
+            <a href="{{ url_for('student.edit_profile') }}" style="font-size: 0.65rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; transition: 0.3s; margin-top: 5px;" class="edit-link">
+                <i class="fas fa-edit"></i> EDIT PROFILE
+            </a>
+            
+            <style>
+                .edit-link:hover {
+                    color: var(--accent);
+                    border-color: var(--accent);
+                    background: rgba(0, 210, 255, 0.05);
+                }
+            </style>
 
             <div class="status-panel">
                 <div class="status-item">

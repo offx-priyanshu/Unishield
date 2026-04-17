@@ -187,8 +187,25 @@
     // 3. Dept Bar
     charts.dept = new Chart(document.getElementById('deptChart').getContext('2d'), {
         type: 'bar',
-        data: { labels: ['CSE', 'ECE', 'ME', 'IT'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#00c8ff', '#475569', '#475569', '#475569'], borderRadius: 4, barPercentage: 0.6 }] },
-        options: baseOpt
+        data: { 
+            labels: ['SOET-FE', 'SOET-ME', 'SOET-EE', 'SOET-CE', 'SOCSE', 'SOCMS', 'SOAS', 'SNJSOE', 'SOLIS', 'SOL'], 
+            datasets: [{ 
+                data: [0,0,0,0,0,0,0,0,0,0], 
+                backgroundColor: '#00c8ff', 
+                borderRadius: 4, 
+                barPercentage: 0.8 
+            }] 
+        },
+        options: {
+            ...baseOpt,
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 } }
+                },
+                y: { grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true }
+            }
+        }
     });
 
     // --- Real-time Sync Engine ---

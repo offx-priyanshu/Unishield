@@ -39,6 +39,12 @@ class User(db.Model, UserMixin):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Guard Specific Fields
+    assigned_gate = db.Column(db.String(50))
+    shift_timing = db.Column(db.String(100))
+    emergency_contact = db.Column(db.String(15))
+    aadhar_document = db.Column(db.String(200))  # Self-attested document
+    
     def set_password(self, password):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
         

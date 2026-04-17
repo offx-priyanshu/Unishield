@@ -32,9 +32,9 @@
                 <label>Parent/Guardian Phone</label>
                 <input type="text" name="parent_phone" placeholder="+91 XXXX" required>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
                 <label>Department</label>
-                <input type="text" name="department" placeholder="e.g. B.Tech CS" required>
+                <input type="text" name="department" id="dept-input" placeholder="Search Department (e.g. SOET)" required autocomplete="off">
             </div>
             <div class="form-group">
                 <label>Year of Study</label>
@@ -88,5 +88,77 @@
         letter-spacing: 1px;
         color: var(--text-muted);
     }
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #111;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .autocomplete-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: #ccc;
+        transition: 0.2s;
+    }
+    .autocomplete-item:hover {
+        background: var(--accent);
+        color: #000;
+    }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class Autocomplete {
+    constructor(inputId, data) {
+        this.input = document.getElementById(inputId);
+        this.data = data;
+        this.list = null;
+        this.init();
+    }
+    init() {
+        this.list = document.createElement('div');
+        this.list.className = 'autocomplete-dropdown';
+        this.input.parentElement.appendChild(this.list);
+        this.input.addEventListener('input', () => this.filter());
+        document.addEventListener('click', (e) => {
+            if (e.target !== this.input) this.close();
+        });
+    }
+    filter() {
+        const val = this.input.value.toUpperCase();
+        this.list.innerHTML = '';
+        if (!val) { this.close(); return; }
+        const matches = this.data.filter(i => i.includes(val));
+        if (matches.length > 0) {
+            matches.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = m;
+                item.onclick = () => {
+                    this.input.value = m;
+                    this.close();
+                };
+                this.list.appendChild(item);
+            });
+            this.list.style.display = 'block';
+        } else {
+            this.close();
+        }
+    }
+    close() { this.list.style.display = 'none'; }
+}
+
+const depts = ['SOET-FE', 'SOET-ME', 'SOET-EE', 'SOET-CE', 'SOCSE', 'SOCMS', 'SOAS', 'SNJSOE', 'SOLIS', 'SOL'];
+new Autocomplete('dept-input', depts);
+</script>
 {% endblock %}

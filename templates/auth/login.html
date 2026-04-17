@@ -27,6 +27,9 @@
       --input-bg: rgba(0, 0, 0, 0.4);
     }
 
+
+
+
     body {
       font-family: 'Outfit', sans-serif;
       background: radial-gradient(circle at 0% 0%, #061c3a 0%, #020813 40%, var(--bg-dark) 100%);
@@ -39,6 +42,8 @@
       overflow: hidden;
       position: relative;
     }
+
+
 
     /* Ambient Glow Background Effect */
     body::before {
@@ -69,6 +74,8 @@
       box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       overflow: hidden;
     }
+
+
 
     /* LEFT PANEL */
     .left-panel {
@@ -269,6 +276,8 @@
       font-family: inherit;
     }
 
+
+
     .form-input:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.1);
@@ -403,6 +412,18 @@
         </div>
       </div>
 
+      <div id="error-msg" style="
+        display: none;
+        background: rgba(255, 59, 92, 0.12);
+        border: 1px solid rgba(255, 59, 92, 0.3);
+        color: #ff6b8a;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 12px;
+      "></div>
+
       <button class="submit-btn" id="submitBtn" onclick="handleLogin()">SIGN IN</button>
     </div>
   </div>
@@ -428,11 +449,14 @@
       const activeRoleBtn = document.querySelector('.role-btn.active');
       const role = activeRoleBtn ? activeRoleBtn.dataset.role : 'admin';
       const btn = document.getElementById('submitBtn');
+      const errBox = document.getElementById('error-msg');
 
       if (!username || !password) {
+        showError('Please enter username and password.');
         return;
       }
 
+      errBox.style.display = 'none';
       const originalText = btn.textContent;
       btn.textContent = 'SIGNING IN...';
       btn.style.opacity = '0.8';
@@ -447,22 +471,34 @@
         const data = await response.json();
 
         if (data.success) {
-          btn.textContent = 'SUCCESS';
+          btn.textContent = 'SUCCESS ✓';
           btn.style.background = '#00f57a';
           btn.style.boxShadow = '0 0 20px rgba(0, 245, 122, 0.4)';
           window.location.href = data.redirect;
         } else {
-          // Revert button on invalid credentials without explicit error alerts
           btn.textContent = originalText;
           btn.style.opacity = '1';
           btn.style.pointerEvents = 'auto';
+          showError(data.message || 'Invalid credentials. Please check username, password and role.');
         }
       } catch (err) {
         btn.textContent = originalText;
         btn.style.opacity = '1';
         btn.style.pointerEvents = 'auto';
+        showError('Connection error. Please try again.');
       }
     }
+
+    function showError(msg) {
+      const box = document.getElementById('error-msg');
+      box.textContent = '⚠ ' + msg;
+      box.style.display = 'block';
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleLogin();
+    });
   </script>
 </body>
 

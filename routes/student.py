@@ -74,5 +74,29 @@ def request_outpass():
         Logger.notify_admin(1, 'New Outpass Request', f'Student {current_user.name} requested an outpass for {destination}.', type='request')
         flash('Outpass request submitted successfully!', 'success')
         return redirect(url_for('student.dashboard'))
-
+        
     return render_template('student/request_outpass.html')
+
+
+@student_bp.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+@student_required
+def edit_profile():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        parent_phone = request.form.get('parent_phone')
+        hostel_room = request.form.get('hostel_room')
+        
+        current_user.name = name
+        current_user.email = email
+        current_user.phone = phone
+        current_user.parent_phone = parent_phone
+        current_user.hostel_room = hostel_room
+        
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('student.dashboard'))
+        
+    return render_template('student/edit_profile.html')

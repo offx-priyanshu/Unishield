@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from models.db import db
 from models.user import User
@@ -82,6 +82,88 @@ def login():
         return redirect(redirect_url)
             
     return render_template('auth/login.html')
+
+@auth_bp.route('/profile')
+@login_required
+def profile():
+    from models.outpass import Outpass
+    from datetime import datetime
+
+    if current_user.role == 'student':
+        # Students only see their own activity
+        active_students = Outpass.query.filter_by(student_id=current_user.id, status='out').count()
+        pending_approvals = Outpass.query.filter_by(student_id=current_user.id, status='pending').count()
+        late_students = Outpass.query.filter(
+            Outpass.student_id == current_user.id,
+            Outpass.status == 'out',
+            Outpass.expected_return < datetime.utcnow()
+        ).count()
+    else:
+        # Admin/Guard see system-wide stats
+        active_students = Outpass.query.filter_by(status='out').count()
+        pending_approvals = Outpass.query.filter_by(status='pending').count()
+        late_students = Outpass.query.filter(
+            Outpass.status == 'out',
+            Outpass.expected_return < datetime.utcnow()
+        ).count()
+
+    return render_template('common/profile.html',
+                         active_students=active_students,
+                         pending_approvals=pending_approvals,
+                         late_students=late_students)
+
+@auth_bp.route('/update_profile_photo', methods=['POST'])
+@login_required
+def update_profile_photo():
+    if 'profile_photo' not in request.files:
+        flash('No photo selected.', 'danger')
+        return redirect(url_for('auth.profile'))
+    
+    file = request.files['profile_photo']
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('auth.profile'))
+    
+    if file:
+        from werkzeug.utils import secure_filename
+        import os
+        filename = secure_filename(f"{current_user.role}_{current_user.id}_{int(datetime.utcnow().timestamp())}.jpg")
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        current_user.photo_path = filename 
+        db.session.commit()
+        
+        Logger.log(current_user.id, f'{current_user.role.capitalize()} updated their profile photo')
+        flash('Profile photo updated successfully!', 'success')
+    
+    return redirect(url_for('auth.profile'))
+
+@auth_bp.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip()
+
+    if not name:
+        flash('Name cannot be empty.', 'danger')
+        return redirect(url_for('auth.profile'))
+
+    # Check email uniqueness (only if changed)
+    if email and email != current_user.email:
+        existing = User.query.filter_by(email=email).first()
+        if existing and existing.id != current_user.id:
+            flash('That email is already in use by another account.', 'danger')
+            return redirect(url_for('auth.profile'))
+
+    current_user.name = name
+    if email:
+        current_user.email = email
+    db.session.commit()
+
+    Logger.log(current_user.id, f'{current_user.role.capitalize()} updated their profile info')
+    flash('Profile updated successfully!', 'success')
+    return redirect(url_for('auth.profile'))
 
 @auth_bp.route('/logout')
 @login_required

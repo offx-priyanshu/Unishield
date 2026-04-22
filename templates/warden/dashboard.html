@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Warden Dashboard — UniShield{% endblock %}
+
+{% block content %}
+<div class="warden-dashboard" style="padding: 2rem;">
+
+  <!-- Header -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem;">
+    <div>
+      <h1 style="font-size:1.8rem; font-weight:700; color:#e2e8f0; margin:0;">
+        🏠 Warden Approval Panel
+      </h1>
+      <p style="color:#94a3b8; margin:0.3rem 0 0;">
+        Welcome, <strong style="color:#34d399;">{{ current_user.name }}</strong> — Final stage: Parent Verification & Gate Pass Issuance
+      </p>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" 
+       style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:0.5rem 1rem; border-radius:0.5rem; text-decoration:none; font-size:0.85rem;">
+      🔒 Logout
+    </a>
+  </div>
+
+  <!-- Stats Bar -->
+  <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; margin-bottom:2rem;">
+    <div style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
+      <div style="font-size:2rem; font-weight:700; color:#34d399;">{{ requests|length }}</div>
+      <div style="color:#94a3b8; font-size:0.85rem;">Awaiting Final Approval</div>
+    </div>
+    <div style="background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
+      <div style="font-size:2rem; font-weight:700; color:#fbbf24;">Stage 3/3</div>
+      <div style="color:#94a3b8; font-size:0.85rem;">Final Workflow Stage</div>
+    </div>
+    <div style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
+      <div style="font-size:2rem; font-weight:700; color:#60a5fa;">WARDEN</div>
+      <div style="color:#94a3b8; font-size:0.85rem;">Your Role</div>
+    </div>
+  </div>
+
+  <!-- Info Banner -->
+  <div style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25); border-radius:0.75rem; padding:1rem 1.2rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
+    <span style="font-size:1.2rem;">⚠️</span>
+    <p style="color:#fcd34d; margin:0; font-size:0.9rem;">
+      <strong>Mandatory:</strong> You must verify parents (via call or digital link) before issuing the final gate pass. Parent verification checkbox is required.
+    </p>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div style="background:rgba({% if category == 'success' %}34,197,94{% elif category == 'danger' %}239,68,68{% else %}59,130,246{% endif %},0.15); border:1px solid rgba({% if category == 'success' %}34,197,94{% elif category == 'danger' %}239,68,68{% else %}59,130,246{% endif %},0.4); color:{% if category == 'success' %}#4ade80{% elif category == 'danger' %}#f87171{% else %}#60a5fa{% endif %}; padding:0.8rem 1rem; border-radius:0.5rem; margin-bottom:1rem;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Requests Cards -->
+  {% if requests %}
+    <div style="display:grid; gap:1.2rem;">
+      {% for req in requests %}
+      <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(52,211,153,0.2); border-radius:1rem; padding:1.5rem;">
+        
+        <!-- Request Header -->
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1rem;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <span style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3); color:#34d399; padding:0.2rem 0.6rem; border-radius:9999px; font-size:0.75rem; font-weight:600;">Home Leave</span>
+              <span style="color:#64748b; font-size:0.8rem;">Request #{{ req.id }}</span>
+            </div>
+            <h3 style="color:#e2e8f0; margin:0.5rem 0 0; font-size:1.1rem;">{{ req.student.name }}</h3>
+            <p style="color:#64748b; margin:0; font-size:0.8rem;">{{ req.student.student_id or 'ID N/A' }} • Submitted {{ req.created_at.strftime('%d %b %Y, %H:%M') }}</p>
+          </div>
+          <div style="text-align:right;">
+            <div style="color:#fbbf24; font-size:0.85rem; font-weight:600;">⏳ Awaiting Warden</div>
+            <div style="color:#64748b; font-size:0.75rem; margin-top:0.3rem;">Return: {{ req.expected_return.strftime('%d %b, %H:%M') }}</div>
+          </div>
+        </div>
+
+        <!-- Trip Details -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+          <div style="background:rgba(148,163,184,0.05); border:1px solid rgba(148,163,184,0.1); border-radius:0.5rem; padding:0.75rem;">
+            <div style="color:#64748b; font-size:0.75rem; margin-bottom:0.25rem;">📍 Destination</div>
+            <div style="color:#a78bfa; font-weight:600;">{{ req.destination }}</div>
+          </div>
+          <div style="background:rgba(148,163,184,0.05); border:1px solid rgba(148,163,184,0.1); border-radius:0.5rem; padding:0.75rem;">
+            <div style="color:#64748b; font-size:0.75rem; margin-bottom:0.25rem;">⏱ Duration</div>
+            <div style="color:#60a5fa; font-weight:600;">{{ req.time_limit_hours }} Hours</div>
+          </div>
+        </div>
+        
+        <div style="background:rgba(148,163,184,0.05); border:1px solid rgba(148,163,184,0.1); border-radius:0.5rem; padding:0.75rem; margin-bottom:1rem;">
+          <div style="color:#64748b; font-size:0.75rem; margin-bottom:0.25rem;">📝 Purpose</div>
+          <div style="color:#94a3b8; font-size:0.9rem;">{{ req.purpose }}</div>
+        </div>
+
+        <!-- Approval Chain Status -->
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1.2rem;">
+          <div style="background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:#4ade80; padding:0.3rem 0.7rem; border-radius:0.4rem; font-size:0.78rem; font-weight:600;">
+            ✅ HOD Approved
+          </div>
+          <div style="color:#64748b;">→</div>
+          <div style="background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:#4ade80; padding:0.3rem 0.7rem; border-radius:0.4rem; font-size:0.78rem; font-weight:600;">
+            ✅ Dean Approved
+          </div>
+          <div style="color:#64748b;">→</div>
+          <div style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#fbbf24; padding:0.3rem 0.7rem; border-radius:0.4rem; font-size:0.78rem; font-weight:600;">
+            ⏳ Warden Pending
+          </div>
+        </div>
+
+        <!-- Final Approval Form -->
+        <form method="POST" action="{{ url_for('warden.approve_request', outpass_id=req.id) }}"
+              style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.2); border-radius:0.75rem; padding:1rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+            <input type="checkbox" name="parent_verified" id="pv-{{ req.id }}" 
+                   style="width:1.1rem; height:1.1rem; accent-color:#34d399; cursor:pointer;">
+            <label for="pv-{{ req.id }}" style="color:#cbd5e1; font-size:0.9rem; cursor:pointer;">
+              ✅ I confirm I have contacted the student's parents and they are aware of this leave
+            </label>
+          </div>
+          <button type="submit"
+                  style="width:100%; background:linear-gradient(135deg,#059669,#047857); color:white; border:none; padding:0.75rem; border-radius:0.6rem; cursor:pointer; font-size:0.95rem; font-weight:700; letter-spacing:0.03em; transition:opacity 0.2s;"
+                  onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            🎫 Generate Final QR Gate Pass
+          </button>
+        </form>
+
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align:center; padding:4rem 2rem; background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1); border-radius:1rem;">
+      <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
+      <h3 style="color:#e2e8f0; margin:0 0 0.5rem;">All Clear!</h3>
+      <p style="color:#64748b; margin:0;">No home leave requests pending final approval.</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

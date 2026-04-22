@@ -1,6 +1,6 @@
 :root {
-    --ui-scale: 0.9;
-    --ui-scale-inv: 111.11%;
+    --ui-scale: 0.85;
+    --ui-scale-inv: 117.65%;
     --primary: #3b82f6;           
     --primary-glow: rgba(59, 130, 246, 0.5);
     --primary-hover: #2563eb;
@@ -93,14 +93,14 @@ body {
 
 .dashboard-container {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 240px 1fr;
     min-height: 100vh;
 }
 
 aside.sidebar {
     background: rgba(10, 15, 29, 0.95);
     border-right: 1px solid var(--glass-border);
-    padding: 2rem;
+    padding: 1.5rem;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -120,7 +120,7 @@ aside.sidebar {
 }
 
 main.content {
-    padding: 2.5rem 4rem;
+    padding: 1.5rem 2.5rem;
     overflow-y: auto;
 }
 

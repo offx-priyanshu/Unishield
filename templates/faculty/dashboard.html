@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{{ 'HOD' if current_user.role == 'hod' else 'Dean' }} Dashboard — UniShield{% endblock %}
+
+{% block content %}
+<div class="faculty-dashboard" style="padding: 2rem;">
+
+  <!-- Header -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem;">
+    <div>
+      <h1 style="font-size:1.8rem; font-weight:700; color:#e2e8f0; margin:0;">
+        {% if current_user.role == 'hod' %}🏫 HOD Approval Panel{% else %}🎓 Dean Approval Panel{% endif %}
+      </h1>
+      <p style="color:#94a3b8; margin:0.3rem 0 0;">
+        Welcome, <strong style="color:#a78bfa;">{{ current_user.name }}</strong> — Review and approve Home Leave requests
+      </p>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" 
+       style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:0.5rem 1rem; border-radius:0.5rem; text-decoration:none; font-size:0.85rem;">
+      🔒 Logout
+    </a>
+  </div>
+
+  <!-- Stats Bar -->
+  <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; margin-bottom:2rem;">
+    <div style="background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
+      <div style="font-size:2rem; font-weight:700; color:#a78bfa;">{{ requests|length }}</div>
+      <div style="color:#94a3b8; font-size:0.85rem;">Pending Approval</div>
+    </div>
+    <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
+      <div style="font-size:2rem; font-weight:700; color:#4ade80;">
+        {% if current_user.role == 'hod' %}HOD{% else %}DEAN{% endif %}
+      </div>
+      <div style="color:#94a3b8; font-size:0.85rem;">Current Role</div>
+    </div>
+    <div style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
+      <div style="font-size:2rem; font-weight:700; color:#60a5fa;">
+        {% if current_user.role == 'hod' %}Stage 1/3{% else %}Stage 2/3{% endif %}
+      </div>
+      <div style="color:#94a3b8; font-size:0.85rem;">Workflow Stage</div>
+    </div>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div style="background:rgba({% if category == 'success' %}34,197,94{% elif category == 'danger' %}239,68,68{% else %}59,130,246{% endif %},0.15); border:1px solid rgba({% if category == 'success' %}34,197,94{% elif category == 'danger' %}239,68,68{% else %}59,130,246{% endif %},0.4); color:{% if category == 'success' %}#4ade80{% elif category == 'danger' %}#f87171{% else %}#60a5fa{% endif %}; padding:0.8rem 1rem; border-radius:0.5rem; margin-bottom:1rem;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Requests Table -->
+  {% if requests %}
+    <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15); border-radius:1rem; overflow:hidden;">
+      <div style="padding:1.2rem 1.5rem; border-bottom:1px solid rgba(148,163,184,0.1);">
+        <h2 style="color:#e2e8f0; font-size:1.1rem; margin:0;">📋 Pending Home Leave Requests</h2>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="background:rgba(148,163,184,0.05);">
+              <th style="padding:0.8rem 1rem; text-align:left; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">#</th>
+              <th style="padding:0.8rem 1rem; text-align:left; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Student</th>
+              <th style="padding:0.8rem 1rem; text-align:left; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Destination</th>
+              <th style="padding:0.8rem 1rem; text-align:left; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Purpose</th>
+              <th style="padding:0.8rem 1rem; text-align:left; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Duration</th>
+              <th style="padding:0.8rem 1rem; text-align:left; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Submitted</th>
+              <th style="padding:0.8rem 1rem; text-align:center; color:#94a3b8; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+            <tr style="border-top:1px solid rgba(148,163,184,0.08); transition:background 0.2s;" onmouseover="this.style.background='rgba(148,163,184,0.05)'" onmouseout="this.style.background='transparent'">
+              <td style="padding:1rem; color:#64748b; font-size:0.85rem;">#{{ req.id }}</td>
+              <td style="padding:1rem;">
+                <div style="color:#e2e8f0; font-weight:600;">{{ req.student.name }}</div>
+                <div style="color:#64748b; font-size:0.75rem;">ID: {{ req.student.student_id or 'N/A' }}</div>
+              </td>
+              <td style="padding:1rem; color:#a78bfa;">{{ req.destination }}</td>
+              <td style="padding:1rem; color:#94a3b8; font-size:0.85rem; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ req.purpose }}</td>
+              <td style="padding:1rem; color:#60a5fa; font-size:0.85rem;">{{ req.time_limit_hours }}h</td>
+              <td style="padding:1rem; color:#64748b; font-size:0.8rem;">{{ req.created_at.strftime('%d %b, %H:%M') }}</td>
+              <td style="padding:1rem; text-align:center;">
+                <button onclick="document.getElementById('modal-{{ req.id }}').style.display='flex'" 
+                        style="background:linear-gradient(135deg,#7c3aed,#4f46e5); color:white; border:none; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                  ✅ Approve
+                </button>
+              </td>
+            </tr>
+
+            <!-- Approval Modal -->
+            <div id="modal-{{ req.id }}" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+              <div style="background:#1e293b; border:1px solid rgba(167,139,250,0.3); border-radius:1rem; padding:2rem; width:min(90vw, 480px);">
+                <h3 style="color:#e2e8f0; margin:0 0 1rem;">Approve Request #{{ req.id }}</h3>
+                <p style="color:#94a3b8; font-size:0.9rem; margin:0 0 1rem;">
+                  <strong style="color:#a78bfa;">{{ req.student.name }}</strong> → {{ req.destination }}<br>
+                  <em>{{ req.purpose }}</em>
+                </p>
+                <form method="POST" action="{{ url_for('faculty.approve_request', outpass_id=req.id) }}">
+                  <div style="margin-bottom:1rem;">
+                    <label style="color:#94a3b8; font-size:0.85rem; display:block; margin-bottom:0.4rem;">Remarks (optional)</label>
+                    <textarea name="remark" rows="3" placeholder="Add your remarks..." 
+                              style="width:100%; background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2); color:#e2e8f0; border-radius:0.5rem; padding:0.6rem; font-size:0.9rem; resize:vertical;"></textarea>
+                  </div>
+                  <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                    <button type="button" onclick="document.getElementById('modal-{{ req.id }}').style.display='none'"
+                            style="background:rgba(148,163,184,0.1); border:1px solid rgba(148,163,184,0.2); color:#94a3b8; padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer;">
+                      Cancel
+                    </button>
+                    <button type="submit" 
+                            style="background:linear-gradient(135deg,#16a34a,#15803d); color:white; border:none; padding:0.5rem 1.2rem; border-radius:0.5rem; cursor:pointer; font-weight:600;">
+                      ✅ Confirm Approval
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div style="text-align:center; padding:4rem 2rem; background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1); border-radius:1rem;">
+      <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
+      <h3 style="color:#e2e8f0; margin:0 0 0.5rem;">All Clear!</h3>
+      <p style="color:#64748b; margin:0;">No pending Home Leave requests at your stage.</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

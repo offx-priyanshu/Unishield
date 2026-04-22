@@ -6,12 +6,12 @@
 <style>
     :root {
         --terminal-dark: #05070a;
-        --card-glass: rgba(13, 17, 23, 0.85);
+        --card-glass: rgba(10, 15, 29, 0.85);
         --accent-glow: #00d2ff;
-        --success-glow: #00f57a;
-        --danger-glow: #ff3b5c;
+        --success-glow: #00ff88;
+        --danger-glow: #ff3366;
         --warning-glow: #ffb800;
-        --border-glass: rgba(255, 255, 255, 0.08);
+        --border-glass: rgba(255, 255, 255, 0.1);
     }
 
     body {
@@ -53,8 +53,8 @@
         aspect-ratio: 16/9;
         border-radius: 20px;
         overflow: hidden;
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 0 60px rgba(0, 210, 255, 0.1);
+        border: 1px solid var(--border-glass);
+        box-shadow: 0 0 40px rgba(0, 210, 255, 0.1);
     }
 
     #video-feed {
@@ -111,44 +111,45 @@
     }
 
     .stat-mini {
-        background: var(--card-glass);
+        background: linear-gradient(145deg, rgba(15, 20, 28, 0.9), rgba(5, 7, 10, 0.95));
         padding: 20px;
         border-radius: 18px;
         border: 1px solid var(--border-glass);
         text-align: center;
+        transition: 0.3s;
     }
 
-    .register-btn {
-        background: var(--accent-glow) !important;
-        border: none !important;
-        box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
-        cursor: pointer;
-        padding: 10px !important;
-        transition: all 0.3s ease;
+    .stat-mini:hover {
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.1);
+        transform: translateY(-3px);
+    }
+
+    .action-btn-neon {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-glass);
+        color: #fff;
+        padding: 15px;
+        border-radius: 14px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 10px;
+        width: 100%;
     }
 
-    .register-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 25px rgba(0, 210, 255, 0.5);
+    .action-btn-neon i {
+        font-size: 1.1rem;
     }
 
-    .register-btn i {
-        font-size: 1.5rem;
-        color: #000;
-        margin-bottom: 4px;
-    }
-
-    .register-btn div {
-        font-size: 0.75rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #000;
-        letter-spacing: 0.5px;
-        line-height: 1.2;
+    .action-btn-neon:hover {
+        background: rgba(0, 210, 255, 0.1);
+        border-color: var(--accent-glow);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 210, 255, 0.2);
     }
 
     .stat-val {
@@ -218,7 +219,8 @@
         bottom: 40px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(10, 15, 29, 0.95);
+        backdrop-filter: blur(20px);
         border: 1px solid var(--accent-glow);
         border-radius: 100px;
         padding: 15px 40px;
@@ -226,7 +228,7 @@
         align-items: center;
         gap: 20px;
         z-index: 50;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 10px 40px rgba(0, 210, 255, 0.3);
     }
 
     /* Autocomplete Styles */
@@ -502,25 +504,28 @@
             </div>
         </div>
 
-        <div class="d-flex gap-2 mb-3">
-            <button onclick="openRegistration('manual')" class="btn btn-outline-info w-100 py-3 rounded-4 fw-bold">
-                <i class="fas fa-user-plus me-2"></i> REGISTER STUDENT
+        <div class="d-flex flex-column gap-3 mb-3">
+            <button onclick="openRegistration('manual')" class="action-btn-neon">
+                <i class="fas fa-user-plus text-info"></i> REGISTER STUDENT
             </button>
-            <button onclick="generateDailyReport()" class="btn btn-outline-light w-100 py-3 rounded-4 fw-bold">
-                <i class="fas fa-print me-2"></i> ACTIVITY REPORT
-            </button>
-            <a href="/gate/export/excel" class="btn btn-outline-success w-100 py-3 rounded-4 fw-bold">
-                <i class="fas fa-file-excel me-2"></i> EXCEL EXPORT
-            </a>
+            <div class="d-flex gap-3">
+                <button onclick="generateDailyReport()" class="action-btn-neon" style="color: #ccc;">
+                    <i class="fas fa-print"></i> ACTIVITY REPORT
+                </button>
+                <a href="/gate/export/excel" class="action-btn-neon" style="color: #ccc; text-decoration: none;">
+                    <i class="fas fa-file-excel text-success"></i> EXCEL REPORT
+                </a>
+            </div>
         </div>
 
         <div class="live-log">
             <div class="log-header">
-                <span>SECURITY EVENT STREAM</span>
-                <span class="badge bg-success">LIVE</span>
+                <span style="color: var(--accent-glow);"><i class="fas fa-satellite-dish me-2"></i> EVENT STREAM</span>
+                <span class="badge"
+                    style="background: rgba(0,255,136,0.1); color: var(--success-glow); border: 1px solid var(--success-glow);">LIVE</span>
             </div>
             <div id="log-items" class="log-items">
-                <!-- Injected via Socket -->
+                <div class="log-item" style="opacity: 0.5;">Waiting for gate events...</div>
             </div>
         </div>
 
@@ -530,21 +535,28 @@
 <!-- Unknown Face Alert Modal -->
 <div class="modal fade" id="alertModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content text-center py-5">
+        <div class="modal-content text-center py-5"
+            style="background: rgba(10,15,25,0.95); backdrop-filter: blur(20px); border: 1px solid var(--danger-glow); box-shadow: 0 0 50px rgba(255,51,102,0.2);">
             <div class="modal-body">
                 <div class="mb-4">
-                    <i class="fas fa-shield-virus text-danger" style="font-size: 4rem;"></i>
+                    <i class="fas fa-shield-virus"
+                        style="font-size: 3.5rem; color: var(--danger-glow); filter: drop-shadow(0 0 10px var(--danger-glow));"></i>
                 </div>
-                <h3 class="fw-bold">Unauthorized Face Detected</h3>
-                <p class="text-muted px-4">This identity exists outside the secure registry. Choose an action protocol
-                    below.</p>
-                <div class="mt-5 d-grid gap-2 px-4">
-                    <button onclick="openRegistration('unknown')" class="btn btn-info py-3 fw-bold"><i
-                            class="fas fa-user-plus me-2"></i> REGISTER NEW STUDENT</button>
-                    <button onclick="registerAsVisitor()" class="btn btn-outline-light py-2"><i
-                            class="fas fa-walking me-2"></i> REGISTER AS VISITOR</button>
-                    <button onclick="notifyControl()" class="btn btn-outline-danger py-2 mt-2"><i
-                            class="fas fa-broadcast-tower me-2"></i> NOTIFY CONTROL ROOM</button>
+                <h3 class="fw-bold mb-3" style="color: #fff;">Unauthorized Face Detected</h3>
+                <p class="text-muted px-4" style="font-size: 0.85rem;">This identity exists outside the secure registry.
+                    Choose an action protocol below.</p>
+                <div class="mt-4 d-grid gap-3 px-4">
+                    <button onclick="openRegistration('unknown')" class="action-btn-neon"
+                        style="background: rgba(0,210,255,0.1); border-color: var(--accent-glow);">
+                        <i class="fas fa-user-plus"></i> REGISTER AS NEW STUDENT
+                    </button>
+                    <button onclick="registerAsVisitor()" class="action-btn-neon">
+                        <i class="fas fa-walking"></i> REGISTER AS TEMP VISITOR
+                    </button>
+                    <button onclick="notifyControl()" class="action-btn-neon"
+                        style="color: var(--danger-glow); border-color: rgba(255,51,102,0.3);">
+                        <i class="fas fa-broadcast-tower"></i> NOTIFY SECURITY CONTROL
+                    </button>
                 </div>
             </div>
         </div>

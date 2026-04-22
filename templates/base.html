@@ -599,6 +599,7 @@
             <div class="nav-section-title">Security Hub</div>
             {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('admin.students') }}" class="nav-link"><i class="fas fa-users"></i> Students</a>
+                <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link"><i class="fas fa-user-shield"></i> Faculty Authority</a>
                 <a href="{{ url_for('admin.guards') }}" class="nav-link"><i class="fas fa-shield-halved"></i> Security Guards</a>
                 <a href="{{ url_for('admin.outpasses') }}" class="nav-link"><i class="fas fa-id-badge"></i> Outpasses</a>
                 <a href="{{ url_for('gate.terminal') }}" class="nav-link"><i class="fas fa-microchip"></i> AI Gate</a>

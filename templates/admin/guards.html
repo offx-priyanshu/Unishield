@@ -50,7 +50,7 @@
     .s-lbl { font-size: 0.62rem; color: #555; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
 
     /* ── COMPACT CONTENT SPLIT ─────────────────────── */
-    .content-split { display: grid; grid-template-columns: 400px 1fr; gap: 2rem; align-items: start; }
+    .content-split { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; align-items: start; }
 
     .smart-panel {
         background: linear-gradient(165deg, rgba(15, 20, 28, 0.95), rgba(5, 7, 10, 0.98));
@@ -103,7 +103,7 @@
     /* ── COMPACT DATA GRID ─────────────────────── */
     .table-panel {
         background: var(--panel-bg); backdrop-filter: blur(30px);
-        border: 1px solid var(--glass-border); border-radius: 28px; padding: 1.75rem;
+        border: 1px solid var(--glass-border); border-radius: 20px; padding: 1.5rem;
     }
 
     .data-table { border-spacing: 0 10px; margin-top: -10px; }
@@ -243,6 +243,16 @@
         <!-- Registry Table -->
         <div class="table-col">
             <div class="table-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 0.5rem;">
+                    <h3 style="font-size: 0.8rem; color: var(--text-muted); letter-spacing: 2px;">GUARD REGISTRY</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="search-box" style="position: relative;">
+                            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #555; font-size: 0.75rem;"></i>
+                            <input type="text" id="guardSearch" placeholder="Search staff..." style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px 12px 6px 30px; color: white; font-size: 0.75rem; outline: none; width: 180px;">
+                        </div>
+                        <button class="btn btn-ghost" onclick="window.location.reload()"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -299,14 +309,15 @@
                 </table>
             </div>
 
-            <!-- AI Ready Footer -->
-            <div class="future-footer">
-                <div style="font-size: 0.7rem; color: var(--accent); font-weight: 800; letter-spacing: 2px; margin-bottom: 1.5rem;">🔮 AI CORE: FUTURE ARCHITECTURE</div>
-                <div class="f-grid">
-                    <div class="f-item"><i class="fas fa-face-viewfinder"></i><p>Face Login</p></div>
-                    <div class="f-item"><i class="fas fa-location-dot"></i><p>Tracking</p></div>
-                    <div class="f-item"><i class="fas fa-brain"></i><p>Auto-Shift</p></div>
-                    <div class="f-item"><i class="fas fa-bullhorn"></i><p>Broadcast</p></div>
+            <!-- LIVE ACTIVITY MONITOR -->
+            <div class="future-footer" style="padding: 1.5rem; background: rgba(0, 210, 255, 0.02); border: 1px solid rgba(0, 210, 255, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div style="font-size: 0.65rem; color: var(--neon); font-weight: 800; letter-spacing: 2px;"><i class="fas fa-broadcast-tower"></i> LIVE SECURITY MONITOR</div>
+                    <div style="font-size: 0.55rem; color: #444;">SYSTEM STATUS: <span style="color: var(--success);">OPTIMAL</span></div>
+                </div>
+                <div id="live-logs" style="height: 120px; overflow-y: hidden; display: flex; flex-direction: column; gap: 8px;">
+                    <div class="log-entry" style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #555;">[SYSTEM] Shield kernel active. Monitoring all gates...</div>
+                    <div class="log-entry" style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #777;">[NETWORK] Encrypted connection established with bypass terminal.</div>
                 </div>
             </div>
         </div>
@@ -316,6 +327,45 @@
 
 {% block scripts %}
 <script>
+    /* ── SEARCH ENGINE ─────────────────────── */
+    document.getElementById('guardSearch').addEventListener('keyup', function() {
+        let val = this.value.toLowerCase();
+        let rows = document.querySelectorAll('.data-table tbody tr');
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(val) ? '' : 'none';
+        });
+    });
+
+    /* ── LIVE LOG SIMULATOR (REAL-TIME FEEL) ─────────────────────── */
+    const logBuffer = [
+        "Gate 1: Biometric verification sequence initiated.",
+        "System: Authenticating security staff token...",
+        "Database: Cross-referencing current shift roster.",
+        "Terminal 2: Hardware handshake successful.",
+        "Monitor: Scanning for unauthorized entry patterns.",
+        "Log: Admin updated entry protocols.",
+        "Cloud: Syncing outpass registry to global nodes."
+    ];
+    
+    function addLiveLog() {
+        const hub = document.getElementById('live-logs');
+        const entry = document.createElement('div');
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        entry.className = 'log-entry';
+        entry.style.cssText = "font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--neon); opacity: 0; transform: translateX(-10px); transition: 0.5s;";
+        entry.innerHTML = `<span style="color: #444;">[${time}]</span> ${logBuffer[Math.floor(Math.random() * logBuffer.length)]}`;
+        
+        hub.appendChild(entry);
+        setTimeout(() => { entry.style.opacity = '1'; entry.style.transform = 'translateX(0)'; }, 50);
+        
+        if (hub.children.length > 5) {
+            hub.removeChild(hub.children[0]);
+        }
+    }
+    
+    setInterval(addLiveLog, 4000);
+
     function updateFileName(input, statusId) {
         const status = document.getElementById(statusId);
         if (input.files && input.files[0]) {

@@ -68,6 +68,8 @@ def create_app():
 
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'signatures'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'stamps'), exist_ok=True)
 
     from routes.auth import auth_bp
     from routes.admin import admin_bp
@@ -75,6 +77,8 @@ def create_app():
     from routes.guard import guard_bp
     from routes.api import api_bp
     from routes.gate import gate_bp
+    from routes.faculty import faculty_bp
+    from routes.warden import warden_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -82,6 +86,15 @@ def create_app():
     app.register_blueprint(guard_bp, url_prefix='/guard')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(gate_bp, url_prefix='/gate')
+    app.register_blueprint(faculty_bp, url_prefix='/faculty')
+    app.register_blueprint(warden_bp, url_prefix='/warden')
+    
+    @app.before_request
+    def update_last_active():
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            current_user.last_active = datetime.utcnow()
+            db.session.commit()
 
     # Background Tasks
     scheduler = BackgroundScheduler()

@@ -29,15 +29,21 @@ class User(db.Model, UserMixin):
     is_blacklisted = db.Column(db.Boolean, default=False)
     violations = db.Column(db.Integer, default=0)
     
-    # Advanced Admin Fields
+    # Advanced Admin & Faculty Fields
     admin_role = db.Column(db.String(30), default='VIEWER') # OWNER | SUPER_ADMIN | SECURITY_ADMIN | VIEWER
+    employee_id = db.Column(db.String(50), unique=True)
     permissions = db.Column(db.Text) # JSON list of permissions
     status = db.Column(db.String(20), default='PENDING') # PENDING | ACTIVE | INACTIVE
     last_login = db.Column(db.DateTime)
+    last_active = db.Column(db.DateTime, default=datetime.utcnow)
     last_action = db.Column(db.String(200)) # Last readable action performed
     
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Faculty Verification Assets
+    signature_path = db.Column(db.String(200))
+    stamp_path = db.Column(db.String(200))
     
     # Guard Specific Fields
     assigned_gate = db.Column(db.String(50))

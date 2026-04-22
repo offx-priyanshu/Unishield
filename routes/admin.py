@@ -253,7 +253,12 @@ def reports():
     suspicious = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h, ActivityLog.action.ilike('%blacklist%')).count()
     logins = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h, ActivityLog.action.ilike('%login%')).count()
     
-    all_logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).all()
+    target_user = request.args.get('user_id')
+    query = ActivityLog.query
+    if target_user:
+        query = query.filter_by(user_id=target_user)
+    
+    all_logs = query.order_by(ActivityLog.timestamp.desc()).all()
     return render_template('admin/reports.html', 
                          logs=all_logs, 
                          total_today=total_24h,
@@ -354,6 +359,11 @@ def export(type):
                 op.time_limit_hours
             ])
         filename = f"outpass_report_{datetime.now().strftime('%Y%m%d')}"
+    elif type == 'faculty':
+        faculty = User.query.filter(User.role.in_(['hod', 'dean', 'warden'])).all()
+        headers = ['ID', 'Employee ID', 'Name', 'Username', 'Email', 'Phone', 'Role', 'Department', 'Status']
+        data = [[f.id, f.employee_id, f.name, f.username, f.email, f.phone, f.role, f.department, f.status] for f in faculty]
+        filename = 'faculty_authority_list'
     else:
         flash('Invalid export type', 'danger')
         return redirect(url_for('admin.reports'))
@@ -453,11 +463,26 @@ def guards():
     
     daily_verifications = log_count + outpass_count
     
+    # Average Response Time Calculation (Real Data)
+    all_outpasses = Outpass.query.filter(Outpass.status != 'pending', Outpass.created_at >= today_start).all()
+    avg_resp = "0.0m"
+    if all_outpasses:
+        total_seconds = 0
+        count = 0
+        for op in all_outpasses:
+            approval_time = op.hod_signed_at or op.dean_signed_at or op.warden_signed_at
+            if approval_time:
+                total_seconds += (approval_time - op.created_at).total_seconds()
+                count += 1
+        if count > 0:
+            avg_mins = (total_seconds / count) / 60
+            avg_resp = f"{avg_mins:.1f}m"
+    
     stats = {
         'active': active_count,
-        'gates': gates_count,
+        'gates': f"{len(gates_set):02d}",
         'verifications': f"{daily_verifications:,}",
-        'response': "1.2m"
+        'response': avg_resp
     }
 
     return render_template('admin/guards.html', guards=all_guards, stats=stats)
@@ -612,13 +637,168 @@ def delete_user(user_id):
     name = user.name
     
     # Cleanup associations
-    Outpass.query.filter_by(student_id=user.id).delete()
+    if user.role == 'student':
+        Outpass.query.filter_by(student_id=user.id).delete()
+    else:
+        # If faculty, clear their approval records in outpasses (don't delete the outpass)
+        Outpass.query.filter_by(hod_id=user.id).update({Outpass.hod_id: None})
+        Outpass.query.filter_by(dean_id=user.id).update({Outpass.dean_id: None})
+        Outpass.query.filter_by(warden_id=user.id).update({Outpass.warden_id: None})
+
     db.session.delete(user)
     db.session.commit()
     
     Logger.log(current_user.id, f'Administrator purged user: {name} ({username})', severity='warning')
     flash(f"User {name} has been permanently purged from the registry.", 'info')
     return redirect(request.referrer or url_for('admin.dashboard'))
+
+
+@admin_bp.route('/faculty', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def manage_faculty():
+    import json
+    if request.method == 'POST':
+        name = request.form.get('name')
+        username = request.form.get('username')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        employee_id = request.form.get('employee_id')
+        password = request.form.get('password')
+        role = request.form.get('role')
+        department = request.form.get('department')
+        perms = request.form.getlist('perms')
+        
+        if role not in ['hod', 'dean', 'warden']:
+            flash('Invalid faculty role selected.', 'danger')
+            return redirect(url_for('admin.manage_faculty'))
+            
+        if User.query.filter_by(username=username).first():
+            flash(f'Username {username} already exists!', 'danger')
+            return redirect(url_for('admin.manage_faculty'))
+
+        # Handle Signature & Stamp Uploads
+        signature_path = None
+        stamp_path = None
+        upload_base = current_app.config['UPLOAD_FOLDER']
+        sig_dir = os.path.join(upload_base, 'signatures')
+        stamp_dir = os.path.join(upload_base, 'stamps')
+        os.makedirs(sig_dir, exist_ok=True)
+        os.makedirs(stamp_dir, exist_ok=True)
+        
+        sig_file = request.files.get('signature_photo')
+        if sig_file and sig_file.filename != '':
+            filename = secure_filename(f"sig_{username}_{sig_file.filename}")
+            sig_file.save(os.path.join(sig_dir, filename))
+            signature_path = os.path.join('signatures', filename)
+            
+        stamp_file = request.files.get('stamp_photo')
+        if stamp_file and stamp_file.filename != '':
+            filename = secure_filename(f"stamp_{username}_{stamp_file.filename}")
+            stamp_file.save(os.path.join(stamp_dir, filename))
+            stamp_path = os.path.join('stamps', filename)
+            
+        new_faculty = User(
+            username=username,
+            name=name,
+            email=email,
+            phone=phone,
+            employee_id=employee_id,
+            role=role,
+            department=department,
+            permissions=json.dumps(perms),
+            signature_path=signature_path,
+            stamp_path=stamp_path,
+            status='ACTIVE'
+        )
+        new_faculty.set_password(password)
+        db.session.add(new_faculty)
+        db.session.commit()
+        
+        Logger.log(current_user.id, f'Admin created enterprise faculty {role.upper()}: {name} (ID: {employee_id})')
+        flash(f'{role.upper()} {name} account created successfully!', 'success')
+        return redirect(url_for('admin.manage_faculty'))
+        
+    all_faculty = User.query.filter(User.role.in_(['hod', 'dean', 'warden'])).all()
+    
+    # Calculate Real-time Stats for each person
+    faculty_data = []
+    for person in all_faculty:
+        pending = 0
+        approvals = 0
+        
+        if person.role == 'hod':
+            pending = Outpass.query.filter_by(status='pending', pass_type='home').count()
+            approvals = Outpass.query.filter_by(hod_id=person.id).count()
+        elif person.role == 'dean':
+            pending = Outpass.query.filter_by(status='hod_approved').count()
+            approvals = Outpass.query.filter_by(dean_id=person.id).count()
+        elif person.role == 'warden':
+            pending = Outpass.query.filter_by(status='dean_approved').count()
+            approvals = Outpass.query.filter_by(warden_id=person.id).count()
+            
+        # Is online? (Active in last 5 minutes)
+        is_online = person.last_active and (datetime.utcnow() - person.last_active).total_seconds() < 300
+        
+        faculty_data.append({
+            'user': person,
+            'pending': pending,
+            'approvals': approvals,
+            'is_online': is_online
+        })
+
+    return render_template('admin/faculty.html', faculty_list=faculty_data)
+
+@admin_bp.route('/faculty/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_faculty(user_id):
+    import json
+    person = User.query.get_or_404(user_id)
+    if person.role not in ['hod', 'dean', 'warden']:
+        flash('Invalid object. Target is not a faculty authority.', 'danger')
+        return redirect(url_for('admin.manage_faculty'))
+        
+    if request.method == 'POST':
+        person.name = request.form.get('name')
+        person.email = request.form.get('email')
+        person.phone = request.form.get('phone')
+        person.role = request.form.get('role')
+        person.department = request.form.get('department')
+        
+        # Handle File Updates
+        upload_base = current_app.config['UPLOAD_FOLDER']
+        sig_dir = os.path.join(upload_base, 'signatures')
+        stamp_dir = os.path.join(upload_base, 'stamps')
+        os.makedirs(sig_dir, exist_ok=True)
+        os.makedirs(stamp_dir, exist_ok=True)
+
+        sig_file = request.files.get('signature_photo')
+        if sig_file and sig_file.filename != '':
+            filename = secure_filename(f"sig_{person.username}_{sig_file.filename}")
+            sig_file.save(os.path.join(sig_dir, filename))
+            person.signature_path = os.path.join('signatures', filename)
+            
+        stamp_file = request.files.get('stamp_photo')
+        if stamp_file and stamp_file.filename != '':
+            filename = secure_filename(f"stamp_{person.username}_{stamp_file.filename}")
+            stamp_file.save(os.path.join(stamp_dir, filename))
+            person.stamp_path = os.path.join('stamps', filename)
+
+        perms = request.form.getlist('perms')
+        person.permissions = json.dumps(perms)
+        
+        db.session.commit()
+        Logger.log(current_user.id, f'Admin updated profile for faculty: {person.name}')
+        flash(f'Profile for {person.name} updated successfully.', 'success')
+        return redirect(url_for('admin.manage_faculty'))
+        
+    try:
+        current_perms = json.loads(person.permissions) if person.permissions else []
+    except:
+        current_perms = []
+        
+    return render_template('admin/edit_faculty.html', faculty=person, current_perms=current_perms)
 
 
 @admin_bp.route('/reset_user_password/<int:user_id>', methods=['POST'])

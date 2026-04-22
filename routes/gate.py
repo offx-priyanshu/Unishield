@@ -61,7 +61,7 @@ def auto_scan():
         if state == 'EXIT':
             if not last_op or last_op.status != 'approved':
                 result_data['state'] = 'DENIED'
-                result_data['message'] = 'No approved outpass found.'
+                result_data['message'] = 'DEPARTURE DENIED: No authorized outpass or official leave found.'
             else:
                 last_op.status = 'out'
                 last_op.exit_time = datetime.utcnow()

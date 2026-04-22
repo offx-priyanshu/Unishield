@@ -47,6 +47,7 @@ def request_outpass():
         purpose = request.form.get('purpose')
         destination = request.form.get('destination')
         hours = int(request.form.get('hours', 2))
+        pass_type = request.form.get('pass_type', 'local')  # 'local' or 'home'
         
         active = Outpass.query.filter(
             (Outpass.student_id == current_user.id) & 
@@ -59,21 +60,67 @@ def request_outpass():
 
         expected_return = datetime.utcnow() + timedelta(hours=hours)
         
+        # Parse multi-day dates if present
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+        start_dt = None
+        end_dt = None
+        
+        if pass_type == 'home' and start_date_str and end_date_str:
+            start_dt = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_dt = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=21, minute=0) # 9 PM return
+            expected_return = end_dt
+
+        # Home Leave → pending for HOD/Dean/Warden approval
+        # Local Transit → auto-approved with QR token
+        import uuid
+        if pass_type == 'home' or hours > 6:
+            new_status = 'pending'
+            qr = None
+            if hours > 6 and pass_type == 'local':
+                flash('Requests exceeding 6 hours require manual Warden authorization.', 'info')
+        else:
+            new_status = 'approved'
+            qr = str(uuid.uuid4())
+        
+        # Handle Optional Document Upload
+        leave_doc_path = None
+        if 'leave_document' in request.files:
+            file = request.files['leave_document']
+            if file and file.filename != '':
+                from werkzeug.utils import secure_filename
+                import os
+                filename = secure_filename(f"leave_{current_user.student_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', filename)
+                os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                file.save(upload_path)
+                leave_doc_path = os.path.join('documents', filename)
+
         new_outpass = Outpass(
             student_id=current_user.id,
             purpose=purpose,
             destination=destination,
             expected_return=expected_return,
+            start_date=start_dt,
+            end_date=end_dt,
             time_limit_hours=hours,
-            status='pending'
+            pass_type=pass_type,
+            status=new_status,
+            qr_token=qr,
+            leave_document=leave_doc_path
         )
         db.session.add(new_outpass)
         db.session.commit()
         
-        Logger.log(current_user.id, f'Student requested outpass for {destination}')
-        Logger.notify_admin(1, 'New Outpass Request', f'Student {current_user.name} requested an outpass for {destination}.', type='request')
-        flash('Outpass request submitted successfully!', 'success')
+        Logger.log(current_user.id, f'Student requested {pass_type} outpass for {destination}')
+        Logger.notify_admin(1, 'New Outpass Request', f'Student {current_user.name} requested a {pass_type} outpass for {destination}.', type='request')
+        
+        if pass_type == 'home':
+            flash('Home Leave request submitted! Awaiting HOD → Dean → Warden approval.', 'info')
+        else:
+            flash('Local transit approved! QR code generated.', 'success')
         return redirect(url_for('student.dashboard'))
+
         
     return render_template('student/request_outpass.html')
 
@@ -100,3 +147,18 @@ def edit_profile():
         return redirect(url_for('student.dashboard'))
         
     return render_template('student/edit_profile.html')
+
+@student_bp.route('/certificate/<int:outpass_id>')
+@login_required
+@student_required
+def view_certificate(outpass_id):
+    outpass = Outpass.query.get_or_404(outpass_id)
+    if outpass.student_id != current_user.id:
+        return "Unauthorized", 403
+    
+    if outpass.status not in ['approved', 'out', 'returned']:
+        flash('Certificate only available for approved requests.', 'warning')
+        return redirect(url_for('student.dashboard'))
+        
+    return render_template('student/certificate.html', outpass=outpass)
+

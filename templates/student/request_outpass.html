@@ -128,6 +128,7 @@
         <input type="hidden" name="destination" id="final_destination">
         <input type="hidden" name="purpose" id="final_purpose">
         <input type="hidden" name="hours" id="final_hours" value="2">
+        <input type="hidden" name="pass_type" id="final_pass_type" value="local">
 
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;" class="form-group">
             <div>
@@ -186,6 +187,29 @@
             <div class="auto-calc-time" id="return_estimate">Expected Return: --:--</div>
         </div>
 
+        <!-- Date Range for Home Leave -->
+        <div id="date-range-group" style="display:none;" class="form-group">
+            <label>Leave Period (Multi-day)</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.6rem; color: #64748b;">START DATE</label>
+                    <input type="date" name="start_date" id="start_date" class="futuristic-input" onchange="updateCalcTime()">
+                </div>
+                <div>
+                    <label style="font-size: 0.6rem; color: #64748b;">END DATE</label>
+                    <input type="date" name="end_date" id="end_date" class="futuristic-input" onchange="updateCalcTime()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Upload for Home Leave -->
+        <div id="document-upload-group" style="display:none;" class="form-group">
+            <label>Supporting Document (Optional)</label>
+            <input type="file" name="leave_document" class="futuristic-input" accept=".pdf,.jpg,.jpeg,.png" style="padding: 0.5rem;">
+            <p style="font-size: 0.6rem; color: #64748b; margin-top: 0.4rem;">Medical certificate, wedding invite, or permission letter.</p>
+        </div>
+
+
         <div class="form-group" style="margin-top: 3rem;">
             <label class="checkbox-wrapper">
                 <input type="checkbox" checked id="parent_notify">
@@ -212,6 +236,17 @@
             </label>
         </div>
 
+        <!-- Home Leave Notice -->
+        <div id="home-leave-notice" style="display:none; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.3); border-radius:0.75rem; padding:1rem 1.2rem; margin-bottom:1.5rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+                <span style="font-size:1.2rem;">🏠</span>
+                <div>
+                    <strong style="color:#fbbf24; font-size:0.9rem;">Home Leave — 3-Stage Approval Required</strong>
+                    <p style="color:#94a3b8; font-size:0.78rem; margin:0.25rem 0 0;">Your request will go through: <strong style="color:#a78bfa;">HOD → Dean → Warden</strong> approval before a gate pass is issued. Parent verification by Warden is mandatory.</p>
+                </div>
+            </div>
+        </div>
+
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1.25rem; font-size: 1rem; letter-spacing: 1px;" onclick="return mergeData()">
             TRANSMIT FOR APPROVAL <i class="fas fa-fingerprint" style="margin-left: 0.75rem;"></i>
         </button>
@@ -229,18 +264,45 @@
     function handleDestType() {
         const type = document.getElementById('dest_type').value;
         const addr = document.getElementById('dest_address');
+        const passTypeEl = document.getElementById('final_pass_type');
         if (type === 'Home/Resident') {
             addr.value = 'Registered Home Address';
             addr.readOnly = true;
             addr.style.opacity = '0.5';
+            passTypeEl.value = 'home';
+            // Show home-leave notice, date range and document upload
+            document.getElementById('home-leave-notice').style.display = 'block';
+            document.getElementById('date-range-group').style.display = 'block';
+            document.getElementById('document-upload-group').style.display = 'block';
+            // Hide hourly duration
+            document.querySelector('[name="ui_hours"]').closest('.form-group').style.display = 'none';
         } else {
             if(addr.value === 'Registered Home Address') addr.value = '';
             addr.readOnly = false;
             addr.style.opacity = '1';
+            passTypeEl.value = 'local';
+            document.getElementById('home-leave-notice').style.display = 'none';
+            document.getElementById('date-range-group').style.display = 'none';
+            document.getElementById('document-upload-group').style.display = 'none';
+            document.querySelector('[name="ui_hours"]').closest('.form-group').style.display = 'block';
         }
     }
 
     function updateCalcTime() {
+        const destType = document.getElementById('dest_type').value;
+        const estimateEl = document.getElementById('return_estimate');
+        
+        if (destType === 'Home/Resident') {
+            const endDate = document.getElementById('end_date').value;
+            if (endDate) {
+                const d = new Date(endDate);
+                estimateEl.innerText = "Expected Return: " + d.toLocaleDateString() + " (By 09:00 PM)";
+            } else {
+                estimateEl.innerText = "Expected Return: Select end date";
+            }
+            return;
+        }
+
         let hrs = document.querySelector('input[name="ui_hours"]:checked').value;
         if (hrs === 'custom') {
             hrs = parseInt(document.getElementById('custom_hr').value) || 0;
@@ -251,14 +313,22 @@
         if (hrs > 0) {
             let d = new Date();
             d.setHours(d.getHours() + hrs);
-            document.getElementById('return_estimate').innerText = "Expected Return: " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " (" + d.toLocaleDateString() + ")";
+            estimateEl.innerText = "Expected Return: " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " (" + d.toLocaleDateString() + ")";
         }
     }
 
     function mergeData() {
         const destType = document.getElementById('dest_type').value;
         const destAddr = document.getElementById('dest_address').value;
+        if (!destAddr.trim()) {
+            alert('Please enter a destination address.');
+            return false;
+        }
         document.getElementById('final_destination').value = `[${destType}] ${destAddr}`;
+
+        // Set pass_type based on destination
+        document.getElementById('final_pass_type').value =
+            (destType === 'Home/Resident') ? 'home' : 'local';
 
         const purpType = document.getElementById('purpose_type').value;
         const purpDesc = document.getElementById('purpose_desc').value;
@@ -284,6 +354,21 @@
     }
 
     // Run once on load
-    updateCalcTime();
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const typeParam = urlParams.get('type');
+        
+        if (typeParam === 'home') {
+            document.getElementById('dest_type').value = 'Home/Resident';
+            document.querySelector('h1').innerText = "Submit Official Leave Application";
+        } else {
+            document.getElementById('dest_type').value = 'Local Transit';
+            document.querySelector('h1').innerText = "Quick Local Outpass Protocol";
+        }
+        
+        handleDestType();
+        updateCalcTime();
+    });
 </script>
+
 {% endblock %}

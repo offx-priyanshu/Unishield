@@ -15,6 +15,10 @@ def login():
             return redirect(url_for('admin.dashboard'))
         elif current_user.role == 'guard':
             return redirect(url_for('guard.dashboard'))
+        elif current_user.role in ['hod', 'dean']:
+            return redirect(url_for('faculty.dashboard'))
+        elif current_user.role == 'warden':
+            return redirect(url_for('warden.dashboard'))
         else:
             return redirect(url_for('student.dashboard'))
             
@@ -43,13 +47,21 @@ def login():
             flash(message, 'danger')
             return redirect(url_for('auth.login'))
             
-        # Role Validation (Optional but recommended since UI allows selection)
-        if role_claim and user.role.lower() != role_claim.lower():
-            message = f'Role mismatch. This account is registered as {user.role.upper()}.'
-            if request.is_json:
-                return jsonify({'success': False, 'message': message}), 403
-            flash(message, 'warning')
-            return redirect(url_for('auth.login'))
+        # Role Validation (Flexible for Faculty)
+        actual_role = user.role.lower()
+        claimed_role = role_claim.lower() if role_claim else None
+        
+        is_faculty = actual_role in ['hod', 'dean', 'warden']
+        is_staff_claim = claimed_role == 'guard'
+        
+        if claimed_role and actual_role != claimed_role:
+            # Allow faculty to login via the 'Staff' (guard) claim
+            if not (is_faculty and is_staff_claim):
+                message = f'Role mismatch. This account is registered as {user.role.upper()}.'
+                if request.is_json:
+                    return jsonify({'success': False, 'message': message}), 403
+                flash(message, 'warning')
+                return redirect(url_for('auth.login'))
 
         # Check Approval Status for Admins
         if user.role == 'admin' and user.status == 'PENDING':
@@ -73,6 +85,10 @@ def login():
             redirect_url = url_for('admin.dashboard')
         elif user.role == 'guard':
             redirect_url = url_for('guard.dashboard')
+        elif user.role in ['hod', 'dean']:
+            redirect_url = url_for('faculty.dashboard')
+        elif user.role == 'warden':
+            redirect_url = url_for('warden.dashboard')
         else:
             redirect_url = url_for('student.dashboard')
 

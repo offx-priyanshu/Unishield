@@ -37,6 +37,8 @@ class Outpass(db.Model):
     
     exit_time = db.Column(db.DateTime)
     return_time = db.Column(db.DateTime)
+    start_date = db.Column(db.DateTime)  # For multi-day leave
+    end_date = db.Column(db.DateTime)    # For multi-day leave
     expected_return = db.Column(db.DateTime, nullable=False)
     actual_return = db.Column(db.DateTime)
     time_limit_hours = db.Column(db.Integer, default=2)
@@ -49,6 +51,8 @@ class Outpass(db.Model):
     
     # --- Security & Audit ---
     qr_token = db.Column(db.String(100), unique=True)
+    leave_document = db.Column(db.String(200)) # Path to uploaded document
+    university_stamp = db.Column(db.String(200)) # Path to digital stamp image used
     alert_sent = db.Column(db.Boolean, default=False)
     violation_tracked = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

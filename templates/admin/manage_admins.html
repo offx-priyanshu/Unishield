@@ -4,70 +4,240 @@
 
 {% block extra_css %}
 <style>
-/* Layout */
-.admin-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+    /* Layout */
+    .admin-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
 
-/* Stats Bar */
-.admin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
-.admin-stat-card { background: rgba(14, 18, 22, 0.4); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
-.admin-stat-card i { font-size: 1.5rem; color: var(--accent); opacity: 0.6; }
-.admin-stat-card .val { font-size: 1.6rem; font-weight: 800; font-family: 'Syne', sans-serif; }
-.admin-stat-card .lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    /* Stats Bar */
+    .admin-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
 
-/* Panel Styling */
-.section-panel { background: rgba(14, 18, 22, 0.6); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
-.section-panel h3 { font-size: 0.8rem; letter-spacing: 1px; color: var(--accent); text-transform: uppercase; margin-bottom: 1.5rem; }
+    .admin-stat-card {
+        background: rgba(14, 18, 22, 0.4);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
 
-/* Form Elements */
-.form-group { margin-bottom: 1.25rem; }
-.form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
-.input-field { 
-    width: 100%; 
-    background: rgba(255, 255, 255, 0.05); 
-    border: 1px solid rgba(255, 255, 255, 0.15); 
-    border-radius: 8px; 
-    color: #fff; 
-    padding: 0.8rem; 
-    font-size: 0.85rem; 
-    outline: none; 
-    transition: all 0.3s ease;
-}
-.input-field:focus { 
-    border-color: var(--accent); 
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
-}
+    .admin-stat-card i {
+        font-size: 1.5rem;
+        color: var(--accent);
+        opacity: 0.6;
+    }
 
-/* Permission Checkboxes */
-.perm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
-.perm-item { display: flex; align-items: center; justify-content: flex-start; gap: 10px; font-size: 0.8rem; color: #ccc; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
-.perm-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-.perm-item input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+    .admin-stat-card .val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        font-family: 'Syne', sans-serif;
+    }
 
-/* Status Badges */
-.badge-status { padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; }
-.badge-status.active { background: rgba(0, 245, 122, 0.1); color: var(--success); }
-.badge-status.pending { background: rgba(255, 184, 0, 0.1); color: var(--warning); animation: pulse 2s infinite; }
-.badge-status.inactive { background: rgba(255, 255, 255, 0.1); color: #94a3b8; }
+    .admin-stat-card .lbl {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
 
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    /* Panel Styling */
+    .section-panel {
+        background: rgba(14, 18, 22, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
 
-/* Table Styling */
-.admin-table { width: 100%; border-collapse: collapse; }
-.admin-table th { text-align: left; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; padding: 1.25rem 1rem; border-bottom: 1px solid var(--border); }
-.admin-table td { padding: 1.25rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); font-size: 0.85rem; vertical-align: middle; }
+    .section-panel h3 {
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        color: var(--accent);
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+    }
 
-/* Registry Items */
-.admin-name { font-weight: 700; color: #fff; display: block; }
-.admin-email { font-size: 0.7rem; color: var(--text-muted); }
-.admin-action-log { font-size: 0.75rem; color: #ccc; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Form Elements */
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
 
-/* Action Buttons */
-.btn-action { background: none; border: none; font-size: 0.9rem; padding: 4px 8px; cursor: pointer; transition: 0.3s; }
-.btn-del { color: var(--danger); }
-.btn-del:hover { color: #ff5274; transform: scale(1.1); }
-.btn-activate { background: var(--success); color: #000; font-size: 0.7rem; font-weight: 800; border-radius: 4px; padding: 4px 10px; }
+    .form-group label {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
 
+    .input-field {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        padding: 0.85rem;
+        font-size: 0.9rem;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .input-field:focus {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+    }
+
+    /* Permission Checkboxes */
+    .perm-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .perm-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: #ccc;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: 0.3s;
+    }
+
+    .perm-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .perm-item input {
+        accent-color: var(--accent);
+        width: 16px;
+        height: 16px;
+        margin: 0;
+    }
+
+    /* Status Badges */
+    .badge-status {
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 800;
+    }
+
+    .badge-status.active {
+        background: rgba(0, 245, 122, 0.1);
+        color: var(--success);
+    }
+
+    .badge-status.pending {
+        background: rgba(255, 184, 0, 0.1);
+        color: var(--warning);
+        animation: pulse 2s infinite;
+    }
+
+    .badge-status.inactive {
+        background: rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    /* Table Styling */
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .admin-table th {
+        text-align: left;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .admin-table td {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        font-size: 0.85rem;
+        vertical-align: middle;
+    }
+
+    /* Registry Items */
+    .admin-name {
+        font-weight: 700;
+        color: #fff;
+        display: block;
+    }
+
+    .admin-email {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+
+    .admin-action-log {
+        font-size: 0.75rem;
+        color: #ccc;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Action Buttons */
+    .btn-action {
+        background: none;
+        border: none;
+        font-size: 0.9rem;
+        padding: 4px 8px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-del {
+        color: var(--danger);
+    }
+
+    .btn-del:hover {
+        color: #ff5274;
+        transform: scale(1.1);
+    }
+
+    .btn-activate {
+        background: var(--success);
+        color: #000;
+        font-size: 0.7rem;
+        font-weight: 800;
+        border-radius: 4px;
+        padding: 4px 10px;
+    }
 </style>
 {% endblock %}
 
@@ -77,15 +247,24 @@
 <div class="admin-stats">
     <div class="admin-stat-card">
         <i class="fas fa-crown"></i>
-        <div><div class="val">{{ total }}</div><div class="lbl">Total Administrators</div></div>
+        <div>
+            <div class="val">{{ total }}</div>
+            <div class="lbl">Total Administrators</div>
+        </div>
     </div>
     <div class="admin-stat-card">
         <i class="fas fa-circle-check" style="color: var(--success);"></i>
-        <div><div class="val">{{ active }}</div><div class="lbl">Active Authority</div></div>
+        <div>
+            <div class="val">{{ active }}</div>
+            <div class="lbl">Active Authority</div>
+        </div>
     </div>
     <div class="admin-stat-card">
         <i class="fas fa-hourglass-half" style="color: var(--warning);"></i>
-        <div><div class="val">{{ pending }}</div><div class="lbl">Awaiting Approval</div></div>
+        <div>
+            <div class="val">{{ pending }}</div>
+            <div class="lbl">Awaiting Approval</div>
+        </div>
     </div>
 </div>
 
@@ -118,40 +297,54 @@
                     <option value="VIEWER" selected>VIEWER (Audit Only)</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label>Granular Permissions</label>
                 <div class="perm-grid">
                     <label class="perm-item"><input type="checkbox" name="perms" value="ALL"> Full Control (ALL)</label>
-                    <label class="perm-item"><input type="checkbox" name="perms" value="STUDENT_MANAGE"> Student Management</label>
-                    <label class="perm-item"><input type="checkbox" name="perms" value="OUTPASS_APPROVE"> Outpass Approval</label>
-                    <label class="perm-item"><input type="checkbox" name="perms" value="SECURITY_CONTROL"> Command Center Access</label>
+                    <label class="perm-item"><input type="checkbox" name="perms" value="STUDENT_MANAGE"> Student
+                        Management</label>
+                    <label class="perm-item"><input type="checkbox" name="perms" value="OUTPASS_APPROVE"> Outpass
+                        Approval</label>
+                    <label class="perm-item"><input type="checkbox" name="perms" value="SECURITY_CONTROL"> Command
+                        Center Access</label>
                     <label class="perm-item"><input type="checkbox" name="perms" value="LOG_EXPORT"> Data Export</label>
                 </div>
             </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; margin-top: 1rem;">
+
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; margin-top: 1rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Profile Photo</label>
-                    <div class="scan-area" onclick="document.getElementById('profile_up').click()" style="border: 1px dashed rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
-                        <i class="fas fa-user-circle" style="font-size: 1.2rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;"></i>
+                    <div class="scan-area" onclick="document.getElementById('profile_up').click()"
+                        style="border: 1px dashed rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
+                        <i class="fas fa-user-circle"
+                            style="font-size: 1.2rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;"></i>
                         <span style="font-size: 0.65rem; color: #aaa;">Upload Photo</span>
-                        <input type="file" id="profile_up" name="profile_photo" accept="image/*" style="display:none;" onchange="updateFileName(this, 'profile-status')">
-                        <div id="profile-status" style="font-size: 0.55rem; color: var(--accent); margin-top: 5px;"></div>
+                        <input type="file" id="profile_up" name="profile_photo" accept="image/*" style="display:none;"
+                            onchange="updateFileName(this, 'profile-status')">
+                        <div id="profile-status" style="font-size: 0.55rem; color: var(--accent); margin-top: 5px;">
+                        </div>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Aadhar Document</label>
-                    <div class="scan-area" onclick="document.getElementById('aadhar_up').click()" style="border: 1px dashed rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
-                        <i class="fas fa-file-contract" style="font-size: 1.2rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;"></i>
+                    <div class="scan-area" onclick="document.getElementById('aadhar_up').click()"
+                        style="border: 1px dashed rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
+                        <i class="fas fa-file-contract"
+                            style="font-size: 1.2rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;"></i>
                         <span style="font-size: 0.65rem; color: #aaa;">Upload Document</span>
-                        <input type="file" id="aadhar_up" name="aadhar_document" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" onchange="updateFileName(this, 'aadhar-status')">
-                        <div id="aadhar-status" style="font-size: 0.55rem; color: var(--accent); margin-top: 5px;"></div>
+                        <input type="file" id="aadhar_up" name="aadhar_document" accept=".jpg,.jpeg,.png,.pdf"
+                            style="display:none;" onchange="updateFileName(this, 'aadhar-status')">
+                        <div id="aadhar-status" style="font-size: 0.55rem; color: var(--accent); margin-top: 5px;">
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; text-align: center; display: flex; justify-content: center; align-items: center; font-weight: 800; letter-spacing: 1px;">CREATE NEW ADMIN</button>
+
+            <button type="submit" class="btn btn-primary"
+                style="width: 100%; margin-top: 1rem; text-align: center; display: flex; justify-content: center; align-items: center; font-weight: 800; letter-spacing: 1px;">CREATE
+                NEW ADMIN</button>
         </form>
     </div>
 
@@ -198,9 +391,12 @@
                                 <button type="submit" class="btn-activate">ACTIVATE</button>
                             </form>
                             {% endif %}
-                            
-                            <form action="{{ url_for('admin.delete_user', user_id=a.id) }}" method="POST" onsubmit="return confirm('CRITICAL: Purge this administrative node?');" style="display: inline;">
-                                <button type="submit" class="btn-action btn-del"><i class="fas fa-trash-alt"></i></button>
+
+                            <form action="{{ url_for('admin.delete_user', user_id=a.id) }}" method="POST"
+                                onsubmit="return confirm('CRITICAL: Purge this administrative node?');"
+                                style="display: inline;">
+                                <button type="submit" class="btn-action btn-del"><i
+                                        class="fas fa-trash-alt"></i></button>
                             </form>
                         </div>
                     </td>

@@ -50,7 +50,7 @@
     .s-lbl { font-size: 0.62rem; color: #555; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
 
     /* ── COMPACT CONTENT SPLIT ─────────────────────── */
-    .content-split { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; align-items: start; }
+    .content-split { display: flex; flex-direction: column; gap: 1.5rem; }
 
     .smart-panel {
         background: linear-gradient(165deg, rgba(15, 20, 28, 0.95), rgba(5, 7, 10, 0.98));
@@ -95,11 +95,11 @@
     
     .field-box input, .field-box select {
         width: 100%;
-        background: rgba(255, 255, 255, 0.02); 
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.08); 
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 12px; 
-        padding: 0.8rem 1rem; 
-        font-size: 0.85rem;
+        padding: 0.85rem 1rem; 
+        font-size: 0.9rem;
         color: #fff;
         outline: none;
         transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -107,14 +107,14 @@
     }
 
     .field-box input::placeholder {
-        color: rgba(255, 255, 255, 0.15);
-        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 0.85rem;
     }
 
     .field-box input:focus, .field-box select:focus {
-        background: rgba(0, 210, 255, 0.03);
+        background: rgba(255, 255, 255, 0.12);
         border-color: var(--neon);
-        box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.08), 0 0 20px rgba(0, 210, 255, 0.15);
+        box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.15), 0 0 25px rgba(0, 210, 255, 0.4);
     }
 
     .field-box:focus-within label {

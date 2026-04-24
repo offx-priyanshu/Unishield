@@ -122,9 +122,20 @@ input:checked + .slider:before { transform: translateX(22px); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
 .form-input { 
-    width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; color: #fff; padding: 0.8rem; font-size: 0.85rem; outline: none; transition: border-color 0.3s;
+    width: 100%; 
+    background: rgba(255,255,255,0.05); 
+    border: 1px solid rgba(255,255,255,0.15); 
+    border-radius: 8px; 
+    color: #fff; 
+    padding: 0.8rem; 
+    font-size: 0.85rem; 
+    outline: none; 
+    transition: all 0.3s;
 }
-.form-input:focus { border-color: var(--accent); }
+.form-input:focus { 
+    border-color: var(--accent); 
+    background: rgba(255,255,255,0.08);
+}
 
 .preview-area {
     background: rgba(0, 200, 255, 0.05);
@@ -245,7 +256,9 @@ input:checked + .slider:before { transform: translateX(22px); }
                         <input type="text" name="twilio_phone" class="form-input" value="{{ configs.get('twilio_phone', '') }}">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-ghost" style="width: 100%; margin-top: 1rem;">SECURE GW SETTINGS</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; background: linear-gradient(90deg, #00c8ff, #00e87a); border: none; color: #000; font-weight: 800; box-shadow: 0 0 15px rgba(0, 200, 255, 0.4); text-transform: uppercase; letter-spacing: 1px;">
+                    <i class="fas fa-save me-2"></i> SAVE API CONFIGURATION
+                </button>
             </form>
         </div>
 

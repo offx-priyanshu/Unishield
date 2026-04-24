@@ -117,16 +117,52 @@ def ocr_from_base64(b64_image: str) -> dict:
 # MASTER FUNCTION — QR first, OCR fallback
 # =============================================================================
 
-def extract_id_card_data(b64_image: str) -> dict:
-    qr_result = scan_qr_from_base64(b64_image)
-    if qr_result and qr_result.get('name'):
-        return {'success': True, 'method': 'qr', 'data': qr_result}
+def extract_id_card_data(b64_image: str, client_qr_data: str = None) -> dict:
+    """
+    Master function — tries in order:
+      1. client_qr_data  (jsQR already decoded on frontend — fastest)
+      2. pyzbar QR scan  (6 preprocessing variants)
+      3. pytesseract OCR (fallback)
+    Returns success if PRN OR name is found (does not require both).
+    """
+    def _has_data(d):
+        return bool(d and (d.get('prn') or d.get('name') or d.get('student_id')))
 
-    ocr_result = ocr_from_base64(b64_image)
-    if ocr_result and ocr_result.get('name'):
-        return {'success': True, 'method': 'ocr', 'data': ocr_result}
+    # 1. Client-side jsQR data (already decoded by browser)
+    if client_qr_data and client_qr_data.strip():
+        parsed = _parse_qr_data(client_qr_data.strip())
+        if _has_data(parsed):
+            logger.info(f"[ID] Client jsQR success: {str(parsed)[:80]}")
+            return {'success': True, 'method': 'qr_client', 'data': parsed}
 
-    return {'success': False, 'method': 'failed', 'data': {}}
+    # 2. pyzbar server-side QR scan
+    if QR_AVAILABLE:
+        qr_result = scan_qr_from_base64(b64_image)
+        if _has_data(qr_result):
+            logger.info(f"[ID] pyzbar QR success: {str(qr_result)[:80]}")
+            return {'success': True, 'method': 'qr', 'data': qr_result}
+    else:
+        logger.warning("[ID] pyzbar not installed — pip install pyzbar")
+
+    # 3. pytesseract OCR fallback
+    if OCR_AVAILABLE and QR_AVAILABLE:
+        ocr_result = ocr_from_base64(b64_image)
+        if _has_data(ocr_result):
+            logger.info(f"[ID] OCR success: {str(ocr_result)[:80]}")
+            return {'success': True, 'method': 'ocr', 'data': ocr_result}
+    else:
+        logger.warning("[ID] pytesseract not installed — pip install pytesseract")
+
+    logger.warning("[ID] All extraction methods failed")
+    return {
+        'success': False,
+        'method':  'failed',
+        'data':    {},
+        'debug': {
+            'pyzbar_available':      QR_AVAILABLE,
+            'pytesseract_available': OCR_AVAILABLE,
+        }
+    }
 
 
 # =============================================================================

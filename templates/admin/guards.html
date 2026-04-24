@@ -62,42 +62,123 @@
     }
 
     .sect-divider {
-        display: flex; align-items: center; gap: 10px; font-size: 0.68rem; color: var(--neon);
-        text-transform: uppercase; letter-spacing: 3px; font-weight: 950; margin: 1.5rem 0 1rem;
+        display: flex; align-items: center; gap: 10px; font-size: 0.65rem; color: var(--neon);
+        text-transform: uppercase; letter-spacing: 2.5px; font-weight: 900; margin: 2rem 0 1.25rem;
+        opacity: 0.85;
     }
     .sect-divider:first-of-type { margin-top: 0; }
+    .sect-divider i { font-size: 0.8rem; }
 
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-    .field-box label { font-size: 0.6rem; color: #444; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem; }
+    .field-row { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 1.25rem; 
+        margin-bottom: 1.5rem; 
+    }
+
+    .field-box {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .field-box label { 
+        font-size: 0.6rem; 
+        color: rgba(255, 255, 255, 0.4); 
+        font-weight: 800; 
+        text-transform: uppercase; 
+        letter-spacing: 1.8px; 
+        white-space: nowrap;
+        transition: all 0.3s ease;
+        line-height: 1;
+    }
     
     .field-box input, .field-box select {
-        background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 12px; padding: 0.75rem 1rem; font-size: 0.85rem;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.02); 
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px; 
+        padding: 0.8rem 1rem; 
+        font-size: 0.85rem;
+        color: #fff;
+        outline: none;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        font-family: inherit;
     }
 
-    .scan-area { padding: 1.5rem 1rem; border-radius: 18px; }
-    .scan-area i { font-size: 1.2rem; }
+    .field-box input::placeholder {
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 0.8rem;
+    }
+
+    .field-box input:focus, .field-box select:focus {
+        background: rgba(0, 210, 255, 0.03);
+        border-color: var(--neon);
+        box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.08), 0 0 20px rgba(0, 210, 255, 0.15);
+    }
+
+    .field-box:focus-within label {
+        color: var(--neon);
+        letter-spacing: 2.2px;
+        opacity: 1;
+    }
+
+    .scan-area { 
+        padding: 1.5rem 1rem; 
+        border-radius: 18px; 
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        transition: 0.3s;
+        cursor: pointer;
+        text-align: center;
+    }
+    .scan-area:hover {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: var(--neon);
+    }
+    .scan-area i { font-size: 1.3rem; color: rgba(255, 255, 255, 0.2); transition: 0.3s; }
+    .scan-area:hover i { color: var(--neon); transform: scale(1.1); }
 
     .permission-box {
-        background: rgba(0,0,0,0.4); border-radius: 18px; padding: 1.25rem;
-        display: flex; flex-direction: column; gap: 12px; /* Single column for better alignment */
-        border: 1px solid rgba(255,255,255,0.02);
+        background: rgba(0,0,0,0.3); border-radius: 18px; padding: 1.25rem;
+        display: flex; flex-direction: column; gap: 10px;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     .p-item {
-        display: flex; align-items: center; gap: 15px; font-size: 0.75rem; color: #777;
-        padding: 5px 0; transition: 0.3s; cursor: pointer;
+        display: flex; align-items: center; gap: 12px; font-size: 0.7rem; color: #666;
+        padding: 6px 10px; border-radius: 8px; transition: 0.3s; cursor: pointer;
+        text-transform: uppercase; letter-spacing: 1px; font-weight: 700;
     }
     .p-item input {
-        width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: var(--neon);
+        width: 15px; height: 15px; margin: 0; cursor: pointer; accent-color: var(--neon);
     }
-    .p-item:hover { color: var(--neon); }
+    .p-item:hover { background: rgba(255,255,255,0.03); color: #aaa; }
+    .p-item input:checked + span { color: var(--neon); }
 
     .enroll-btn {
-        width: 100%; padding: 1.1rem; border-radius: 14px;
+        width: 100%; padding: 1.25rem; border-radius: 16px;
         background: linear-gradient(135deg, var(--neon), #0066ff);
-        color: #000; border: none; font-weight: 900; font-size: 0.95rem;
-        text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
-        transition: 0.4s; margin-top: 1.5rem;
+        color: #000; border: none; font-weight: 900; font-size: 0.9rem;
+        text-transform: uppercase; letter-spacing: 2.5px; cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        margin-top: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3);
+    }
+    .enroll-btn:hover {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 15px 40px rgba(0, 210, 255, 0.5);
+    }
+    .enroll-btn:active { transform: scale(0.98); }
+
+    /* Responsive Overrides */
+    @media (max-width: 1200px) {
+        .content-split { grid-template-columns: 1fr; }
+        .form-col { order: 2; }
+        .table-col { order: 1; }
+        .stat-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .field-row { grid-template-columns: 1fr; gap: 1.25rem; }
     }
 
     /* ── COMPACT DATA GRID ─────────────────────── */
@@ -115,7 +196,15 @@
     .p-id { font-size: 0.7rem; }
 
     .st-badge { padding: 6px 14px; font-size: 0.62rem; }
-    .act-btn { width: 34px; height: 34px; border-radius: 10px; font-size: 0.9rem; }
+    .act-btn { 
+        width: 34px; height: 34px; border-radius: 10px; font-size: 0.9rem; 
+        display: inline-flex; align-items: center; justify-content: center; 
+        background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .act-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
 
     /* ── COMPACT FUTURE FOOTER ─────────────────────── */
     .future-footer { margin-top: 4rem; padding: 2.5rem; border-radius: 28px; }
@@ -299,7 +388,9 @@
                                         <a href="{{ url_for('static', filename='uploads/' + g.aadhar_document) }}" target="_blank" class="act-btn" title="View Aadhar"><i class="fas fa-file-pdf" style="color: var(--neon);"></i></a>
                                     {% endif %}
                                     <a href="{{ url_for('admin.edit_guard', user_id=g.id) }}" class="act-btn" title="Edit Profile"><i class="fas fa-edit"></i></a>
-                                    <div class="act-btn" onclick="window.location.href='/admin/toggle_guard_duty/{{ g.id }}'" title="Toggle Status"><i class="fas fa-power-off"></i></div>
+                                    <div class="act-btn" onclick="window.location.href='/admin/toggle_guard_duty/{{ g.id }}'" title="{{ 'Unblock Guard' if g.status == 'INACTIVE' or g.status == 'OFFLINE' else 'Block Guard' }}" style="color: {{ 'var(--success)' if g.status == 'INACTIVE' or g.status == 'OFFLINE' else 'var(--danger)' }}; cursor: pointer;">
+                                        <i class="fas fa-{{ 'user-check' if g.status == 'INACTIVE' or g.status == 'OFFLINE' else 'user-slash' }}"></i>
+                                    </div>
                                     <div class="act-btn del" onclick="confirmDelete('{{ g.id }}', '{{ g.name }}')" title="Remove Guard"><i class="fas fa-trash"></i></div>
                                 </div>
                             </td>

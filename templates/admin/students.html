@@ -30,7 +30,9 @@
         <tbody id="studentTable">
             {% for s in students %}
             <tr>
-                <td class="mono" style="font-weight: 700; color: var(--accent);">{{ s.student_id }}</td>
+                <td class="mono" style="font-weight: 700; color: var(--accent);">
+                    <a href="{{ url_for('admin.edit_student', user_id=s.id) }}" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(0,210,255,0.3);">{{ s.student_id }}</a>
+                </td>
                 <td>
                     <div style="font-weight: 600;">{{ s.name }}</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">{{ s.email }}</div>
@@ -51,10 +53,16 @@
                 </td>
                 <td>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button id="btn_reset_{{ s.id }}" onclick="promptReset('{{ s.id }}', '{{ s.name }}')" class="btn btn-ghost" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--accent);">
+                        <a href="{{ url_for('admin.edit_student', user_id=s.id) }}" class="btn btn-ghost" title="View/Edit Profile" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--text-main);">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <button onclick="confirmBlacklist('{{ s.id }}', '{{ s.name }}', {{ 'true' if s.is_blacklisted else 'false' }})" class="btn btn-ghost" title="{{ 'Whitelist Student' if s.is_blacklisted else 'Blacklist Student' }}" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: {{ 'var(--success)' if s.is_blacklisted else 'var(--warning)' }};">
+                            <i class="fas fa-{{ 'user-check' if s.is_blacklisted else 'user-slash' }}"></i>
+                        </button>
+                        <button id="btn_reset_{{ s.id }}" onclick="promptReset('{{ s.id }}', '{{ s.name }}')" class="btn btn-ghost" title="Reset Password" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--accent);">
                             <i class="fas fa-key"></i>
                         </button>
-                        <button onclick="confirmDelete('{{ s.id }}', '{{ s.name }}')" class="btn btn-ghost" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--danger);">
+                        <button onclick="confirmDelete('{{ s.id }}', '{{ s.name }}')" class="btn btn-ghost" title="Delete Student" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--danger);">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -83,6 +91,13 @@
     function confirmDelete(id, name) {
         if (confirm(`CRITICAL: Are you sure you want to permanently delete student ${name}? This action cannot be undone.`)) {
             $(`#delete_form_${id}`).submit();
+        }
+    }
+
+    function confirmBlacklist(id, name, isBlacklisted) {
+        const action = isBlacklisted ? 'WHITELIST' : 'BLACKLIST';
+        if (confirm(`Are you sure you want to ${action} student ${name}?`)) {
+            window.location.href = `{{ url_for('admin.students') }}?blacklist_id=${id}`;
         }
     }
 

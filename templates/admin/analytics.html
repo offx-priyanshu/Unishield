@@ -73,8 +73,18 @@
             <option>Last 30 Days</option>
             <option>Last 7 Days</option>
         </select>
-        <select class="filter-select">
-            <option>All Departments</option>
+        <select class="filter-select" id="dept-filter" onchange="syncDashboard()">
+            <option value="ALL">All Departments</option>
+            <option value="SOET-FE">SOET-FE</option>
+            <option value="SOET-ME">SOET-ME</option>
+            <option value="SOET-EE">SOET-EE</option>
+            <option value="SOET-CE">SOET-CE</option>
+            <option value="SOCSE">SOCSE</option>
+            <option value="SOCMS">SOCMS</option>
+            <option value="SOAS">SOAS</option>
+            <option value="SNJSOE">SNJSOE</option>
+            <option value="SOLIS">SOLIS</option>
+            <option value="SOL">SOL</option>
         </select>
     </div>
 </div>
@@ -236,7 +246,8 @@
 
     async function syncDashboard() {
         try {
-            const res = await fetch('/api/stats/summary');
+            const deptFilter = document.getElementById('dept-filter').value;
+            const res = await fetch(`/api/stats/summary?dept=${encodeURIComponent(deptFilter)}`);
             const data = await res.json();
             
             // Update Card: Total Population

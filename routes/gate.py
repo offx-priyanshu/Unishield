@@ -11,6 +11,22 @@ from datetime import datetime
 import json
 import os
 
+@socketio.on('sos_alert', namespace='/gate')
+def handle_sos(data):
+    gate = data.get('gate', 'Main Gate')
+    guard = data.get('guard', 'Security Personnel')
+    time = data.get('time', datetime.now().strftime('%H:%M'))
+    
+    # Broadcast to all gate terminals
+    socketio.emit('gate_log', {
+        'time': time,
+        'msg': f"CRITICAL SOS: Emergency triggered at {gate} by {guard}!",
+        'type': 'DANGER'
+    }, namespace='/gate')
+    
+    # Here you would typically also trigger SMS/Push notifications
+    print(f"SOS ALERT: Emergency at {gate} triggered by {guard}")
+
 gate_bp = Blueprint('gate', __name__, url_prefix='/gate')
 
 @gate_bp.route('/terminal')
@@ -94,6 +110,60 @@ def auto_scan():
         
     socketio.emit('gate_event', result_data, namespace='/gate')
     return jsonify({'success': True, 'data': result_data})
+
+
+@gate_bp.route('/scan-id', methods=['POST'])
+@login_required
+def scan_id():
+    """
+    POST /gate/scan-id
+    Accepts a base64 image of student ID card.
+    Tries QR decode first, falls back to OCR.
+    Returns extracted student data + DB lookup result.
+    """
+    data        = request.json or {}
+    image_b64   = data.get('image', '')
+    client_qr   = data.get('client_qr')
+
+    if not image_b64 and not client_qr:
+        return jsonify({'success': False, 'message': 'No image received'}), 400
+
+    from utils.id_card import extract_id_card_data
+    
+    # Unified extraction: tries client_qr first, then server QR, then OCR
+    result = extract_id_card_data(image_b64, client_qr_data=client_qr)
+
+    if not result['success']:
+        return jsonify({'success': False, 'message': 'Could not read ID card. Try again or fill manually.'})
+
+    extracted = result['data']
+
+    # Normalise PRN field (id_card.py returns 'prn')
+    sid = (extracted.get('prn') or extracted.get('student_id') or '').strip()
+
+    # DB lookup
+    student      = User.query.filter_by(student_id=sid).first() if sid else None
+    has_face     = bool(student.face_encoded) if student else False
+    db_data      = None
+    if student:
+        db_data = {
+            'name':         student.name,
+            'department':   student.department,
+            'course':       student.course,
+            'session_year': student.session_year,
+            'phone':        student.phone,
+            'parent_phone': student.parent_phone,
+        }
+
+    return jsonify({
+        'success':      True,
+        'method':       result['method'],        # 'qr' | 'ocr'
+        'data':         extracted,               # raw extracted fields
+        'sid':          sid,
+        'exists':       bool(student),
+        'has_face':     has_face,
+        'db_data':      db_data,
+    })
 
 
 @gate_bp.route('/enroll', methods=['POST'])

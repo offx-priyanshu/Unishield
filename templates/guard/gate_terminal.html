@@ -509,8 +509,8 @@
                 <i class="fas fa-user-plus text-info"></i> REGISTER STUDENT
             </button>
             <div class="d-flex gap-3">
-                <button onclick="generateDailyReport()" class="action-btn-neon" style="color: #ccc;">
-                    <i class="fas fa-print"></i> ACTIVITY REPORT
+                <button id="btn-sos" onclick="triggerSOS()" class="action-btn-neon" style="color: var(--danger-glow); border-color: rgba(255,51,102,0.3);">
+                    <i class="fas fa-bullhorn"></i> SOS EMERGENCY
                 </button>
                 <a href="/gate/export/excel" class="action-btn-neon" style="color: #ccc; text-decoration: none;">
                     <i class="fas fa-file-excel text-success"></i> EXCEL REPORT
@@ -532,40 +532,12 @@
     </div>
 </div>
 
-<!-- Unknown Face Alert Modal -->
-<div class="modal fade" id="alertModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content text-center py-5"
-            style="background: rgba(10,15,25,0.95); backdrop-filter: blur(20px); border: 1px solid var(--danger-glow); box-shadow: 0 0 50px rgba(255,51,102,0.2);">
-            <div class="modal-body">
-                <div class="mb-4">
-                    <i class="fas fa-shield-virus"
-                        style="font-size: 3.5rem; color: var(--danger-glow); filter: drop-shadow(0 0 10px var(--danger-glow));"></i>
-                </div>
-                <h3 class="fw-bold mb-3" style="color: #fff;">Unauthorized Face Detected</h3>
-                <p class="text-muted px-4" style="font-size: 0.85rem;">This identity exists outside the secure registry.
-                    Choose an action protocol below.</p>
-                <div class="mt-4 d-grid gap-3 px-4">
-                    <button onclick="openRegistration('unknown')" class="action-btn-neon"
-                        style="background: rgba(0,210,255,0.1); border-color: var(--accent-glow);">
-                        <i class="fas fa-user-plus"></i> REGISTER AS NEW STUDENT
-                    </button>
-                    <button onclick="registerAsVisitor()" class="action-btn-neon">
-                        <i class="fas fa-walking"></i> REGISTER AS TEMP VISITOR
-                    </button>
-                    <button onclick="notifyControl()" class="action-btn-neon"
-                        style="color: var(--danger-glow); border-color: rgba(255,51,102,0.3);">
-                        <i class="fas fa-broadcast-tower"></i> NOTIFY SECURITY CONTROL
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Audio Assets -->
 <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
 <audio id="snd-alert" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3"></audio>
+<audio id="snd-sos" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3" loop></audio>
 
 {% endblock %}
 
@@ -653,15 +625,14 @@
 
     // Socket Interactions
     socket.on('gate_event', (data) => {
-        if (isRegOpen) return;
+        if (isRegOpen || processingLock) return;
 
         if (data.state === 'IDLE') return;
 
         if (data.state === 'UNKNOWN') {
-            document.getElementById('snd-alert').play();
-            var alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
-            alertModal.show();
-            isScanning = false;
+            // Sound and modal removed as per user request to only play sound on click.
+            processingLock = true;
+            setTimeout(() => processingLock = false, 4000); // 4s cooldown for unknown faces
         } else {
             showToast(data);
             if (['EXIT', 'RETURN'].includes(data.state)) {
@@ -676,12 +647,56 @@
         const container = document.getElementById('log-items');
         const item = document.createElement('div');
         item.className = 'log-item';
+        
+        let colorClass = 'info';
+        if (data.type === 'SUCCESS') colorClass = 'success';
+        if (data.type === 'DANGER') colorClass = 'danger';
+        
         item.innerHTML = `
             <div style="color: #666; font-size: 0.7rem;">${data.time}</div>
-            <div style="flex:1;"><strong class="text-${data.type === 'SUCCESS' ? 'success' : 'info'}">[${data.type}]</strong> ${data.msg}</div>
+            <div style="flex:1;"><strong class="text-${colorClass}">[${data.type}]</strong> ${data.msg}</div>
         `;
         container.prepend(item);
     });
+
+    let sosActive = false;
+    function triggerSOS() {
+        const siren = document.getElementById('snd-sos');
+        const btn = document.getElementById('btn-sos');
+        
+        if (!sosActive) {
+            if (confirm("CRITICAL: Trigger campus-wide security SOS? This will alert all administrative stations.")) {
+                sosActive = true;
+                socket.emit('sos_alert', {
+                    state: 'START',
+                    gate: "Main Gate",
+                    guard: "{{ current_user.name }}",
+                    time: new Date().toLocaleTimeString()
+                });
+                
+                siren.play().catch(e => console.warn("Audio play failed:", e));
+                btn.innerHTML = '<i class="fas fa-radiation fa-spin"></i> STOP SOS';
+                btn.style.background = 'rgba(255, 51, 102, 0.4)';
+                btn.style.borderColor = 'var(--danger-glow)';
+                btn.style.boxShadow = '0 0 30px rgba(255, 51, 102, 0.4)';
+            }
+        } else {
+            sosActive = false;
+            socket.emit('sos_alert', {
+                state: 'STOP',
+                gate: "Main Gate",
+                guard: "{{ current_user.name }}",
+                time: new Date().toLocaleTimeString()
+            });
+            
+            siren.pause();
+            siren.currentTime = 0;
+            btn.innerHTML = '<i class="fas fa-bullhorn"></i> SOS EMERGENCY';
+            btn.style.background = 'rgba(255, 255, 255, 0.03)';
+            btn.style.borderColor = 'var(--border-glass)';
+            btn.style.boxShadow = 'none';
+        }
+    }
 
     function showToast(data) {
         const toast = document.getElementById('res-toast');
@@ -791,100 +806,139 @@
         }
     }
 
-    // ID Scanning Flow
+    // ── ID Scanning Flow — powered by /gate/scan-id (pyzbar QR + pytesseract OCR) ──
     async function triggerIdScan(btn) {
-        const scanLine = document.getElementById('id-scan-line');
+        const scanLine  = document.getElementById('id-scan-line');
+        const origText  = btn.innerHTML;
+
+        // Show scanning UI
         scanLine.style.display = 'block';
-        const origText = btn.innerHTML;
+        btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> SCANNING...';
 
+        // Step 1: Try client-side jsQR first (instant, no server round-trip)
         const scanCanvas = document.createElement('canvas');
-        scanCanvas.width = video.videoWidth;
-        scanCanvas.height = video.videoHeight;
+        scanCanvas.width  = video.videoWidth  || 1280;
+        scanCanvas.height = video.videoHeight || 720;
         const sctx = scanCanvas.getContext('2d');
         sctx.drawImage(video, 0, 0);
-        const imgData = sctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
 
-        let extractedRaw = null;
-
-        // 1. Try QR
-        const qr = jsQR(imgData.data, imgData.width, imgData.height);
-        if (qr && qr.data) {
-            extractedRaw = qr.data;
-        } else {
-            // 2. Try OCR Fallback
-            try {
-                const result = await Tesseract.recognize(scanCanvas, 'eng');
-                extractedRaw = result.data.text;
-            } catch (e) {
-                console.error("OCR Error:", e);
-            }
-        }
-
-        scanLine.style.display = 'none';
-        btn.innerHTML = origText;
-
-        if (extractedRaw) {
-            await processExtractedData(extractedRaw);
-        } else {
-            alert("Could not detect ID. Please align and try again, or skip to enter manually.");
-        }
-    }
-
-    async function processExtractedData(raw) {
-        console.log("Raw ID Data:", raw);
-        let sid = ""; let name = ""; let dept = ""; let course = "";
-
-        // Basic parser for NAME|SID|DEPT|COURSE format
-        const parts = raw.split('|');
-        if (parts.length >= 2) {
-            name = parts[0];
-            sid = parts[1];
-            if (parts[2]) dept = parts[2];
-            if (parts[3]) course = parts[3];
-        } else {
-            // Regex attempt for Sandip University IDs
-            const prnMatch = raw.match(/\d{10,14}/);
-            if (prnMatch) sid = prnMatch[0];
-            const nameMatch = raw.match(/Name:\s*([A-Z\s]+)/i);
-            if (nameMatch) name = nameMatch[1].trim();
-        }
-
-        if (!sid) {
-            alert("ID number not found in scan. Please scan again or input manually.");
-            return;
-        }
-
-        // Fetch Backend DB
+        let clientQrFound = false;
         try {
-            const res = await fetch(`/gate/check-student/${sid}`);
-            const data = await res.json();
+            const imgData = sctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+            const qr      = jsQR(imgData.data, imgData.width, imgData.height);
+            if (qr && qr.data) {
+                clientQrFound = true;
+                console.log('[scan-id] Client jsQR hit:', qr.data.slice(0, 80));
+            }
+        } catch (e) { console.warn('[scan-id] jsQR error:', e); }
 
-            if (data.exists && data.has_face) {
-                alert("STUDENT ALREADY REGISTERED: " + sid);
-                closeRegistration();
+        // Step 2: Send frame + client QR data to backend
+        const b64 = scanCanvas.toDataURL('image/jpeg', 0.92);
+        btn.innerHTML = '<i class="fas fa-server fa-spin me-2"></i> PROCESSING...';
+
+        try {
+            const res  = await fetch('/gate/scan-id', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({
+                    image:     b64,
+                    client_qr: clientQrFound ? (() => {
+                        // re-decode to get the string value
+                        try {
+                            const id2 = scanCanvas.getContext('2d').getImageData(0,0,scanCanvas.width,scanCanvas.height);
+                            const q2  = jsQR(id2.data, id2.width, id2.height);
+                            return q2 ? q2.data : '';
+                        } catch(e) { return ''; }
+                    })() : ''
+                })
+            });
+            const resp = await res.json();
+
+            scanLine.style.display = 'none';
+            btn.disabled = false;
+            btn.innerHTML = origText;
+
+            if (!resp.success) {
+                _showScanFeedback('danger',
+                    '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                    (resp.message || 'Could not read ID card.') +
+                    ' Please align card and try again, or fill manually.'
+                );
                 return;
             }
 
-            // Auto-fill form
-            document.getElementById('reg-sid').value = sid;
-            document.getElementById('reg-name').value = data.exists ? data.data.name : name;
-            document.getElementById('reg-dept').value = data.exists ? data.data.department : dept;
-            document.getElementById('reg-course').value = data.exists ? data.data.course : course;
-
-            if (data.exists) {
-                document.getElementById('reg-session').value = data.data.session_year || '';
-                document.getElementById('reg-sphone').value = data.data.phone || '';
-                document.getElementById('reg-pphone').value = data.data.parent_phone || '';
-            }
-
-            alert("ID Extracted Successfully! Review details.");
-            goToStep(2);
+            await _applyScannedData(resp);
 
         } catch (e) {
-            console.error(e);
-            alert("Could not check student database.");
+            scanLine.style.display = 'none';
+            btn.disabled = false;
+            btn.innerHTML = origText;
+            console.error('[scan-id] fetch error:', e);
+            _showScanFeedback('danger',
+                '<i class="fas fa-plug me-2"></i> Server connection error. Is the backend running?'
+            );
         }
+    }
+
+    // Apply data returned from /gate/scan-id into the registration form
+    async function _applyScannedData(resp) {
+        const d   = resp.data    || {};
+        const db  = resp.db_data || {};
+        const sid = resp.sid     || d.prn || d.student_id || '';
+
+        // If already fully registered → skip registration, close overlay
+        if (resp.exists && resp.has_face) {
+            _showScanFeedback('info',
+                `<i class="fas fa-check-circle me-2"></i>` +
+                `<strong>${db.name || sid}</strong> is already enrolled. Closing registration.`
+            );
+            setTimeout(() => closeRegistration(), 2000);
+            return;
+        }
+
+        // Fill form fields — prefer DB values when student exists but has no face yet
+        const fill = (id, val) => { if (val) document.getElementById(id).value = val; };
+
+        fill('reg-sid',     sid);
+        fill('reg-name',    db.name         || d.name    || '');
+        fill('reg-dept',    db.department   || d.dept    || d.department || '');
+        fill('reg-course',  db.course       || d.course  || '');
+        fill('reg-session', db.session_year || d.session || d.year || '');
+        fill('reg-sphone',  db.phone        || d.mobile  || d.phone || '');
+        fill('reg-pphone',  db.parent_phone || '');
+
+        const method = resp.method === 'qr' ? '✅ QR Code' : '⚠️ OCR Text';
+        _showScanFeedback(
+            resp.method === 'qr' ? 'success' : 'warning',
+            `<i class="fas fa-id-card me-2"></i> ID scanned via <strong>${method}</strong>. ` +
+            (resp.exists ? 'Student found in DB — verify details.' : 'New student — fill missing fields.')
+        );
+
+        // Short delay so user sees feedback, then advance to form step
+        setTimeout(() => goToStep(2), 900);
+    }
+
+    // Inline feedback inside reg-panel (above the button)
+    function _showScanFeedback(type, html) {
+        const colorMap = {
+            success: 'var(--success-glow)',
+            danger:  'var(--danger-glow)',
+            warning: 'var(--warning-glow)',
+            info:    'var(--accent-glow)',
+        };
+        let box = document.getElementById('scan-feedback-box');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'scan-feedback-box';
+            box.style.cssText = 'margin-top:16px;padding:12px 16px;border-radius:10px;font-size:0.85rem;border:1px solid;text-align:left;';
+            document.getElementById('step-1').appendChild(box);
+        }
+        box.style.color       = colorMap[type] || '#fff';
+        box.style.borderColor = colorMap[type] || '#fff';
+        box.style.background  = `${colorMap[type] || '#fff'}18`;
+        box.innerHTML = html;
+        box.style.display = 'block';
     }
 
     // Stats

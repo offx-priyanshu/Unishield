@@ -5,7 +5,7 @@
 {% block extra_css %}
 <style>
 /* Layout */
-.admin-grid { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; }
+.admin-grid { display: flex; flex-direction: column; gap: 1.5rem; }
 
 /* Stats Bar */
 .admin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
@@ -21,13 +21,28 @@
 /* Form Elements */
 .form-group { margin-bottom: 1.25rem; }
 .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
-.input-field { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: #fff; padding: 0.75rem; font-size: 0.85rem; outline: none; }
-.input-field:focus { border-color: var(--accent); }
+.input-field { 
+    width: 100%; 
+    background: rgba(255, 255, 255, 0.05); 
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    border-radius: 8px; 
+    color: #fff; 
+    padding: 0.8rem; 
+    font-size: 0.85rem; 
+    outline: none; 
+    transition: all 0.3s ease;
+}
+.input-field:focus { 
+    border-color: var(--accent); 
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
+}
 
 /* Permission Checkboxes */
-.perm-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
-.perm-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #ccc; cursor: pointer; }
-.perm-item input { accent-color: var(--accent); }
+.perm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
+.perm-item { display: flex; align-items: center; justify-content: flex-start; gap: 10px; font-size: 0.8rem; color: #ccc; cursor: pointer; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+.perm-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+.perm-item input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
 
 /* Status Badges */
 .badge-status { padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; }
@@ -78,7 +93,7 @@
     <!-- Left: Provision Form -->
     <div class="section-panel">
         <h3>Provision Authority</h3>
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Full Legal Name</label>
                 <input type="text" name="name" class="input-field" required placeholder="Real Name">
@@ -115,7 +130,28 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">PROVISION ACCOUNT</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; margin-top: 1rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Profile Photo</label>
+                    <div class="scan-area" onclick="document.getElementById('profile_up').click()" style="border: 1px dashed rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
+                        <i class="fas fa-user-circle" style="font-size: 1.2rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 0.65rem; color: #aaa;">Upload Photo</span>
+                        <input type="file" id="profile_up" name="profile_photo" accept="image/*" style="display:none;" onchange="updateFileName(this, 'profile-status')">
+                        <div id="profile-status" style="font-size: 0.55rem; color: var(--accent); margin-top: 5px;"></div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Aadhar Document</label>
+                    <div class="scan-area" onclick="document.getElementById('aadhar_up').click()" style="border: 1px dashed rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
+                        <i class="fas fa-file-contract" style="font-size: 1.2rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 0.65rem; color: #aaa;">Upload Document</span>
+                        <input type="file" id="aadhar_up" name="aadhar_document" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" onchange="updateFileName(this, 'aadhar-status')">
+                        <div id="aadhar-status" style="font-size: 0.55rem; color: var(--accent); margin-top: 5px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; text-align: center; display: flex; justify-content: center; align-items: center; font-weight: 800; letter-spacing: 1px;">CREATE NEW ADMIN</button>
         </form>
     </div>
 
@@ -175,4 +211,18 @@
     </div>
 </div>
 
+{% endblock %}
+{% block extra_js %}
+<script>
+    function updateFileName(input, targetId) {
+        const target = document.getElementById(targetId);
+        if (input.files && input.files.length > 0) {
+            target.innerText = input.files[0].name;
+            target.parentElement.style.borderColor = 'var(--success)';
+            target.parentElement.style.background = 'rgba(0,245,122,0.05)';
+        } else {
+            target.innerText = '';
+        }
+    }
+</script>
 {% endblock %}

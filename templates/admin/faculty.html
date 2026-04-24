@@ -435,6 +435,9 @@
                         </td>
                         <td>
                             <span class="role-label role-{{ item.user.role }}">{{ item.user.role }}</span>
+                            {% if item.user.status == 'INACTIVE' %}
+                                <span style="background: rgba(255, 59, 92, 0.1); color: var(--danger); font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-left: 5px;">BLOCKED</span>
+                            {% endif %}
                             <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">{{ item.user.department }}</div>
                         </td>
                         <td>
@@ -464,14 +467,13 @@
                         <td style="padding-right: 1.5rem;">
                             <div class="action-group" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
                                 <a href="{{ url_for('admin.edit_faculty', user_id=item.user.id) }}" class="action-btn" title="Edit Profile" style="color: var(--neon-cyan);"><i class="fas fa-edit"></i></a>
-                                <form action="{{ url_for('admin.reset_user_password', user_id=item.user.id) }}" method="POST" style="margin: 0; padding: 0; display: flex;">
-                                    <button class="action-btn" type="submit" title="Reset Credentials" onclick="return confirm('Reset credentials to reset123?')" style="background: transparent; border: none; color: #fff; cursor: pointer; font-size: 1rem;"><i class="fas fa-key"></i></button>
-                                </form>
-                                <a href="{{ url_for('admin.reports', user_id=item.user.id) }}" class="action-btn" title="View Activity Audit" style="color: #a855f7;"><i class="fas fa-terminal"></i></a>
-                                <form action="{{ url_for('admin.delete_user', user_id=item.user.id) }}" method="POST" onsubmit="return confirm('CRITICAL: Purge this authority account permanently?')" style="margin: 0; padding: 0; display: flex;">
-                                    <button class="action-btn danger" type="submit" title="Revoke Access" style="background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 1rem;"><i class="fas fa-user-slash"></i></button>
-                                </form>
+                                <button class="action-btn" onclick="promptReset('{{ item.user.id }}', '{{ item.user.name }}')" title="Reset Credentials" style="color: #fff;"><i class="fas fa-key"></i></button>
+                                <a href="{{ url_for('admin.toggle_faculty_status', user_id=item.user.id) }}" class="action-btn" title="{{ 'Unblock Authority' if item.user.status == 'INACTIVE' else 'Block Authority' }}" style="color: {{ 'var(--success)' if item.user.status == 'INACTIVE' else 'var(--danger)' }};"><i class="fas fa-{{ 'user-check' if item.user.status == 'INACTIVE' else 'user-slash' }}"></i></a>
                             </div>
+                            <form id="reset_form_{{ item.user.id }}" action="{{ url_for('admin.reset_user_password', user_id=item.user.id) }}" method="POST" style="display: none;">
+                                <input type="hidden" name="new_password" id="reset_input_{{ item.user.id }}">
+                            </form>
+                            <form action="{{ url_for('admin.delete_user', user_id=item.user.id) }}" id="delete_form_{{ item.user.id }}" method="POST" style="display: none;"></form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -504,5 +506,13 @@
     setInterval(() => {
         console.log("Polling authority stats...");
     }, 30000);
+
+    function promptReset(id, name) {
+        const pass = prompt(`Enter new temporary password for ${name}:`, "reset123");
+        if (pass) {
+            document.getElementById(`reset_input_${id}`).value = pass;
+            document.getElementById(`reset_form_${id}`).submit();
+        }
+    }
 </script>
 {% endblock %}

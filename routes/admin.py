@@ -151,6 +151,50 @@ def add_student():
         return redirect(url_for('admin.students'))
 
     return render_template('admin/add_student.html')
+@admin_bp.route('/students/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_student(user_id):
+    student = User.query.get_or_404(user_id)
+    if student.role != 'student':
+        flash('Target user is not a student.', 'warning')
+        return redirect(url_for('admin.students'))
+        
+    if request.method == 'POST':
+        student.name = request.form.get('name')
+        student.email = request.form.get('email')
+        student.phone = request.form.get('phone')
+        student.parent_phone = request.form.get('parent_phone')
+        student.department = request.form.get('department')
+        student.year = int(request.form.get('year')) if request.form.get('year') else student.year
+        student.hostel_room = request.form.get('hostel_room')
+        
+        # Handle Image Updates
+        face_file = request.files.get('face_image')
+        if face_file and face_file.filename != '':
+            filename = secure_filename(f"{student.student_id}_face.jpg")
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            face_file.save(filepath)
+            student.photo_path = filepath
+            # Re-encode face
+            face_encoded_list = FaceUtils.get_encoding(filepath)
+            if face_encoded_list:
+                import json
+                student.face_encoded = json.dumps(face_encoded_list)
+
+        id_file = request.files.get('id_image')
+        if id_file and id_file.filename != '':
+            filename = secure_filename(f"{student.student_id}_id.jpg")
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            id_file.save(filepath)
+            student.id_card_photo = filepath
+
+        db.session.commit()
+        Logger.log(current_user.id, f'Admin updated student {student.name}')
+        flash(f'Student {student.name} updated successfully!', 'success')
+        return redirect(url_for('admin.students'))
+
+    return render_template('admin/edit_student.html', s=student)
 
 @admin_bp.route('/outpasses', methods=['GET', 'POST'])
 @login_required
@@ -548,10 +592,11 @@ def toggle_guard_duty(user_id):
     if guard.role != 'guard':
         flash('Invalid user role.', 'danger')
     else:
-        guard.status = 'OFFLINE' if guard.status == 'ACTIVE' else 'ACTIVE'
+        guard.status = 'INACTIVE' if guard.status == 'ACTIVE' else 'ACTIVE'
         db.session.commit()
-        Logger.log(current_user.id, f"Admin toggled duty for: {guard.name} (Now {guard.status})")
-        flash(f'Status updated for {guard.name}.', 'success')
+        action = 'blocked' if guard.status == 'INACTIVE' else 'unblocked'
+        Logger.log(current_user.id, f"Admin {action} guard: {guard.name} (Now {guard.status})")
+        flash(f'Guard {guard.name} is now {action.upper()}.', 'success')
     return redirect(url_for('admin.guards'))
 
 @admin_bp.route('/manage_admins', methods=['GET', 'POST'])
@@ -589,6 +634,28 @@ def manage_admins():
         elif User.query.filter_by(email=email).first():
             flash(f'Email {email} already exists!', 'danger')
         else:
+            # Handle File Uploads
+            profile_path = None
+            doc_path = None
+            
+            upload_base = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
+            profile_dir = os.path.join(upload_base, 'profile')
+            doc_dir = os.path.join(upload_base, 'documents')
+            os.makedirs(profile_dir, exist_ok=True)
+            os.makedirs(doc_dir, exist_ok=True)
+
+            profile_file = request.files.get('profile_photo')
+            if profile_file and profile_file.filename != '':
+                filename = secure_filename(f"admin_profile_{username}_{profile_file.filename}")
+                profile_file.save(os.path.join(profile_dir, filename))
+                profile_path = os.path.join('profile', filename)
+                
+            aadhar_file = request.files.get('aadhar_document')
+            if aadhar_file and aadhar_file.filename != '':
+                filename = secure_filename(f"admin_doc_{username}_{aadhar_file.filename}")
+                aadhar_file.save(os.path.join(doc_dir, filename))
+                doc_path = os.path.join('documents', filename)
+
             new_admin = User(
                 username=username,
                 name=name,
@@ -596,7 +663,9 @@ def manage_admins():
                 role='admin',
                 admin_role=role,
                 status='PENDING', # Always pending initially
-                permissions=json.dumps(perms)
+                permissions=json.dumps(perms),
+                photo_path=profile_path,
+                aadhar_document=doc_path
             )
             new_admin.set_password(password)
             db.session.add(new_admin)
@@ -749,6 +818,21 @@ def manage_faculty():
 
     return render_template('admin/faculty.html', faculty_list=faculty_data)
 
+@admin_bp.route('/faculty/toggle_status/<int:user_id>')
+@login_required
+@admin_required
+def toggle_faculty_status(user_id):
+    person = User.query.get_or_404(user_id)
+    if person.role not in ['hod', 'dean', 'warden']:
+        flash('Invalid user role.', 'danger')
+    else:
+        person.status = 'INACTIVE' if person.status == 'ACTIVE' else 'ACTIVE'
+        db.session.commit()
+        action = 'deactivated' if person.status == 'INACTIVE' else 'activated'
+        Logger.log(current_user.id, f"Admin {action} faculty: {person.name} (Now {person.status})")
+        flash(f'Status updated for {person.name}. Account is now {person.status}.', 'success')
+    return redirect(url_for('admin.manage_faculty'))
+
 @admin_bp.route('/faculty/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -788,6 +872,11 @@ def edit_faculty(user_id):
         perms = request.form.getlist('perms')
         person.permissions = json.dumps(perms)
         
+        # Handle Password Update
+        new_password = request.form.get('password')
+        if new_password:
+            person.set_password(new_password)
+            
         db.session.commit()
         Logger.log(current_user.id, f'Admin updated profile for faculty: {person.name}')
         flash(f'Profile for {person.name} updated successfully.', 'success')

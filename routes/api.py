@@ -158,16 +158,25 @@ def sms_stats_api():
 
 @api_bp.route('/stats/summary', methods=['GET'])
 def stats_summary():
+    dept_filter = request.args.get('dept', 'ALL')
     now = datetime.utcnow()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today - timedelta(days=now.weekday())
     
+    # Setup base queries with department filtering
+    student_query = User.query.filter_by(role='student')
+    op_query = Outpass.query
+    
+    if dept_filter != 'ALL':
+        student_query = student_query.filter(User.department.ilike(f"%{dept_filter}%"))
+        op_query = op_query.join(User).filter(User.department.ilike(f"%{dept_filter}%"))
+        
     # 1. Basic Counts
-    total_students = User.query.filter_by(role='student').count()
-    exits_this_week = Outpass.query.filter(Outpass.exit_time >= week_start).count()
+    total_students = student_query.count()
+    exits_this_week = op_query.filter(Outpass.exit_time >= week_start).count()
     
     # 2. Avg Time Outside (for returned outpasses)
-    returned_ops = Outpass.query.filter(Outpass.status == 'returned', Outpass.exit_time != None, Outpass.actual_return != None).all()
+    returned_ops = op_query.filter(Outpass.status == 'returned', Outpass.exit_time != None, Outpass.actual_return != None).all()
     if returned_ops:
         total_hours = sum((op.actual_return - op.exit_time).total_seconds() / 3600 for op in returned_ops)
         avg_time = round(total_hours / len(returned_ops), 1)
@@ -176,10 +185,10 @@ def stats_summary():
 
     # 3. Status Distribution
     status_counts = {
-        'approved': Outpass.query.filter_by(status='approved').count(),
-        'returned': Outpass.query.filter_by(status='returned').count(),
-        'out': Outpass.query.filter_by(status='out').count(),
-        'rejected': Outpass.query.filter_by(status='rejected').count(),
+        'approved': op_query.filter(Outpass.status=='approved').count(),
+        'returned': op_query.filter(Outpass.status=='returned').count(),
+        'out': op_query.filter(Outpass.status=='out').count(),
+        'rejected': op_query.filter(Outpass.status=='rejected').count(),
     }
 
     # 4. Daily Trend (Last 30 days)
@@ -187,11 +196,11 @@ def stats_summary():
     for i in range(29, -1, -1):
         day = today - timedelta(days=i)
         next_day = day + timedelta(days=1)
-        count = Outpass.query.filter(Outpass.exit_time >= day, Outpass.exit_time < next_day).count()
+        count = op_query.filter(Outpass.exit_time >= day, Outpass.exit_time < next_day).count()
         trend_data.append(count)
 
     # 5. Dept Movement
-    depts = ['CSE', 'ECE', 'ME', 'IT']
+    depts = ['SOET-FE', 'SOET-ME', 'SOET-EE', 'SOET-CE', 'SOCSE', 'SOCMS', 'SOAS', 'SNJSOE', 'SOLIS', 'SOL']
     dept_movement = []
     for d in depts:
         count = Outpass.query.join(User).filter(User.department.ilike(f'%{d}%')).count()

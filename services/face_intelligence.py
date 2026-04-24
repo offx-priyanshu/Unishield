@@ -147,7 +147,7 @@ class FaceIntelligence:
                 phone=data.get('phone'),
                 parent_phone=data.get('parent_phone')
             )
-            user.set_password(student_id)
+            user.set_password('student123')
             db.session.add(user)
 
         user.face_encoded = json.dumps(embeddings) # Store all angles as list of embeddings

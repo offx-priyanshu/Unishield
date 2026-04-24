@@ -27,7 +27,7 @@ def dashboard():
     
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
     
-    active_outpass = next((op for op in outpass_history if op.status in ['pending', 'approved', 'out']), None)
+    active_outpass = next((op for op in outpass_history if op.status in ['pending', 'hod_approved', 'dean_approved', 'approved', 'out']), None)
     
     return render_template('student/dashboard.html', 
                          history=outpass_history, 
@@ -51,7 +51,7 @@ def request_outpass():
         
         active = Outpass.query.filter(
             (Outpass.student_id == current_user.id) & 
-            (Outpass.status.in_(['pending', 'approved', 'out']))
+            (Outpass.status.in_(['pending', 'hod_approved', 'dean_approved', 'approved', 'out']))
         ).first()
         
         if active:

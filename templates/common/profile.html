@@ -375,9 +375,12 @@ input:checked + .sl:before { transform:translateX(18px); }
                     <span class="ptag"><i class="fas fa-check-circle"></i> AI Gate Control</span>
                     <span class="ptag"><i class="fas fa-check-circle"></i> SMS System Access</span>
                     <span class="ptag"><i class="fas fa-check-circle"></i> Analytics Access</span>
-                {% else %}
+                {% elif current_user.role == 'guard' %}
                     <span class="ptag"><i class="fas fa-check-circle"></i> Terminal Access</span>
                     <span class="ptag"><i class="fas fa-check-circle"></i> Gate Verify</span>
+                {% elif current_user.role in ['hod', 'dean'] %}
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Administrative Authority</span>
+                    <span class="ptag"><i class="fas fa-check-circle"></i> Leave Approval Rights</span>
                 {% endif %}
             </div>
         </div>

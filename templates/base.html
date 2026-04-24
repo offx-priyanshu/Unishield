@@ -616,6 +616,10 @@
             {% elif current_user.role == 'guard' %}
                 <a href="{{ url_for('guard.dashboard') }}" class="nav-link"><i class="fas fa-desktop"></i> Terminal</a>
                 <a href="{{ url_for('gate.terminal') }}" class="nav-link"><i class="fas fa-microchip"></i> AI Gate</a>
+            {% elif current_user.role == 'warden' %}
+                <a href="{{ url_for('warden.dashboard') }}" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
+            {% elif current_user.role in ['hod', 'dean'] %}
+                <a href="{{ url_for('faculty.dashboard') }}" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
             {% else %}
                 <a href="{{ url_for('student.dashboard') }}" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
                 <a href="{{ url_for('student.request_outpass') }}" class="nav-link"><i class="fas fa-paper-plane"></i> New Request</a>

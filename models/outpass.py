@@ -13,6 +13,8 @@ class Outpass(db.Model):
     status = db.Column(db.String(30), default='pending') 
     # Statuses: pending | hod_approved | dean_approved | approved | out | returned | rejected
     
+    priority = db.Column(db.String(20), default='normal') # normal | medical | emergency
+    
     # --- Approval Details (For 'home' leave) ---
     hod_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     hod_signed_at = db.Column(db.DateTime)

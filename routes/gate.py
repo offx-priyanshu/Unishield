@@ -36,6 +36,13 @@ def terminal():
         return "Unauthorized", 403
     return render_template('guard/gate_terminal.html')
 
+@gate_bp.route('/qr-scanner')
+@login_required
+def qr_scanner():
+    if current_user.role not in ['admin', 'guard']:
+        return "Unauthorized", 403
+    return render_template('guard/qr_scanner.html')
+
 @gate_bp.route('/auto-scan', methods=['POST'])
 @login_required
 def auto_scan():

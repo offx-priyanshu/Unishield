@@ -43,6 +43,30 @@ def verify_qr():
         'status': op.status
     })
 
+@api_bp.route('/verify-outpass/<int:op_id>', methods=['GET'])
+def verify_outpass_id(op_id):
+    op = Outpass.query.get(op_id)
+    if not op:
+        return jsonify({'success': False, 'message': 'Outpass not found'}), 404
+        
+    student = User.query.get(op.student_id)
+    if not student:
+        return jsonify({'success': False, 'message': 'Student record missing'}), 404
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'outpass_id': op.id,
+            'student_id': student.student_id,
+            'student_name': student.name,
+            'student_pic': student.face_image.split('/')[-1] if student.face_image else None,
+            'destination': op.destination,
+            'purpose': op.purpose,
+            'status': op.status,
+            'expected_return': op.expected_return.strftime('%H:%M %d/%m/%Y')
+        }
+    })
+
 @api_bp.route('/outpass/exit/<int:oid>', methods=['POST'])
 def mark_exit(oid):
     op = Outpass.query.get_or_404(oid)

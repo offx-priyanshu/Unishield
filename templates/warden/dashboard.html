@@ -1,141 +1,485 @@
 {% extends "base.html" %}
-{% block title %}Warden Dashboard — UniShield{% endblock %}
+{% block page_title %}Warden Command Center{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+<style>
+/* ── Layout ── */
+.cc-wrap {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 22px;
+    height: calc(100vh - 130px);
+    overflow: hidden;
+}
+
+/* ── Context bar ── */
+.ctx-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    background: rgba(0,245,122,0.04);
+    border: 1px solid rgba(0,245,122,0.12);
+    border-radius: 14px; margin-bottom: 22px;
+}
+.ctx-pulse { width:8px; height:8px; border-radius:50%; background:var(--success); animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,245,122,0.4)} 50%{opacity:.7;box-shadow:0 0 0 6px transparent} }
+
+/* ── Stats ── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+.s-card { background:rgba(14,18,22,.7); border:1px solid var(--border); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:14px; transition:.3s; }
+.s-card:hover { border-color:rgba(0,245,122,.2); transform:translateY(-2px); }
+.s-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.s-val { font-size:1.6rem; font-weight:800; color:#fff; line-height:1; }
+.s-lbl { font-size:.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-top:3px; }
+
+/* ── Queue ── */
+.q-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.q-title { font-size:.85rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; }
+.q-badge { background:rgba(0,245,122,.1); border:1px solid rgba(0,245,122,.2); color:var(--success); padding:3px 10px; border-radius:100px; font-size:.75rem; font-weight:800; }
+
+.req-list { display:flex; flex-direction:column; gap:14px; overflow-y:auto; padding-right:6px; height:calc(100% - 56px); }
+.req-list::-webkit-scrollbar { width:3px; }
+.req-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); border-radius:10px; }
+
+/* ── Request card ── */
+.req-card {
+    background:rgba(14,18,22,.85);
+    border:1px solid var(--border);
+    border-radius:18px; padding:20px;
+    display:grid; grid-template-columns:68px 1fr auto;
+    gap:16px; transition:.35s;
+    animation:fadeSlide .5s ease-out;
+}
+.req-card:hover { border-color:rgba(0,245,122,.25); box-shadow:0 0 25px rgba(0,245,122,.04); }
+.req-card.emergency { border-color:rgba(255,59,92,.3); animation:fadeSlide .5s ease-out, glowRed 2s infinite; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes glowRed   { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 20px rgba(255,59,92,.1)} }
+
+.req-avatar { width:68px;height:68px;border-radius:14px;object-fit:cover;border:2px solid var(--border); }
+.req-avatar-fb { width:68px;height:68px;border-radius:14px;background:linear-gradient(135deg,var(--success),#00aa55);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#000;border:2px solid var(--border); }
+
+.req-name { font-size:1rem; font-weight:700; color:#fff; margin-bottom:4px; }
+.req-meta { display:flex; gap:10px; font-size:.7rem; color:var(--text-muted); margin-bottom:10px; flex-wrap:wrap; }
+.req-reason { font-size:.8rem;color:#ccc;line-height:1.5;background:rgba(255,255,255,.03);border-left:2px solid var(--success);padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:10px; }
+
+/* Timeline */
+.mini-timeline { display:flex; align-items:center; gap:6px; font-size:.6rem; color:var(--text-muted); }
+.t-dot { width:7px;height:7px;border-radius:50%;background:#222;flex-shrink:0; }
+.t-dot.done { background:var(--success); box-shadow:0 0 6px var(--success); }
+.t-dot.active { background:var(--warning); box-shadow:0 0 6px var(--warning); animation:pulse 1.5s infinite; }
+.t-line { width:18px; height:1px; background:rgba(255,255,255,.08); }
+.t-label { color:#888; }
+.t-label.done { color:var(--success); }
+.t-label.active { color:var(--warning); font-weight:700; }
+
+/* Tags & Risk */
+.tag { padding:3px 9px;border-radius:6px;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.8px; }
+.tag-normal { background:rgba(255,255,255,.05);color:#888; }
+.tag-medical { background:rgba(0,210,255,.1);color:var(--accent); }
+.tag-emergency { background:rgba(255,59,92,.15);color:var(--danger); }
+.risk-badge { padding:2px 7px;border-radius:5px;font-size:.55rem;font-weight:900;text-transform:uppercase;border:1px solid; }
+.risk-low  { color:var(--success);border-color:var(--success);background:rgba(0,245,122,.05); }
+.risk-med  { color:var(--warning);border-color:var(--warning);background:rgba(255,184,0,.05); }
+.risk-high { color:var(--danger); border-color:var(--danger); background:rgba(255,59,92,.05); }
+
+/* Action panel */
+.action-col { display:flex;flex-direction:column;justify-content:space-between;min-width:210px;border-left:1px solid var(--border);padding-left:16px; }
+.verif-row { display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px; }
+.v-chip { border-radius:8px;padding:6px 8px;text-align:center; }
+.v-lbl { font-size:.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px; }
+.v-val { font-size:.7rem;font-weight:800;margin-top:2px; }
+
+.parent-check {
+    display:flex; align-items:center; gap:8px; margin-bottom:8px;
+    background:rgba(255,184,0,.06); border:1px solid rgba(255,184,0,.2);
+    padding:8px 10px; border-radius:8px; cursor:pointer;
+    font-size:.75rem; color:var(--warning); font-weight:600;
+}
+.parent-check input[type=checkbox] { width:auto; cursor:pointer; accent-color:var(--warning); }
+
+.remark-box { width:100%;padding:8px;resize:none;height:42px;background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:.75rem;margin-bottom:8px; }
+.remark-box:focus { border-color:var(--success);outline:none; }
+
+.action-btns { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+.btn-approve { background:rgba(0,245,122,.15);color:var(--success);border:1px solid rgba(0,245,122,.3);border-radius:8px;padding:7px;font-size:.7rem;font-weight:900;cursor:pointer;transition:.2s;width:100%; }
+.btn-approve:hover { background:var(--success);color:#000; }
+.btn-reject  { background:rgba(255,59,92,.12);color:var(--danger); border:1px solid rgba(255,59,92,.3); border-radius:8px;padding:7px;font-size:.7rem;font-weight:900;cursor:pointer;transition:.2s;width:100%; }
+.btn-reject:hover  { background:var(--danger);color:#fff; }
+
+/* Sidebar feed */
+.feed-panel { background:rgba(12,15,20,.6);border:1px solid var(--border);border-radius:18px;display:flex;flex-direction:column;overflow:hidden; }
+.feed-hdr { padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+.feed-hdr-title { font-size:.65rem;color:var(--success);text-transform:uppercase;letter-spacing:2px;font-weight:800; }
+.feed-items { overflow-y:auto;flex:1;padding:8px 0; }
+.feed-items::-webkit-scrollbar { width:3px; }
+.feed-item { padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.03);position:relative; }
+.feed-item::before { content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--border); }
+.feed-item.live::before { background:var(--success);box-shadow:0 0 8px var(--success); }
+.fi-title { font-size:.8rem;color:#ddd;font-weight:600;margin-bottom:2px; }
+.fi-time  { font-size:.65rem;color:var(--text-muted); }
+
+/* Empty state */
+.empty-state { height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem; }
+.empty-ico { font-size:3.5rem;color:var(--success);margin-bottom:16px;filter:drop-shadow(0 0 20px rgba(0,245,122,.3));animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="warden-dashboard" style="padding: 2rem;">
 
-  <!-- Header -->
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem;">
-    <div>
-      <h1 style="font-size:1.8rem; font-weight:700; color:#e2e8f0; margin:0;">
-        🏠 Warden Approval Panel
-      </h1>
-      <p style="color:#94a3b8; margin:0.3rem 0 0;">
-        Welcome, <strong style="color:#34d399;">{{ current_user.name }}</strong> — Final stage: Parent Verification & Gate Pass Issuance
-      </p>
+<!-- Context bar -->
+<div class="ctx-bar">
+    <div class="ctx-pulse"></div>
+    <span id="ctx-text" style="font-size:.82rem;font-weight:600;color:#eee;">
+        {% if requests %}
+            <span style="color:var(--success)">{{ requests|length }}</span>
+            request{{ 's' if requests|length != 1 else '' }} awaiting final Warden authorization + QR generation.
+        {% else %}
+            All authorization queues clear. Gate Pass system on standby.
+        {% endif %}
+    </span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.65rem;color:var(--text-muted);">
+        <i class="fas fa-circle fa-fade" style="color:var(--success);font-size:8px;"></i> LIVE
+        <span id="live-clock"></span>
     </div>
-    <a href="{{ url_for('auth.logout') }}" 
-       style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:0.5rem 1rem; border-radius:0.5rem; text-decoration:none; font-size:0.85rem;">
-      🔒 Logout
-    </a>
-  </div>
+</div>
 
-  <!-- Stats Bar -->
-  <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; margin-bottom:2rem;">
-    <div style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
-      <div style="font-size:2rem; font-weight:700; color:#34d399;">{{ requests|length }}</div>
-      <div style="color:#94a3b8; font-size:0.85rem;">Awaiting Final Approval</div>
+<!-- Stats -->
+<div class="stats-row">
+    <div class="s-card">
+        <div class="s-icon" style="background:rgba(0,245,122,.1)"><i class="fas fa-hourglass-half" style="color:var(--success)"></i></div>
+        <div><div class="s-val">{{ requests|length }}</div><div class="s-lbl">Awaiting Seal</div></div>
     </div>
-    <div style="background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
-      <div style="font-size:2rem; font-weight:700; color:#fbbf24;">Stage 3/3</div>
-      <div style="color:#94a3b8; font-size:0.85rem;">Final Workflow Stage</div>
+    <div class="s-card">
+        <div class="s-icon" style="background:rgba(0,210,255,.1)"><i class="fas fa-qrcode" style="color:var(--accent)"></i></div>
+        <div><div class="s-val">{{ stats.approved_today }}</div><div class="s-lbl">Passes Today</div></div>
     </div>
-    <div style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:0.75rem; padding:1.2rem; text-align:center;">
-      <div style="font-size:2rem; font-weight:700; color:#60a5fa;">WARDEN</div>
-      <div style="color:#94a3b8; font-size:0.85rem;">Your Role</div>
+    <div class="s-card">
+        <div class="s-icon" style="background:rgba(255,59,92,.1)"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div>
+        <div><div class="s-val" style="color:{{ 'var(--danger)' if stats.emergency_count > 0 else '#fff' }}">{{ stats.emergency_count }}</div><div class="s-lbl">Emergency</div></div>
     </div>
-  </div>
+    <div class="s-card">
+        <div class="s-icon" style="background:rgba(255,184,0,.1)"><i class="fas fa-id-card-alt" style="color:var(--warning)"></i></div>
+        <div><div class="s-val">{{ stats.total_passes_issued }}</div><div class="s-lbl">Total Issued</div></div>
+    </div>
+</div>
 
-  <!-- Info Banner -->
-  <div style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25); border-radius:0.75rem; padding:1rem 1.2rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
-    <span style="font-size:1.2rem;">⚠️</span>
-    <p style="color:#fcd34d; margin:0; font-size:0.9rem;">
-      <strong>Mandatory:</strong> You must verify parents (via call or digital link) before issuing the final gate pass. Parent verification checkbox is required.
-    </p>
-  </div>
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat, msg in messages %}
+    <div style="padding:10px 16px;border-radius:10px;margin-bottom:14px;font-size:.85rem;font-weight:600;
+        background:{{ 'rgba(0,245,122,0.1)' if cat=='success' else 'rgba(255,59,92,0.1)' }};
+        border:1px solid {{ 'rgba(0,245,122,0.3)' if cat=='success' else 'rgba(255,59,92,0.3)' }};
+        color:{{ 'var(--success)' if cat=='success' else 'var(--danger)' }};">
+        <i class="fas {{ 'fa-check-circle' if cat=='success' else 'fa-times-circle' }}"></i> {{ msg }}
+    </div>
+  {% endfor %}{% endif %}
+{% endwith %}
 
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div style="background:rgba({% if category == 'success' %}34,197,94{% elif category == 'danger' %}239,68,68{% else %}59,130,246{% endif %},0.15); border:1px solid rgba({% if category == 'success' %}34,197,94{% elif category == 'danger' %}239,68,68{% else %}59,130,246{% endif %},0.4); color:{% if category == 'success' %}#4ade80{% elif category == 'danger' %}#f87171{% else %}#60a5fa{% endif %}; padding:0.8rem 1rem; border-radius:0.5rem; margin-bottom:1rem;">
-          {{ message }}
+<!-- Main grid -->
+<div class="cc-wrap">
+
+    <!-- LEFT: Queue -->
+    <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <div class="q-header">
+            <div class="q-title"><i class="fas fa-shield-halved" style="color:var(--success);margin-right:8px;"></i>Final Authorization Queue</div>
+            <div class="q-badge">{{ requests|length }} AWAITING SEAL</div>
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
 
-  <!-- Requests Cards -->
-  {% if requests %}
-    <div style="display:grid; gap:1.2rem;">
-      {% for req in requests %}
-      <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(52,211,153,0.2); border-radius:1rem; padding:1.5rem;">
-        
-        <!-- Request Header -->
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1rem;">
-          <div>
-            <div style="display:flex; align-items:center; gap:0.75rem;">
-              <span style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3); color:#34d399; padding:0.2rem 0.6rem; border-radius:9999px; font-size:0.75rem; font-weight:600;">Home Leave</span>
-              <span style="color:#64748b; font-size:0.8rem;">Request #{{ req.id }}</span>
+        <div class="req-list" id="req-list">
+            {% if requests %}
+                {% for req in requests %}
+                {% set student = req.student %}
+                {% set risk = 'low' %}{% if student.violations and student.violations > 0 %}{% set risk = 'med' %}{% endif %}{% if student.is_blacklisted %}{% set risk = 'high' %}{% endif %}
+                <div class="req-card {{ 'emergency' if req.priority == 'emergency' else '' }}" id="card-{{ req.id }}">
+
+                    <!-- Avatar -->
+                    <div>
+                        {% if student.face_image %}
+                        <img src="{{ url_for('static', filename='uploads/' + student.face_image.split('/')[-1]) }}"
+                             class="req-avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="req-avatar-fb" style="display:none;">{{ student.name[0]|upper }}</div>
+                        {% else %}
+                        <div class="req-avatar-fb">{{ student.name[0]|upper }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Info -->
+                    <div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+                            <div class="req-name">{{ student.name }}</div>
+                            <span class="risk-badge risk-{{ risk }}">{{ risk|upper }}</span>
+                            <span class="tag tag-{{ req.priority }}">{{ req.priority }}</span>
+                            {% if student.violations and student.violations > 0 %}
+                            <span style="font-size:.6rem;color:var(--warning);"><i class="fas fa-warning"></i> {{ student.violations }} violation{{ 's' if student.violations > 1 }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="req-meta">
+                            <span><i class="fas fa-id-badge"></i> {{ student.student_id or 'N/A' }}</span>
+                            <span><i class="fas fa-building"></i> {{ student.department or '—' }}</span>
+                            <span style="color:var(--success)"><i class="fas fa-location-dot"></i> {{ req.destination }}</span>
+                            <span><i class="fas fa-clock"></i> {{ req.time_limit_hours }}h</span>
+                            {% if req.start_date %}<span style="color:var(--accent)"><i class="fas fa-calendar-range"></i> {{ req.start_date.strftime('%d %b') }} → {{ req.end_date.strftime('%d %b') }}</span>{% endif %}
+                        </div>
+                        <div class="req-reason">{{ req.purpose }}</div>
+
+                        {% if req.leave_document %}
+                        <div style="margin-bottom:10px;">
+                            <a href="{{ url_for('static', filename='uploads/' + req.leave_document) }}" target="_blank"
+                               style="display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--success);background:rgba(0,245,122,.08);border:1px solid rgba(0,245,122,.2);padding:5px 12px;border-radius:8px;text-decoration:none;transition:.2s;"
+                               onmouseover="this.style.background='rgba(0,245,122,0.15)'" onmouseout="this.style.background='rgba(0,245,122,0.08)'">
+                                <i class="fas fa-file-alt"></i> View Supporting Document
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <!-- Full timeline -->
+                        <div class="mini-timeline">
+                            <div class="t-dot done"></div><div class="t-line"></div>
+                            <div class="t-label done">SUBMITTED</div><div class="t-line"></div>
+                            <div class="t-dot done"></div><div class="t-line"></div>
+                            <div class="t-label done">HOD</div><div class="t-line"></div>
+                            <div class="t-dot done"></div><div class="t-line"></div>
+                            <div class="t-label done">DEAN</div><div class="t-line"></div>
+                            <div class="t-dot active"></div><div class="t-line"></div>
+                            <div class="t-label active">WARDEN</div><div class="t-line"></div>
+                            <div class="t-dot"></div>
+                            <div class="t-label">QR PASS</div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="action-col">
+                        <div>
+                            <div class="verif-row">
+                                <div class="v-chip" style="background:rgba(0,245,122,.08)">
+                                    <div class="v-lbl">HOD</div>
+                                    <div class="v-val" style="color:var(--success)">✓ SIGNED</div>
+                                </div>
+                                <div class="v-chip" style="background:rgba(0,245,122,.08)">
+                                    <div class="v-lbl">Dean</div>
+                                    <div class="v-val" style="color:var(--success)">✓ SIGNED</div>
+                                </div>
+                            </div>
+
+                            <!-- Parent Phone Info -->
+                            <div style="background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;">
+                                <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Parent Contact</div>
+                                <div style="font-size:.8rem;font-weight:700;color:var(--warning);">
+                                    <i class="fas fa-phone" style="margin-right:5px;font-size:.7rem;"></i>
+                                    {% if student.parent_phone %}
+                                        {{ student.parent_phone[:-4] | replace(student.parent_phone[3:-4], 'X' * (student.parent_phone|length - 7)) }}{{ student.parent_phone[-4:] }}
+                                    {% else %}
+                                        <span style="color:var(--danger);font-size:.7rem;">Not Registered</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- OTP Panel -->
+                            <div id="otp-panel-{{ req.id }}">
+                                {% if req.parent_verified %}
+                                <!-- Already verified -->
+                                <div style="background:rgba(0,245,122,.08);border:1px solid rgba(0,245,122,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;text-align:center;">
+                                    <i class="fas fa-check-circle" style="color:var(--success);margin-right:5px;"></i>
+                                    <span style="font-size:.75rem;font-weight:700;color:var(--success);">Parent Verified</span>
+                                </div>
+                                {% else %}
+                                <!-- Send OTP step -->
+                                <div id="step-send-{{ req.id }}">
+                                    <button onclick="sendOTP({{ req.id }})" 
+                                        style="width:100%;background:rgba(255,184,0,.1);border:1px solid rgba(255,184,0,.3);color:var(--warning);border-radius:8px;padding:7px;font-size:.7rem;font-weight:900;cursor:pointer;margin-bottom:6px;transition:.2s;"
+                                        onmouseover="this.style.background='rgba(255,184,0,0.2)'" onmouseout="this.style.background='rgba(255,184,0,0.1)'"
+                                        {% if not student.parent_phone %}disabled style="opacity:0.4;cursor:not-allowed;"{% endif %}>
+                                        <i class="fas fa-paper-plane"></i> SEND OTP TO PARENT
+                                    </button>
+                                </div>
+                                <!-- Enter OTP step (hidden initially) -->
+                                <div id="step-verify-{{ req.id }}" style="display:none;">
+                                    <div style="font-size:.65rem;color:var(--text-muted);margin-bottom:4px;" id="otp-sent-msg-{{ req.id }}"></div>
+                                    <div style="display:flex;gap:6px;margin-bottom:6px;">
+                                        <input type="text" id="otp-input-{{ req.id }}" maxlength="6" placeholder="Enter 6-digit OTP"
+                                            style="flex:1;padding:7px 10px;font-size:.8rem;font-family:'IBM Plex Mono',monospace;letter-spacing:3px;text-align:center;border-radius:8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,184,0,.3);color:var(--warning);">
+                                        <button onclick="verifyOTP({{ req.id }})"
+                                            style="background:rgba(0,245,122,.1);border:1px solid rgba(0,245,122,.3);color:var(--success);border-radius:8px;padding:7px 10px;font-size:.7rem;font-weight:900;cursor:pointer;white-space:nowrap;">
+                                            VERIFY
+                                        </button>
+                                    </div>
+                                    <button onclick="sendOTP({{ req.id }})"
+                                        style="background:none;border:none;color:var(--text-muted);font-size:.65rem;cursor:pointer;text-decoration:underline;">
+                                        Resend OTP
+                                    </button>
+                                </div>
+                                <!-- Status message -->
+                                <div id="otp-status-{{ req.id }}" style="font-size:.7rem;margin-bottom:6px;"></div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div>
+                            <textarea class="remark-box" id="remark-{{ req.id }}" placeholder="Add remark (optional)..."></textarea>
+                            <form method="POST" action="{{ url_for('warden.approve_request', outpass_id=req.id) }}" style="margin:0 0 6px 0;" id="form-approve-{{ req.id }}">
+                                <input type="hidden" name="remark" id="hr-{{ req.id }}">
+                                <button type="submit" id="seal-btn-{{ req.id }}"
+                                    class="btn-approve"
+                                    {% if not req.parent_verified %}disabled style="opacity:0.35;cursor:not-allowed;pointer-events:none;"{% endif %}
+                                    onclick="document.getElementById('hr-{{ req.id }}').value=document.getElementById('remark-{{ req.id }}').value">
+                                    <i class="fas fa-qrcode"></i> SEAL & GENERATE QR
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('warden.reject_request', outpass_id=req.id) }}" style="margin:0;">
+                                <input type="hidden" name="remark" id="rr-{{ req.id }}">
+                                <button type="submit" class="btn-reject"
+                                    onclick="document.getElementById('rr-{{ req.id }}').value=document.getElementById('remark-{{ req.id }}').value">
+                                    <i class="fas fa-ban"></i> DENY REQUEST
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-ico"><i class="fas fa-shield-check"></i></div>
+                    <h3 style="color:#fff;margin-bottom:8px;">All Clear!</h3>
+                    <p style="color:var(--text-muted);font-size:.85rem;">No requests awaiting Warden authorization.</p>
+                    <p style="color:var(--text-muted);font-size:.75rem;margin-top:6px;">Requests arrive after HOD + Dean approval.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- RIGHT: Activity feed -->
+    <div class="feed-panel">
+        <div class="feed-hdr">
+            <span class="feed-hdr-title"><i class="fas fa-rss" style="margin-right:6px;"></i>Live Activity</span>
+            <span style="font-size:.6rem;color:var(--text-muted);" id="feed-count">0 events</span>
+        </div>
+        <div class="feed-items" id="feed-items">
+            <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:.8rem;">
+                <i class="fas fa-satellite-dish" style="font-size:1.5rem;margin-bottom:10px;display:block;opacity:.3;"></i>
+                Monitoring authorization signals...
             </div>
-            <h3 style="color:#e2e8f0; margin:0.5rem 0 0; font-size:1.1rem;">{{ req.student.name }}</h3>
-            <p style="color:#64748b; margin:0; font-size:0.8rem;">{{ req.student.student_id or 'ID N/A' }} • Submitted {{ req.created_at.strftime('%d %b %Y, %H:%M') }}</p>
-          </div>
-          <div style="text-align:right;">
-            <div style="color:#fbbf24; font-size:0.85rem; font-weight:600;">⏳ Awaiting Warden</div>
-            <div style="color:#64748b; font-size:0.75rem; margin-top:0.3rem;">Return: {{ req.expected_return.strftime('%d %b, %H:%M') }}</div>
-          </div>
         </div>
-
-        <!-- Trip Details -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
-          <div style="background:rgba(148,163,184,0.05); border:1px solid rgba(148,163,184,0.1); border-radius:0.5rem; padding:0.75rem;">
-            <div style="color:#64748b; font-size:0.75rem; margin-bottom:0.25rem;">📍 Destination</div>
-            <div style="color:#a78bfa; font-weight:600;">{{ req.destination }}</div>
-          </div>
-          <div style="background:rgba(148,163,184,0.05); border:1px solid rgba(148,163,184,0.1); border-radius:0.5rem; padding:0.75rem;">
-            <div style="color:#64748b; font-size:0.75rem; margin-bottom:0.25rem;">⏱ Duration</div>
-            <div style="color:#60a5fa; font-weight:600;">{{ req.time_limit_hours }} Hours</div>
-          </div>
+        <div style="padding:14px 20px;border-top:1px solid var(--border);">
+            <div style="font-size:.65rem;color:var(--text-muted);text-align:center;">
+                <i class="fas fa-circle fa-fade" style="color:var(--success);font-size:8px;margin-right:6px;"></i>
+                Socket.io connected · /gate namespace
+            </div>
         </div>
-        
-        <div style="background:rgba(148,163,184,0.05); border:1px solid rgba(148,163,184,0.1); border-radius:0.5rem; padding:0.75rem; margin-bottom:1rem;">
-          <div style="color:#64748b; font-size:0.75rem; margin-bottom:0.25rem;">📝 Purpose</div>
-          <div style="color:#94a3b8; font-size:0.9rem;">{{ req.purpose }}</div>
-        </div>
-
-        <!-- Approval Chain Status -->
-        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1.2rem;">
-          <div style="background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:#4ade80; padding:0.3rem 0.7rem; border-radius:0.4rem; font-size:0.78rem; font-weight:600;">
-            ✅ HOD Approved
-          </div>
-          <div style="color:#64748b;">→</div>
-          <div style="background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:#4ade80; padding:0.3rem 0.7rem; border-radius:0.4rem; font-size:0.78rem; font-weight:600;">
-            ✅ Dean Approved
-          </div>
-          <div style="color:#64748b;">→</div>
-          <div style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#fbbf24; padding:0.3rem 0.7rem; border-radius:0.4rem; font-size:0.78rem; font-weight:600;">
-            ⏳ Warden Pending
-          </div>
-        </div>
-
-        <!-- Final Approval Form -->
-        <form method="POST" action="{{ url_for('warden.approve_request', outpass_id=req.id) }}"
-              style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.2); border-radius:0.75rem; padding:1rem;">
-          <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
-            <input type="checkbox" name="parent_verified" id="pv-{{ req.id }}" 
-                   style="width:1.1rem; height:1.1rem; accent-color:#34d399; cursor:pointer;">
-            <label for="pv-{{ req.id }}" style="color:#cbd5e1; font-size:0.9rem; cursor:pointer;">
-              ✅ I confirm I have contacted the student's parents and they are aware of this leave
-            </label>
-          </div>
-          <button type="submit"
-                  style="width:100%; background:linear-gradient(135deg,#059669,#047857); color:white; border:none; padding:0.75rem; border-radius:0.6rem; cursor:pointer; font-size:0.95rem; font-weight:700; letter-spacing:0.03em; transition:opacity 0.2s;"
-                  onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-            🎫 Generate Final QR Gate Pass
-          </button>
-        </form>
-
-      </div>
-      {% endfor %}
     </div>
-  {% else %}
-    <div style="text-align:center; padding:4rem 2rem; background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1); border-radius:1rem;">
-      <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
-      <h3 style="color:#e2e8f0; margin:0 0 0.5rem;">All Clear!</h3>
-      <p style="color:#64748b; margin:0;">No home leave requests pending final approval.</p>
-    </div>
-  {% endif %}
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Live clock
+    async function sendOTP(id) {
+        const btn = document.querySelector(`#step-send-${id} button`);
+        btn.innerText = 'Sending...'; btn.disabled = true;
+        try {
+            const r = await fetch(`/warden/send-otp/${id}`, {method:'POST', headers:{'Content-Type':'application/json'}});
+            const d = await r.json();
+            if (d.success) {
+                document.getElementById(`step-send-${id}`).style.display = 'none';
+                document.getElementById(`step-verify-${id}`).style.display = 'block';
+                let msg = `OTP sent to ${d.masked_phone}`;
+                if (d.otp_debug) msg += ` · Dev OTP: ${d.otp_debug}`;
+                document.getElementById(`otp-sent-msg-${id}`).innerText = msg;
+                addFeed(`OTP dispatched to parent for request #${id}`, 'live');
+            } else {
+                document.getElementById(`otp-status-${id}`).innerHTML = `<span style="color:var(--danger)">${d.error}</span>`;
+                btn.innerText = '⚡ SEND OTP TO PARENT'; btn.disabled = false;
+            }
+        } catch(e) {
+            document.getElementById(`otp-status-${id}`).innerHTML = `<span style="color:var(--danger)">Network error.</span>`;
+            btn.innerText = '⚡ SEND OTP TO PARENT'; btn.disabled = false;
+        }
+    }
+
+    async function verifyOTP(id) {
+        const otp = document.getElementById(`otp-input-${id}`).value.trim();
+        if (otp.length !== 6) {
+            document.getElementById(`otp-status-${id}`).innerHTML = `<span style="color:var(--danger)">Enter a valid 6-digit OTP.</span>`;
+            return;
+        }
+        document.getElementById(`otp-status-${id}`).innerHTML = `<span style="color:var(--text-muted)">Verifying...</span>`;
+        try {
+            const r = await fetch(`/warden/verify-otp/${id}`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({otp})
+            });
+            const d = await r.json();
+            if (d.success) {
+                // Hide OTP panel, show verified badge
+                document.getElementById(`otp-panel-${id}`).innerHTML = `
+                    <div style="background:rgba(0,245,122,.08);border:1px solid rgba(0,245,122,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;text-align:center;">
+                        <i class="fas fa-check-circle" style="color:var(--success);margin-right:5px;"></i>
+                        <span style="font-size:.75rem;font-weight:700;color:var(--success);">Parent Verified ✓</span>
+                    </div>`;
+                // Unlock Seal button
+                const sealBtn = document.getElementById(`seal-btn-${id}`);
+                sealBtn.disabled = false;
+                sealBtn.style.opacity = '1';
+                sealBtn.style.cursor = 'pointer';
+                sealBtn.style.pointerEvents = 'auto';
+                addFeed(`Parent verified for request #${id} — QR generation unlocked.`, 'live');
+            } else {
+                document.getElementById(`otp-status-${id}`).innerHTML = `<span style="color:var(--danger)">${d.error}</span>`;
+            }
+        } catch(e) {
+            document.getElementById(`otp-status-${id}`).innerHTML = `<span style="color:var(--danger)">Network error.</span>`;
+        }
+    }
+
+    function updateClock() {
+        document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('en-IN', {hour12:false});
+    }
+    updateClock(); setInterval(updateClock, 1000);
+
+    // Socket.io
+    const socket = io('/gate');
+    let feedCount = 0;
+
+    socket.on('connect', () => addFeed('Warden command center connected.', 'live'));
+
+    socket.on('status_update', (data) => {
+        const msgs = {
+            'dean_approved': `New request #${data.outpass_id} cleared by Dean — ready for Warden seal.`,
+            'approved':      `QR Gate Pass generated for request #${data.outpass_id} ✓`,
+            'rejected':      `Request #${data.outpass_id} denied.`
+        };
+        addFeed(msgs[data.status] || `Request #${data.outpass_id} → ${data.status}`, 'live');
+
+        // Update context message
+        const cards = document.querySelectorAll('.req-card').length;
+        document.getElementById('ctx-text').innerHTML = cards > 0
+            ? `<span style="color:var(--success)">${cards}</span> request${cards !== 1 ? 's' : ''} awaiting final Warden authorization.`
+            : 'All authorization queues clear. Gate Pass system on standby.';
+
+        // Animate out approved/rejected card
+        if (data.status === 'approved' || data.status === 'rejected') {
+            const card = document.getElementById(`card-${data.outpass_id}`);
+            if (card) {
+                card.style.opacity = '0'; card.style.transform = 'translateX(30px)';
+                card.style.transition = '0.5s';
+                setTimeout(() => card.remove(), 500);
+            }
+        }
+    });
+
+    function addFeed(msg, cls = '') {
+        feedCount++;
+        document.getElementById('feed-count').innerText = `${feedCount} event${feedCount !== 1 ? 's' : ''}`;
+        const container = document.getElementById('feed-items');
+        const placeholder = container.querySelector('div[style*="40px"]');
+        if (placeholder) placeholder.remove();
+        const el = document.createElement('div');
+        el.className = `feed-item ${cls}`;
+        el.innerHTML = `<div class="fi-title">${msg}</div><div class="fi-time">${new Date().toLocaleTimeString('en-IN',{hour12:false})}</div>`;
+        container.prepend(el);
+        while (container.children.length > 20) container.lastChild.remove();
+    }
+</script>
 {% endblock %}

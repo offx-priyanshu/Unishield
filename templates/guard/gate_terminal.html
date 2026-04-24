@@ -359,7 +359,7 @@
         <div id="res-toast" class="result-toast">
             <div id="res-icon" style="font-size: 1.5rem;"><i class="fas fa-check-circle text-success"></i></div>
             <div style="text-align: left;">
-                <div id="res-name" style="font-weight: 800; font-size: 1.1rem;">PRADIP PAWAR</div>
+                <div id="res-name" style="font-weight: 800; font-size: 1.1rem;">PRIYANSHU KUMAR</div>
                 <div id="res-msg" style="font-size: 0.7rem; letter-spacing: 1px; color: #aaa;">EXIT AUTHORIZED • 96.4%
                     CONFIDENCE</div>
             </div>
@@ -382,7 +382,7 @@
                 <div id="step-1"
                     class="h-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
                     <i class="fas fa-id-card fa-4x text-info mb-4"></i>
-                    <h3 class="mb-3 fw-bold text-white">STEP 1: VALIDATE IDENTITY</h3>
+                    <h3 class="mb-3 fw-bold text-white"> VALIDATE IDENTITY</h3>
                     <p class="text-muted mb-5" style="max-width: 400px; margin: 0 auto; line-height: 1.6;">Show student
                         ID card to the camera to extract PRN and details automatically.</p>
                     <button id="btn-scan-id" onclick="triggerIdScan(this)"
@@ -395,27 +395,27 @@
 
                 <!-- STEP 2: Auto-filled Form -->
                 <div id="step-2" style="display: none; flex:1;">
-                    <h4 class="mb-4 text-info"><i class="fas fa-user-edit me-2"></i> STEP 2: VERIFY DETAILS</h4>
+                    <h4 class="mb-4 text-info"><i class="fas fa-user-edit me-2"></i> VERIFY DETAILS</h4>
                     <form id="enroll-form">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Student ID / PRN</label>
                                 <input type="text" id="reg-sid"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="Enter ID">
+                                    placeholder>
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Full Name</label>
                                 <input type="text" id="reg-name"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="Identify Student">
+                                    placeholder>
                             </div>
                             <div class="col-md-4">
                                 <label class="small text-muted mb-2 uppercase">Department</label>
                                 <div class="autocomplete-wrapper" id="dept-autocomplete-wrapper">
                                     <input type="text" id="reg-dept"
                                         class="form-control bg-dark border-secondary text-white py-3 rounded-3"
-                                        placeholder="e.g. SOCSE" autocomplete="off">
+                                        placeholder autocomplete="off">
                                     <div id="dept-dropdown" class="autocomplete-dropdown"></div>
                                 </div>
                             </div>
@@ -424,7 +424,7 @@
                                 <div class="autocomplete-wrapper" id="course-autocomplete-wrapper">
                                     <input type="text" id="reg-course"
                                         class="form-control bg-dark border-secondary text-white py-3 rounded-3"
-                                        placeholder="e.g. B.Tech" autocomplete="off">
+                                        placeholder autocomplete="off">
                                     <div id="course-dropdown" class="autocomplete-dropdown"></div>
                                 </div>
                             </div>
@@ -432,20 +432,20 @@
                                 <label class="small text-muted mb-2 uppercase">Session</label>
                                 <input type="text" id="reg-session"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="e.g. 2024-2028">
+                                    placeholder>
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Student Phone</label>
                                 <input type="tel" id="reg-sphone"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="+91 XXXXX XXXXX" maxlength="10"
+                                    placeholder 10"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Parent Phone (Required for SMS)</label>
                                 <input type="tel" id="reg-pphone"
                                     class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder="+91 XXXXX XXXXX" maxlength="10"
+                                    placeholder 10"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                         </div>
@@ -459,19 +459,19 @@
                 <!-- STEP 3: BIOMETRIC CAPTURE -->
                 <div id="step-3" style="display: none; flex:1;"
                     class="justify-content-center align-items-center flex-column text-center">
-                    <h4 class="mb-4 text-info"><i class="fas fa-camera me-2"></i> STEP 3: FACE CAPTURE</h4>
+                    <h4 class="mb-4 text-info"><i class="fas fa-camera me-2"></i> FACE CAPTURE</h4>
                     <div class="card bg-black border-secondary p-4 text-center d-flex flex-column justify-content-center"
                         style="max-width:400px; width:100%;">
                         <div id="capture-status">
                             <i class="fas fa-camera fa-3x text-info mb-3"></i>
                             <h4>Face Biometric Capture</h4>
-                            <p class="small text-muted">System will capture 5 angles automatically.</p>
+                            <p class="small text-muted">System will capture 10 angles automatically.</p>
                             <button id="start-capture" onclick="startCaptureFlow()"
                                 class="btn btn-info w-100 py-3 mt-3 fw-bold">START CAPTURE</button>
                         </div>
                         <div id="capture-progress" style="display: none;">
                             <div class="spinner-border text-info mb-3" role="status"></div>
-                            <h4 id="capture-count">Capturing 0/5</h4>
+                            <h4 id="capture-count">Capturing 0/10</h4>
                             <p class="small text-muted">Please rotate head slightly...</p>
                         </div>
                     </div>

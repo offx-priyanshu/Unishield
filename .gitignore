@@ -1,39 +1,88 @@
-# System & Editor files
+# ── System & Editor ──────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Python Cache & Builds
+# ── Python ───────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
 dist/
 build/
 *.egg-info/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Virtual Environment
+# ── Virtual Environment ───────────────────────────────────
 venv/
 .venv/
 env/
 ENV/
-.env
 
-# Database
+# ── Environment / Secrets ─────────────────────────────────
+.env
+*.env
+!.env.example
+
+# ── Database ──────────────────────────────────────────────
 *.db
+*.sqlite
 *.sqlite3
 instance/
 database/*.db
 
-# Application Specific (Media & Temps)
+# ── Uploads & Media (student photos, documents, faces) ────
 static/uploads/*
 !static/uploads/.gitkeep
 static/faces/*
 !static/faces/.gitkeep
 faces/
-scratch/
-Unishield-clean/
+
+# ── Logs & Temp Files ─────────────────────────────────────
 logs/
 *.log
+scratch/
+*.tmp
+*.bak
+
+# ── Certificates & Keys ───────────────────────────────────
+*.pem
+*.key
+*.cert
+*.crt
+ssl/
+
+# ── Jupyter ───────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Test & Dev Artifacts ──────────────────────────────────
+test_*.py
+*_test.py
+Unishield-clean/
+UniShield_fix/
+check_img.py
+check_user.py
+fix_passwords.py
+
+# ── Node (if any frontend tooling added later) ────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+.nuxt/

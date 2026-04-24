@@ -161,7 +161,14 @@
     <div>
         <div class="card profile-card">
             <div class="profile-img-wrap">
-                <img src="{{ url_for('static', filename='uploads/' + current_user.photo_path.split('/')[-1]) if current_user.photo_path else 'https://via.placeholder.com/150' }}" class="profile-img" onerror="this.src='https://via.placeholder.com/150'">
+                {% set profile_img = 'https://via.placeholder.com/150' %}
+                {% if current_user.photo_path %}
+                    {% set profile_img = url_for('static', filename='uploads/' + current_user.photo_path.split('/')[-1]) %}
+                {% elif current_user.face_image %}
+                    {% set face_rel = current_user.face_image.split('static/')[-1] %}
+                    {% set profile_img = url_for('static', filename=face_rel) %}
+                {% endif %}
+                <img src="{{ profile_img }}" class="profile-img" onerror="this.src='https://via.placeholder.com/150'">
             </div>
             <h2 style="margin-bottom: 0.25rem; font-size: 1.4rem;">{{ current_user.name }}</h2>
             <p class="mono" style="color: var(--accent); font-size: 0.8rem; letter-spacing: 1px;">STUDENT ID #{{ current_user.student_id }}</p>
@@ -268,7 +275,7 @@
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Destination: <strong style="color: white;">{{ active_outpass.destination }}</strong></p>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Status: <span class="st-badge st-{{ active_outpass.status }}">{{ active_outpass.status | upper }}</span></p>
                 </div>
-                {% if active_outpass.status == 'approved' or active_outpass.status == 'pending' %}
+                {% if active_outpass.status == 'approved' or active_outpass.status == 'out' %}
                     <div style="text-align: right;">
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ active_outpass.id }}" style="border-radius: 8px; border: 2px solid var(--accent); background: white; padding: 4px;">
                     </div>
@@ -283,6 +290,132 @@
                         <i class="fas fa-exclamation-triangle"></i> LATE RETURN ALERT TRIGGERED
                     </div>
                 </div>
+            {% elif active_outpass.pass_type == 'home' %}
+                <!-- REAL-TIME APPROVAL TIMELINE -->
+                <div class="timeline-container" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <h4 style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">Approval Protocol Status</h4>
+                    
+                    <div class="approval-timeline">
+                        <!-- Step 1: Submission -->
+                        <div class="t-step active" id="step-submitted">
+                            <div class="t-icon"><i class="fas fa-file-export"></i></div>
+                            <div class="t-content">
+                                <div class="t-title">Application Submitted</div>
+                                <div class="t-desc">Wait for departmental review</div>
+                            </div>
+                            <div class="t-status"><i class="fas fa-check-circle text-success"></i></div>
+                        </div>
+
+                        <!-- Step 2: HOD -->
+                        {% set hod_st = 'active' if active_outpass.status == 'pending' else ('done' if active_outpass.status != 'rejected' else 'locked') %}
+                        <div class="t-step {{ hod_st }}" id="step-hod">
+                            <div class="t-icon"><i class="fas fa-user-tie"></i></div>
+                            <div class="t-content">
+                                <div class="t-title">HOD Approval</div>
+                                <div class="t-desc" id="hod-approver">{{ active_outpass.hod.name if active_outpass.hod_id else 'Department Head Review' }}</div>
+                            </div>
+                            <div class="t-status">
+                                {% if active_outpass.status == 'pending' %}
+                                    <div class="pulse-dot"></div>
+                                {% elif active_outpass.hod_id %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                    <i class="fas fa-lock-alt text-muted"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Dean -->
+                        {% set dean_st = 'active' if active_outpass.status == 'hod_approved' else ('done' if active_outpass.dean_id else 'locked') %}
+                        <div class="t-step {{ dean_st }}" id="step-dean">
+                            <div class="t-icon"><i class="fas fa-university"></i></div>
+                            <div class="t-content">
+                                <div class="t-title">Dean Authorization</div>
+                                <div class="t-desc" id="dean-approver">{{ active_outpass.dean.name if active_outpass.dean_id else 'Central Faculty Review' }}</div>
+                            </div>
+                            <div class="t-status">
+                                {% if active_outpass.status == 'hod_approved' %}
+                                    <div class="pulse-dot"></div>
+                                {% elif active_outpass.dean_id %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                    <i class="fas fa-lock-alt text-muted"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Warden / Parent -->
+                        {% set warden_st = 'active' if active_outpass.status == 'dean_approved' else ('done' if active_outpass.status == 'approved' else 'locked') %}
+                        <div class="t-step {{ warden_st }}" id="step-warden">
+                            <div class="t-icon"><i class="fas fa-home-user"></i></div>
+                            <div class="t-content">
+                                <div class="t-title">Warden & Parent Verify</div>
+                                <div class="t-desc">Final verification & OTP sync</div>
+                            </div>
+                            <div class="t-status">
+                                {% if active_outpass.status == 'dean_approved' %}
+                                    <div class="pulse-dot"></div>
+                                {% elif active_outpass.status == 'approved' %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                    <i class="fas fa-lock-alt text-muted"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Gate Pass -->
+                        {% set pass_st = 'active' if active_outpass.status == 'approved' else 'locked' %}
+                        <div class="t-step {{ pass_st }}" id="step-qr">
+                            <div class="t-icon"><i class="fas fa-qrcode"></i></div>
+                            <div class="t-content">
+                                <div class="t-title">QR Gate Pass</div>
+                                <div class="t-desc">System active for departure</div>
+                            </div>
+                            <div class="t-status">
+                                {% if active_outpass.status == 'approved' %}
+                                    <i class="fas fa-check-circle text-success shadow-neon"></i>
+                                {% else %}
+                                    <i class="fas fa-lock-alt text-muted"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .approval-timeline { display: flex; flex-direction: column; gap: 1rem; position: relative; }
+                    .approval-timeline::before {
+                        content: ''; position: absolute; left: 19px; top: 10px; bottom: 10px;
+                        width: 2px; background: rgba(255,255,255,0.05); z-index: 0;
+                    }
+                    .t-step { display: flex; align-items: center; gap: 1rem; position: relative; z-index: 1; padding: 0.5rem 0; transition: 0.4s; }
+                    .t-icon { 
+                        width: 40px; height: 40px; border-radius: 10px; background: rgba(0,0,0,0.4); 
+                        border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+                        font-size: 0.9rem; color: var(--text-muted);
+                    }
+                    .t-content { flex: 1; }
+                    .t-title { font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+                    .t-desc { font-size: 0.65rem; color: var(--text-muted); }
+                    .t-status { font-size: 0.9rem; }
+
+                    /* States */
+                    .t-step.done .t-icon { border-color: var(--success); color: var(--success); background: rgba(0,232,122,0.05); }
+                    .t-step.active .t-icon { border-color: var(--accent); color: var(--accent); background: rgba(0,210,255,0.1); box-shadow: 0 0 15px rgba(0,210,255,0.2); }
+                    .t-step.active .t-title { color: var(--accent); }
+                    
+                    .pulse-dot {
+                        width: 8px; height: 8px; background: var(--warning); border-radius: 50%;
+                        box-shadow: 0 0 10px var(--warning);
+                        animation: pulse 1.5s infinite;
+                    }
+                    @keyframes pulse {
+                        0% { transform: scale(0.9); opacity: 1; }
+                        50% { transform: scale(1.3); opacity: 0.5; }
+                        100% { transform: scale(0.9); opacity: 1; }
+                    }
+                    .shadow-neon { filter: drop-shadow(0 0 5px var(--success)); }
+                </style>
             {% elif active_outpass.status == 'pending' %}
                 <div style="margin-top: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
                     Awaiting authorization from Security Control.
@@ -405,5 +538,74 @@
         updateTimer();
         setInterval(updateTimer, 1000);
     }
+
+    // REAL-TIME STATUS TRACKER SOCKET
+    const socket = io('/gate');
+    
+    socket.on('status_update', function(data) {
+        console.log("Real-time Status Update Received:", data);
+        
+        // Only act if it's for this student and this active outpass
+        // (In a real app, we would check if active_outpass ID matches)
+        
+        if (data.status === 'hod_approved') {
+            updateStep('step-hod', 'done', data.approver);
+            updateStep('step-dean', 'active', 'Central Faculty Review');
+            showNotify(`HOD ${data.approver} approved your request.`);
+        } 
+        else if (data.status === 'dean_approved') {
+            updateStep('step-dean', 'done', data.approver);
+            updateStep('step-warden', 'active', 'Final verification & OTP sync');
+            showNotify(`Dean ${data.approver} authorized your request.`);
+        }
+        else if (data.status === 'approved') {
+            updateStep('step-warden', 'done', data.approver);
+            updateStep('step-qr', 'active', 'System active for departure');
+            showNotify(`Final approval granted! QR Pass generated.`);
+            // Reload page after a short delay to show the QR code
+            setTimeout(() => location.reload(), 3000);
+        }
+        else if (data.status === 'rejected') {
+            showNotify(`Your outpass request was rejected.`, 'danger');
+            setTimeout(() => location.reload(), 2000);
+        }
+    });
+
+    function updateStep(stepId, state, desc) {
+        const step = document.getElementById(stepId);
+        if (!step) return;
+
+        step.classList.remove('active', 'locked', 'done');
+        step.classList.add(state);
+        
+        const descEl = step.querySelector('.t-desc');
+        if (descEl && desc) descEl.innerText = desc;
+
+        const statusEl = step.querySelector('.t-status');
+        if (state === 'done') {
+            statusEl.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+        } else if (state === 'active') {
+            statusEl.innerHTML = '<div class="pulse-dot"></div>';
+        }
+    }
+
+    function showNotify(msg, type='success') {
+        const toast = document.createElement('div');
+        toast.style = `position:fixed; bottom:20px; right:20px; background:${type==='success'?'#00e87a':'#ff3b5c'}; color:black; padding:12px 24px; border-radius:8px; font-weight:700; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.5); animation:slideIn 0.5s ease-out;`;
+        toast.innerHTML = `<i class="fas fa-info-circle"></i> ${msg}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.5s ease-in forwards';
+            setTimeout(() => toast.remove(), 500);
+        }, 5000);
+    }
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        @keyframes slideOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(100%); opacity:0; } }
+    `;
+    document.head.appendChild(style);
 </script>
 {% endblock %}

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block page_title %}Security Gate: Outpass Scanner{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+    .scanner-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+    }
+
+    .video-wrap {
+        position: relative;
+        background: #000;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 2px solid var(--border);
+        aspect-ratio: 4/3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #scan-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .scanner-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    .scan-box {
+        width: 250px;
+        height: 250px;
+        border: 2px solid var(--accent);
+        border-radius: 20px;
+        position: relative;
+        box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
+    }
+
+    .scan-line {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background: var(--accent);
+        box-shadow: 0 0 15px var(--accent);
+        top: 0;
+        animation: scanMove 2s infinite linear;
+    }
+
+    @keyframes scanMove {
+        0% { top: 0; }
+        100% { top: 100%; }
+    }
+
+    .result-card {
+        padding: 2rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    .student-pic {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin: 0 auto;
+        border: 4px solid var(--accent);
+        object-fit: cover;
+    }
+
+    #scan-status-msg {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+    <div>
+        <h1 style="color: white; font-size: 1.8rem; margin-bottom: 0.5rem;">Gate Pass Protocol</h1>
+        <p style="color: var(--text-muted);">Neural identity verification and outpass validation.</p>
+    </div>
+    <a href="{{ url_for('guard.dashboard') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> RETURN TO POST</a>
+</div>
+
+<div class="scanner-container">
+    <div class="card" style="padding: 10px; margin: 0;">
+        <div class="video-wrap">
+            <video id="scan-video" playsinline muted></video>
+            <canvas id="hidden-canvas" style="display: none;"></canvas>
+            <div class="scanner-overlay">
+                <div class="scan-box">
+                    <div class="scan-line"></div>
+                </div>
+                <div id="scan-status-msg">Position QR code within the frame...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card result-card" id="result-panel">
+        <div style="font-size: 3rem; color: var(--border); opacity: 0.3; margin-top: 2rem;">
+            <i class="fas fa-id-card"></i>
+        </div>
+        <h3 style="color: var(--text-muted);">Awaiting Signal</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Scan a student outpass QR to initiate identity verification sequence.</p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const video = document.getElementById('scan-video');
+    const canvas = document.getElementById('hidden-canvas');
+    const context = canvas.getContext('2d');
+    const resultPanel = document.getElementById('result-panel');
+    let stream = null;
+    let isProcessing = false;
+
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = stream;
+            video.play();
+            requestAnimationFrame(tick);
+        } catch (err) {
+            console.error("Camera error:", err);
+            document.getElementById('scan-status-msg').innerText = "ERROR: Camera access denied.";
+        }
+    }
+
+    function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA && !isProcessing) {
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "attemptBoth",
+            });
+
+            if (code) {
+                console.log("QR Found:", code.data);
+                verifyOutpass(code.data);
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    async function verifyOutpass(id) {
+        isProcessing = true;
+        document.getElementById('scan-status-msg').innerText = "PROCESSING DATA...";
+        
+        try {
+            const res = await fetch(`/api/verify-outpass/${id}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                renderResult(data.data);
+                if (data.data.status === 'approved' || data.data.status === 'pending') {
+                    document.getElementById('scan-status-msg').innerHTML = '<span style="color: var(--success)">VALID OUTPASS FOUND</span>';
+                } else {
+                    document.getElementById('scan-status-msg').innerHTML = '<span style="color: var(--danger)">INVALID OR EXPIRED</span>';
+                }
+            } else {
+                showError(data.message);
+                document.getElementById('scan-status-msg').innerText = "INVALID QR CODE";
+            }
+        } catch (err) {
+            console.error(err);
+            showError("Network sequence failed.");
+        } finally {
+            setTimeout(() => { isProcessing = false; }, 3000); // 3s debounce
+        }
+    }
+
+    function renderResult(data) {
+        let statusClass = 'background: rgba(255,255,255,0.05); color: #fff;';
+        if (data.status === 'approved') statusClass = 'background: rgba(0,232,122,0.1); color: var(--success);';
+        if (data.status === 'pending') statusClass = 'background: rgba(251,191,36,0.1); color: var(--warning);';
+        if (data.status === 'rejected') statusClass = 'background: rgba(255,59,92,0.1); color: var(--danger);';
+
+        resultPanel.innerHTML = `
+            <div style="margin-top: 1rem;">
+                <img src="/static/uploads/${data.student_pic || 'default.png'}" class="student-pic" onerror="this.src='https://via.placeholder.com/120'">
+            </div>
+            <div>
+                <h2 style="color: white; margin-bottom: 0.25rem;">${data.student_name}</h2>
+                <p class="mono" style="color: var(--accent); font-size: 0.75rem;">ID: ${data.student_id}</p>
+            </div>
+            
+            <div class="status-badge" style="${statusClass}">
+                STATUS: ${data.status}
+            </div>
+
+            <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                <p style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Destination</p>
+                <p style="font-size: 0.8rem; color: white; margin-bottom: 0.75rem;">${data.destination}</p>
+                <p style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Purpose</p>
+                <p style="font-size: 0.8rem; color: white;">${data.purpose}</p>
+            </div>
+
+            ${data.status === 'approved' ? `
+                <a href="{{ url_for('gate.terminal') }}" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1rem;">
+                    PROCEED TO FACE SCAN <i class="fas fa-camera"></i>
+                </a>
+            ` : `
+                <button class="btn" disabled style="width: 100%; justify-content: center; opacity: 0.5;">
+                    NOT AUTHORIZED <i class="fas fa-lock"></i>
+                </button>
+            `}
+        `;
+    }
+
+    function showError(msg) {
+        resultPanel.innerHTML = `
+            <div style="font-size: 3rem; color: var(--danger); margin-top: 2rem;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 style="color: var(--danger);">Verification Failed</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">${msg}</p>
+            <button onclick="location.reload()" class="btn btn-ghost" style="margin-top: 1rem;">RETRY SCAN</button>
+        `;
+    }
+
+    startCamera();
+</script>
+{% endblock %}

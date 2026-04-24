@@ -31,6 +31,15 @@
             </div>
         </div>
     </div>
+
+    <a href="{{ url_for('gate.qr_scanner') }}" class="card" style="text-decoration: none; text-align: center; padding: 4rem; grid-column: span 2; border-top: 4px solid #a78bfa; background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(13, 13, 13, 0.8) 100%);">
+        <i class="fas fa-qrcode" style="font-size: 4rem; color: #a78bfa; margin-bottom: 2rem;"></i>
+        <h2 style="color: white; margin-bottom: 1rem;">SCAN OUTPASS QR</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Instantly verify student gate passes and initialize biometric exit protocol.</p>
+        <div style="margin-top: 2rem; display: inline-flex; align-items: center; gap: 0.5rem; color: #a78bfa; font-weight: 700; font-size: 0.8rem;">
+            INITIALIZE SCANNER <i class="fas fa-expand"></i>
+        </div>
+    </a>
 </div>
 
 <style>

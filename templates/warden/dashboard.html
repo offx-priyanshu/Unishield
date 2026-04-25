@@ -122,6 +122,121 @@
 .empty-state { height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem; }
 .empty-ico { font-size:3.5rem;color:var(--success);margin-bottom:16px;filter:drop-shadow(0 0 20px rgba(0,245,122,.3));animation:float 3s ease-in-out infinite; }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+/* ── Clickable stat card ── */
+.s-card-clickable { cursor:pointer; }
+/* green (Awaiting Seal) */
+.s-card-green:hover  { border-color:rgba(0,245,122,.4) !important; box-shadow:0 0 22px rgba(0,245,122,.12); transform:translateY(-3px) scale(1.02); }
+.s-card-green .s-lbl { color:var(--success) !important; }
+/* blue (Passes Today) */
+.s-card-blue:hover   { border-color:rgba(0,210,255,.4) !important; box-shadow:0 0 22px rgba(0,210,255,.12); transform:translateY(-3px) scale(1.02); }
+.s-card-blue .s-lbl  { color:var(--accent)  !important; }
+/* red (Emergency) */
+.s-card-red:hover    { border-color:rgba(255,59,92,.4)  !important; box-shadow:0 0 22px rgba(255,59,92,.12);  transform:translateY(-3px) scale(1.02); }
+.s-card-red .s-lbl   { color:var(--danger)  !important; }
+/* gold (Total Issued) */
+.s-card-gold:hover   { border-color:rgba(255,184,0,.4)  !important; box-shadow:0 0 22px rgba(255,184,0,.12);  transform:translateY(-3px) scale(1.02); }
+.s-card-gold .s-lbl  { color:var(--warning) !important; }
+
+/* ── All Modals — unified backdrop ── */
+#weekly-modal-backdrop,
+#awaiting-modal-backdrop,
+#today-modal-backdrop,
+#emergency-modal-backdrop {
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+}
+#weekly-modal-backdrop.open,
+#awaiting-modal-backdrop.open,
+#today-modal-backdrop.open,
+#emergency-modal-backdrop.open { display:flex; align-items:center; justify-content:center; }
+
+#weekly-modal,
+.wm-modal-box {
+    background: linear-gradient(160deg,#0d1117,#111820);
+    border:1px solid rgba(255,184,0,.2);
+    border-radius:22px;
+    width:92%; max-width:1100px;
+    max-height:88vh;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+    animation:slideUp .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+
+.wm-header {
+    padding:20px 28px;
+    background:linear-gradient(90deg,rgba(255,184,0,.08),transparent);
+    border-bottom:1px solid rgba(255,255,255,.06);
+    display:flex; align-items:center; justify-content:space-between;
+    flex-shrink:0;
+}
+.wm-title { font-size:1rem; font-weight:800; color:#fff; }
+.wm-subtitle { font-size:.7rem; color:var(--text-muted); margin-top:2px; }
+.wm-close-btn {
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+    color:#aaa; border-radius:10px; padding:6px 14px; cursor:pointer;
+    font-size:.75rem; font-weight:700; transition:.2s;
+}
+.wm-close-btn:hover { background:rgba(255,59,92,.2); color:var(--danger); border-color:rgba(255,59,92,.4); }
+
+.wm-toolbar {
+    padding:14px 28px;
+    border-bottom:1px solid rgba(255,255,255,.04);
+    display:flex; align-items:center; gap:12px; flex-shrink:0;
+}
+.wm-count-badge {
+    background:rgba(255,184,0,.12); border:1px solid rgba(255,184,0,.3);
+    color:var(--warning); padding:4px 14px; border-radius:100px;
+    font-size:.7rem; font-weight:800; letter-spacing:.5px;
+}
+.btn-excel {
+    margin-left:auto;
+    background:linear-gradient(135deg,#217346,#1a5c38);
+    color:#fff; border:none; border-radius:10px;
+    padding:8px 18px; font-size:.75rem; font-weight:800;
+    cursor:pointer; display:flex; align-items:center; gap:8px;
+    transition:.25s; letter-spacing:.3px;
+    box-shadow:0 4px 15px rgba(33,115,70,.4);
+}
+.btn-excel:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(33,115,70,.55); }
+.btn-excel:active { transform:translateY(0); }
+
+.wm-body { overflow-y:auto; flex:1; padding:0 28px 20px; }
+.wm-body::-webkit-scrollbar { width:4px; }
+.wm-body::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); border-radius:10px; }
+
+/* Table */
+.pass-table { width:100%; border-collapse:collapse; margin-top:14px; }
+.pass-table thead th {
+    padding:10px 12px; text-align:left;
+    font-size:.6rem; font-weight:900; text-transform:uppercase;
+    letter-spacing:1px; color:var(--text-muted);
+    border-bottom:1px solid rgba(255,255,255,.08);
+    position:sticky; top:0;
+    background:linear-gradient(160deg,#0d1117,#111820);
+    z-index:1;
+}
+.pass-table tbody tr {
+    border-bottom:1px solid rgba(255,255,255,.04);
+    transition:.18s;
+}
+.pass-table tbody tr:hover { background:rgba(255,184,0,.04); }
+.pass-table td { padding:11px 12px; font-size:.75rem; color:#ccc; vertical-align:middle; }
+.pass-table td:first-child { color:var(--text-muted); font-size:.65rem; }
+.pt-name { font-weight:700; color:#fff !important; }
+.pt-priority { padding:2px 8px; border-radius:5px; font-size:.6rem; font-weight:900; text-transform:uppercase; }
+.pt-normal    { background:rgba(255,255,255,.06); color:#888; }
+.pt-medical   { background:rgba(0,210,255,.1); color:var(--accent); }
+.pt-emergency { background:rgba(255,59,92,.15); color:var(--danger); }
+.pt-verified-yes { color:var(--success); font-weight:800; }
+.pt-verified-no  { color:var(--danger);  font-weight:800; }
+
+.wm-loading { text-align:center; padding:60px 20px; color:var(--text-muted); font-size:.85rem; }
+.wm-loading .spin { display:inline-block; width:32px; height:32px; border:3px solid rgba(255,184,0,.2); border-top-color:var(--warning); border-radius:50%; animation:spin .7s linear infinite; margin-bottom:12px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.wm-empty { text-align:center; padding:60px 20px; color:var(--text-muted); font-size:.85rem; }
 </style>
 {% endblock %}
 
@@ -146,21 +261,33 @@
 
 <!-- Stats -->
 <div class="stats-row">
-    <div class="s-card">
+    <div class="s-card s-card-clickable s-card-green" onclick="openAwaitingModal()" title="View pending requests">
         <div class="s-icon" style="background:rgba(0,245,122,.1)"><i class="fas fa-hourglass-half" style="color:var(--success)"></i></div>
-        <div><div class="s-val">{{ requests|length }}</div><div class="s-lbl">Awaiting Seal</div></div>
+        <div>
+            <div class="s-val" style="color:var(--success)">{{ requests|length }}</div>
+            <div class="s-lbl">Awaiting Seal <i class="fas fa-arrow-up-right-from-square" style="font-size:.5rem;opacity:.6;margin-left:3px;"></i></div>
+        </div>
     </div>
-    <div class="s-card">
+    <div class="s-card s-card-clickable s-card-blue" onclick="openTodayModal()" title="View today's approved passes">
         <div class="s-icon" style="background:rgba(0,210,255,.1)"><i class="fas fa-qrcode" style="color:var(--accent)"></i></div>
-        <div><div class="s-val">{{ stats.approved_today }}</div><div class="s-lbl">Passes Today</div></div>
+        <div>
+            <div class="s-val" style="color:var(--accent)">{{ stats.approved_today }}</div>
+            <div class="s-lbl">Passes Today <i class="fas fa-arrow-up-right-from-square" style="font-size:.5rem;opacity:.6;margin-left:3px;"></i></div>
+        </div>
     </div>
-    <div class="s-card">
+    <div class="s-card s-card-clickable s-card-red" onclick="openEmergencyModal()" title="View emergency requests">
         <div class="s-icon" style="background:rgba(255,59,92,.1)"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div>
-        <div><div class="s-val" style="color:{{ 'var(--danger)' if stats.emergency_count > 0 else '#fff' }}">{{ stats.emergency_count }}</div><div class="s-lbl">Emergency</div></div>
+        <div>
+            <div class="s-val" style="color:{{ 'var(--danger)' if stats.emergency_count > 0 else '#fff' }}">{{ stats.emergency_count }}</div>
+            <div class="s-lbl">Emergency <i class="fas fa-arrow-up-right-from-square" style="font-size:.5rem;opacity:.6;margin-left:3px;"></i></div>
+        </div>
     </div>
-    <div class="s-card">
+    <div class="s-card s-card-clickable s-card-gold" id="total-issued-card" onclick="openWeeklyModal()" title="Click to view last 7 days gate passes">
         <div class="s-icon" style="background:rgba(255,184,0,.1)"><i class="fas fa-id-card-alt" style="color:var(--warning)"></i></div>
-        <div><div class="s-val">{{ stats.total_passes_issued }}</div><div class="s-lbl">Total Issued</div></div>
+        <div>
+            <div class="s-val" style="color:var(--warning)">{{ stats.total_passes_issued }}</div>
+            <div class="s-lbl">Total Issued <i class="fas fa-arrow-up-right-from-square" style="font-size:.55rem;opacity:.7;margin-left:4px;"></i></div>
+        </div>
     </div>
 </div>
 
@@ -319,12 +446,31 @@
                             <textarea class="remark-box" id="remark-{{ req.id }}" placeholder="Add remark (optional)..."></textarea>
                             <form method="POST" action="{{ url_for('warden.approve_request', outpass_id=req.id) }}" style="margin:0 0 6px 0;" id="form-approve-{{ req.id }}">
                                 <input type="hidden" name="remark" id="hr-{{ req.id }}">
+                                {% if not req.parent_verified %}
+                                <!-- OTP LOCK STATE — shown when parent not yet verified -->
+                                <div style="background:rgba(255,59,92,0.08); border:1px dashed rgba(255,59,92,0.35); border-radius:10px; padding:10px; margin-bottom:8px; text-align:center;">
+                                    <i class="fas fa-lock" style="color:var(--danger); font-size:1rem;"></i>
+                                    <div style="font-size:0.65rem; font-weight:800; color:var(--danger); margin-top:5px; letter-spacing:0.5px;">PARENT OTP REQUIRED</div>
+                                    <div style="font-size:0.58rem; color:rgba(255,255,255,0.35); margin-top:3px;">Call parent to receive OTP, then verify above</div>
+                                    {% if student.parent_phone %}
+                                    <a href="tel:{{ student.parent_phone }}" style="display:inline-flex; align-items:center; gap:5px; margin-top:6px; background:rgba(255,184,0,0.1); border:1px solid rgba(255,184,0,0.3); color:var(--warning); padding:4px 10px; border-radius:6px; font-size:0.65rem; font-weight:800; text-decoration:none;">
+                                        <i class="fas fa-phone-volume"></i> {{ student.parent_phone }}
+                                    </a>
+                                    {% else %}
+                                    <div style="font-size:0.6rem; color:var(--danger); margin-top:5px;"><i class="fas fa-exclamation-triangle"></i> Parent number not registered</div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" disabled
+                                    style="width:100%;background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.1);color:rgba(255,255,255,0.2);border-radius:8px;padding:9px;font-size:.7rem;font-weight:900;cursor:not-allowed;">
+                                    <i class="fas fa-lock"></i> SEAL & GENERATE QR
+                                </button>
+                                {% else %}
                                 <button type="submit" id="seal-btn-{{ req.id }}"
                                     class="btn-approve"
-                                    {% if not req.parent_verified %}disabled style="opacity:0.35;cursor:not-allowed;pointer-events:none;"{% endif %}
                                     onclick="document.getElementById('hr-{{ req.id }}').value=document.getElementById('remark-{{ req.id }}').value">
                                     <i class="fas fa-qrcode"></i> SEAL & GENERATE QR
                                 </button>
+                                {% endif %}
                             </form>
                             <form method="POST" action="{{ url_for('warden.reject_request', outpass_id=req.id) }}" style="margin:0;">
                                 <input type="hidden" name="remark" id="rr-{{ req.id }}">
@@ -370,10 +516,281 @@
     </div>
 
 </div>
+
+<!-- ══════════ Awaiting Seal Modal ══════════ -->
+<div id="awaiting-modal-backdrop" role="dialog" aria-modal="true" onclick="closeAnyModal('awaiting-modal-backdrop')">
+    <div id="awaiting-modal" class="wm-modal-box" style="border-color:rgba(0,245,122,.2);">
+        <div class="wm-header" style="background:linear-gradient(90deg,rgba(0,245,122,.07),transparent);">
+            <div>
+                <div class="wm-title"><i class="fas fa-hourglass-half" style="color:var(--success);margin-right:10px;"></i>Pending Requests — Awaiting Warden Seal</div>
+                <div class="wm-subtitle" id="awaiting-subtitle">Requests cleared by HOD + Dean, pending your final stamp</div>
+            </div>
+            <button class="wm-close-btn" onclick="closeAnyModal('awaiting-modal-backdrop', true)"><i class="fas fa-times" style="margin-right:5px;"></i>Close</button>
+        </div>
+        <div class="wm-toolbar">
+            <span class="wm-count-badge" id="awaiting-count-badge" style="background:rgba(0,245,122,.1);border-color:rgba(0,245,122,.3);color:var(--success);">0 PENDING</span>
+            <span style="font-size:.7rem;color:var(--text-muted);"><i class="fas fa-shield-halved" style="margin-right:5px;color:var(--success);"></i>HOD + Dean approved, waiting for Warden</span>
+            <a href="/warden/export-awaiting-passes" target="_blank" class="btn-excel"><i class="fas fa-file-excel"></i> Export Excel</a>
+        </div>
+        <div class="wm-body"><div id="awaiting-content"><div class="wm-loading"><div class="spin" style="border-top-color:var(--success);"></div><div>Loading...</div></div></div></div>
+    </div>
+</div>
+
+<!-- ══════════ Passes Today Modal ══════════ -->
+<div id="today-modal-backdrop" role="dialog" aria-modal="true" onclick="closeAnyModal('today-modal-backdrop')">
+    <div id="today-modal" class="wm-modal-box" style="border-color:rgba(0,210,255,.2);">
+        <div class="wm-header" style="background:linear-gradient(90deg,rgba(0,210,255,.07),transparent);">
+            <div>
+                <div class="wm-title"><i class="fas fa-qrcode" style="color:var(--accent);margin-right:10px;"></i>Today's Approved Gate Passes</div>
+                <div class="wm-subtitle" id="today-subtitle">Gate passes approved by Warden today</div>
+            </div>
+            <button class="wm-close-btn" onclick="closeAnyModal('today-modal-backdrop', true)"><i class="fas fa-times" style="margin-right:5px;"></i>Close</button>
+        </div>
+        <div class="wm-toolbar">
+            <span class="wm-count-badge" id="today-count-badge" style="background:rgba(0,210,255,.1);border-color:rgba(0,210,255,.3);color:var(--accent);">0 PASSES</span>
+            <span style="font-size:.7rem;color:var(--text-muted);"><i class="fas fa-calendar-day" style="margin-right:5px;color:var(--accent);"></i>Passes issued today</span>
+            <a href="/warden/export-today-passes" target="_blank" class="btn-excel"><i class="fas fa-file-excel"></i> Export Excel</a>
+        </div>
+        <div class="wm-body"><div id="today-content"><div class="wm-loading"><div class="spin" style="border-top-color:var(--accent);"></div><div>Loading...</div></div></div></div>
+    </div>
+</div>
+
+<!-- ══════════ Emergency Modal ══════════ -->
+<div id="emergency-modal-backdrop" role="dialog" aria-modal="true" onclick="closeAnyModal('emergency-modal-backdrop')">
+    <div id="emergency-modal" class="wm-modal-box" style="border-color:rgba(255,59,92,.25);">
+        <div class="wm-header" style="background:linear-gradient(90deg,rgba(255,59,92,.08),transparent);">
+            <div>
+                <div class="wm-title"><i class="fas fa-triangle-exclamation" style="color:var(--danger);margin-right:10px;"></i>Emergency Requests</div>
+                <div class="wm-subtitle">High-priority requests pending Dean approval or above</div>
+            </div>
+            <button class="wm-close-btn" onclick="closeAnyModal('emergency-modal-backdrop', true)"><i class="fas fa-times" style="margin-right:5px;"></i>Close</button>
+        </div>
+        <div class="wm-toolbar">
+            <span class="wm-count-badge" id="emergency-count-badge" style="background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.3);color:var(--danger);">0 EMERGENCY</span>
+            <span style="font-size:.7rem;color:var(--text-muted);"><i class="fas fa-siren-on" style="margin-right:5px;color:var(--danger);"></i>Requires immediate attention</span>
+            <a href="/warden/export-emergency-passes" target="_blank" class="btn-excel" style="background:linear-gradient(135deg,#8b0000,#c0392b);"><i class="fas fa-file-excel"></i> Export Excel</a>
+        </div>
+        <div class="wm-body"><div id="emergency-content"><div class="wm-loading"><div class="spin" style="border-top-color:var(--danger);"></div><div>Loading...</div></div></div></div>
+    </div>
+</div>
+
+<!-- ══════════ Weekly Gate Passes Modal ══════════ -->
+<div id="weekly-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="wm-title-text" onclick="closeAnyModal('weekly-modal-backdrop')">
+    <div id="weekly-modal" class="wm-modal-box">
+        <div class="wm-header">
+            <div>
+                <div class="wm-title" id="wm-title-text"><i class="fas fa-id-card-alt" style="color:var(--warning);margin-right:10px;"></i>Weekly Gate Pass Report</div>
+                <div class="wm-subtitle" id="wm-date-range">Last 7 days · Loading...</div>
+            </div>
+            <button class="wm-close-btn" onclick="closeAnyModal('weekly-modal-backdrop', true)"><i class="fas fa-times" style="margin-right:5px;"></i>Close</button>
+        </div>
+        <div class="wm-toolbar">
+            <span class="wm-count-badge" id="wm-count-badge">0 PASSES</span>
+            <span style="font-size:.7rem;color:var(--text-muted);"><i class="fas fa-calendar-week" style="margin-right:5px;color:var(--warning);"></i>Approved passes from last 7 days</span>
+            <a href="/warden/export-weekly-passes" target="_blank" class="btn-excel"><i class="fas fa-file-excel"></i> Export Excel</a>
+        </div>
+        <div class="wm-body"><div id="wm-content"><div class="wm-loading"><div class="spin"></div><div>Loading gate passes...</div></div></div></div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+    /* ══ Universal Modal Helpers ══ */
+    const _modalLoaded = {};
+
+    function openModal(backdropId) {
+        document.getElementById(backdropId).classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeAnyModal(backdropId, force = false) {
+        const el = document.getElementById(backdropId);
+        // Close if force is true (from button) OR if clicking the backdrop itself
+        if (force || (event && event.target === el)) {
+            el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    }
+
+    /* ── Awaiting Seal ── */
+    function openAwaitingModal() {
+        openModal('awaiting-modal-backdrop');
+        if (!_modalLoaded['awaiting']) loadGenericPasses('/warden/awaiting-passes', 'awaiting-content', 'awaiting-count-badge', '{n} PENDING', buildPassTable);
+    }
+
+    /* ── Passes Today ── */
+    function openTodayModal() {
+        openModal('today-modal-backdrop');
+        if (!_modalLoaded['today']) loadGenericPasses('/warden/today-passes', 'today-content', 'today-count-badge', '{n} PASSES', buildPassTable);
+    }
+
+    /* ── Emergency ── */
+    function openEmergencyModal() {
+        openModal('emergency-modal-backdrop');
+        if (!_modalLoaded['emergency']) loadGenericPasses('/warden/emergency-passes', 'emergency-content', 'emergency-count-badge', '{n} EMERGENCY', buildPassTable);
+    }
+
+    /* ── Weekly (Total Issued) ── */
+    function openWeeklyModal() {
+        openModal('weekly-modal-backdrop');
+        if (!_modalLoaded['weekly']) loadGenericPasses('/warden/weekly-passes', 'wm-content', 'wm-count-badge', '{n} PASSES', buildPassTable);
+    }
+
+    /* ── Generic loader ── */
+    async function loadGenericPasses(url, contentId, badgeId, badgeTpl, renderFn) {
+        const key = contentId;
+        try {
+            const res  = await fetch(url);
+            const data = await res.json();
+            const badge   = document.getElementById(badgeId);
+            const content = document.getElementById(contentId);
+
+            if (badgeId === 'wm-count-badge') {
+                const now = new Date(), weekAgo = new Date(Date.now()-7*24*60*60*1000);
+                const fmt = d => d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+                const sub = document.getElementById('wm-date-range');
+                if (sub) sub.textContent = `${fmt(weekAgo)} — ${fmt(now)}`;
+            }
+
+            badge.textContent = badgeTpl.replace('{n}', data.count);
+
+            if (!data.passes || data.passes.length === 0) {
+                content.innerHTML = `<div class="wm-empty"><i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:12px;"></i>No records found.</div>`;
+            } else {
+                content.innerHTML = renderFn(data.passes);
+            }
+            _modalLoaded[key] = true;
+        } catch(err) {
+            document.getElementById(contentId).innerHTML =
+                `<div class="wm-empty"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i><br>Failed to load data.</div>`;
+        }
+    }
+
+    function buildPassTable(passes) {
+        let rows = '';
+        passes.forEach((p, idx) => {
+            const pClass = p.priority === 'emergency' ? 'pt-emergency'
+                         : p.priority === 'medical'   ? 'pt-medical' : 'pt-normal';
+            const verified = p.parent_verified !== undefined
+                ? (p.parent_verified
+                    ? '<span class="pt-verified-yes"><i class="fas fa-check-circle"></i> YES</span>'
+                    : '<span class="pt-verified-no"><i class="fas fa-times-circle"></i> NO</span>')
+                : '—';
+            const statusBadge = p.status
+                ? `<span style="font-size:.6rem;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);color:#aaa;">${p.status.replace('_',' ').toUpperCase()}</span>`
+                : '';
+            rows += `<tr>
+                <td>${idx+1}</td>
+                <td class="pt-name">${p.student_name}</td>
+                <td><span style="font-size:.65rem;font-family:'IBM Plex Mono',monospace;color:#aaa;">${p.student_id}</span></td>
+                <td>${p.department}</td>
+                <td><i class="fas fa-location-dot" style="color:var(--success);margin-right:4px;font-size:.65rem;"></i>${p.destination}</td>
+                <td style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.purpose}">${p.purpose}</td>
+                <td><span class="pt-priority ${pClass}">${p.priority}</span></td>
+                <td style="white-space:nowrap;">${p.start_date || '—'}</td>
+                <td style="white-space:nowrap;">${p.end_date || '—'}</td>
+                <td style="color:var(--success);font-size:.68rem;white-space:nowrap;">${p.approved_at || p.created_at || '—'}</td>
+                <td>${verified}</td>
+                <td style="font-size:.65rem;opacity:.7;">${statusBadge}</td>
+            </tr>`;
+        });
+        return `<table class="pass-table">
+            <thead><tr>
+                <th>#</th><th>Student Name</th><th>Roll No.</th><th>Department</th>
+                <th>Destination</th><th>Purpose</th><th>Priority</th>
+                <th>Start Date</th><th>End Date</th><th>Approved At</th>
+                <th>Parent Verified</th><th>Status</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    async function loadWeeklyPasses() {
+        try {
+            const res  = await fetch('/warden/weekly-passes');
+            const data = await res.json();
+
+            const badge    = document.getElementById('wm-count-badge');
+            const dateEl   = document.getElementById('wm-date-range');
+            const content  = document.getElementById('wm-content');
+
+            // Update date range
+            const now    = new Date();
+            const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
+            const fmt = d => d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+            dateEl.textContent = `${fmt(weekAgo)} — ${fmt(now)}`;
+
+            badge.textContent = `${data.count} PASS${data.count !== 1 ? 'ES' : ''}`;
+
+            if (!data.passes || data.passes.length === 0) {
+                content.innerHTML = `<div class="wm-empty">
+                    <i class="fas fa-inbox" style="font-size:2rem;opacity:.3;display:block;margin-bottom:12px;"></i>
+                    No gate passes approved in the last 7 days.
+                </div>`;
+                weeklyLoaded = true;
+                return;
+            }
+
+            let rows = '';
+            data.passes.forEach((p, idx) => {
+                const pClass = p.priority === 'emergency' ? 'pt-emergency'
+                             : p.priority === 'medical'   ? 'pt-medical' : 'pt-normal';
+                const verified = p.parent_verified
+                    ? '<span class="pt-verified-yes"><i class="fas fa-check-circle"></i> YES</span>'
+                    : '<span class="pt-verified-no"><i class="fas fa-times-circle"></i> NO</span>';
+                rows += `
+                <tr>
+                    <td>${idx+1}</td>
+                    <td class="pt-name">${p.student_name}</td>
+                    <td><span style="font-size:.65rem;font-family:'IBM Plex Mono',monospace;color:#aaa;">${p.student_id}</span></td>
+                    <td>${p.department}</td>
+                    <td><i class="fas fa-location-dot" style="color:var(--success);margin-right:5px;font-size:.65rem;"></i>${p.destination}</td>
+                    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.purpose}">${p.purpose}</td>
+                    <td><span class="pt-priority ${pClass}">${p.priority}</span></td>
+                    <td style="white-space:nowrap;">${p.start_date}</td>
+                    <td style="white-space:nowrap;">${p.end_date}</td>
+                    <td style="color:var(--success);font-size:.68rem;white-space:nowrap;">${p.approved_at}</td>
+                    <td>${verified}</td>
+                    <td style="font-size:.65rem;opacity:.7;">#${p.id}</td>
+                </tr>`;
+            });
+
+            content.innerHTML = `
+            <table class="pass-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student Name</th>
+                        <th>Roll No.</th>
+                        <th>Department</th>
+                        <th>Destination</th>
+                        <th>Purpose</th>
+                        <th>Priority</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Warden Approved At</th>
+                        <th>Parent Verified</th>
+                        <th>Pass ID</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+
+            weeklyLoaded = true;
+        } catch(err) {
+            document.getElementById('wm-content').innerHTML =
+                `<div class="wm-empty"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i><br>Failed to load data. Please try again.</div>`;
+        }
+    }
+
+    // Close any open modal on Escape
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape') return;
+        ['awaiting-modal-backdrop','today-modal-backdrop','emergency-modal-backdrop','weekly-modal-backdrop']
+            .forEach(id => document.getElementById(id).classList.remove('open'));
+        document.body.style.overflow = '';
+    });
     // Live clock
     async function sendOTP(id) {
         const btn = document.querySelector(`#step-send-${id} button`);
@@ -384,8 +801,7 @@
             if (d.success) {
                 document.getElementById(`step-send-${id}`).style.display = 'none';
                 document.getElementById(`step-verify-${id}`).style.display = 'block';
-                let msg = `OTP sent to ${d.masked_phone}`;
-                if (d.otp_debug) msg += ` · Dev OTP: ${d.otp_debug}`;
+                let msg = `OTP sent to ${d.masked_phone} — Ask parent to share the code.`;
                 document.getElementById(`otp-sent-msg-${id}`).innerText = msg;
                 addFeed(`OTP dispatched to parent for request #${id}`, 'live');
             } else {

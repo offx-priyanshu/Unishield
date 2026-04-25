@@ -274,10 +274,39 @@
                     </h3>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Destination: <strong style="color: white;">{{ active_outpass.destination }}</strong></p>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Status: <span class="st-badge st-{{ active_outpass.status }}">{{ active_outpass.status | upper }}</span></p>
+
+                    {% if active_outpass.leave_document %}
+                    <a href="{{ url_for('static', filename='uploads/' + active_outpass.leave_document) }}" target="_blank"
+                       style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+                              font-size: 0.72rem; font-weight: 700; text-decoration: none;
+                              color: var(--accent); background: rgba(0,210,255,0.07);
+                              border: 1px solid rgba(0,210,255,0.2); padding: 5px 12px;
+                              border-radius: 8px; transition: 0.2s;"
+                       onmouseover="this.style.background='rgba(0,210,255,0.15)'"
+                       onmouseout="this.style.background='rgba(0,210,255,0.07)'">
+                        <i class="fas fa-file-alt"></i> View My Supporting Document
+                    </a>
+                    {% endif %}
                 </div>
                 {% if active_outpass.status == 'approved' or active_outpass.status == 'out' %}
                     <div style="text-align: right;">
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ active_outpass.id }}" style="border-radius: 8px; border: 2px solid var(--accent); background: white; padding: 4px;">
+                        
+                        {% if active_outpass.status != 'out' %}
+                        <form action="{{ url_for('student.cancel_outpass', outpass_id=active_outpass.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this request? Your approval signal will be revoked.')" style="margin-top: 10px;">
+                            <button type="submit" style="background: rgba(255,59,92,0.1); border: 1px solid rgba(255,59,92,0.3); color: var(--danger); padding: 5px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; width: 100%; justify-content: center;">
+                                <i class="fas fa-times-circle"></i> CANCEL REQUEST
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                {% elif active_outpass.status in ['pending', 'hod_approved', 'dean_approved'] %}
+                    <div style="text-align: right;">
+                        <form action="{{ url_for('student.cancel_outpass', outpass_id=active_outpass.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this pending request?')" style="margin-top: 0;">
+                            <button type="submit" style="background: rgba(255,59,92,0.1); border: 1px solid rgba(255,59,92,0.3); color: var(--danger); padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-ban"></i> CANCEL
+                            </button>
+                        </form>
                     </div>
                 {% endif %}
             </div>

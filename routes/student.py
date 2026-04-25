@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from models.db import db
 from models.user import User
@@ -44,11 +44,30 @@ def request_outpass():
         return redirect(url_for('student.dashboard'))
         
     if request.method == 'POST':
-        purpose = request.form.get('purpose')
-        destination = request.form.get('destination')
+        purpose = request.form.get('purpose', '').strip()
+        destination = request.form.get('destination', '').strip()
         hours = int(request.form.get('hours', 2))
-        pass_type = request.form.get('pass_type', 'local')  # 'local' or 'home'
-        
+        pass_type = request.form.get('pass_type', 'local')
+
+        # ── Server-side validation ──
+        errors = []
+        if not destination:
+            errors.append('Destination address is required.')
+        if not purpose or len(purpose) < 5:
+            errors.append('Purpose must be at least 5 characters.')
+        if pass_type == 'home':
+            if not request.form.get('start_date'):
+                errors.append('Start date is required for Home Leave.')
+            if not request.form.get('end_date'):
+                errors.append('End date is required for Home Leave.')
+            elif request.form.get('start_date') and request.form.get('end_date'):
+                if request.form.get('end_date') < request.form.get('start_date'):
+                    errors.append('End date cannot be before start date.')
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return redirect(url_for('student.request_outpass', type=pass_type))
+
         active = Outpass.query.filter(
             (Outpass.student_id == current_user.id) & 
             (Outpass.status.in_(['pending', 'hod_approved', 'dean_approved', 'approved', 'out']))
@@ -122,7 +141,7 @@ def request_outpass():
         return redirect(url_for('student.dashboard'))
 
         
-    return render_template('student/request_outpass.html')
+    return render_template('student/request_outpass.html', now=datetime.utcnow())
 
 
 @student_bp.route('/profile/edit', methods=['GET', 'POST'])
@@ -162,3 +181,26 @@ def view_certificate(outpass_id):
         
     return render_template('student/certificate.html', outpass=outpass)
 
+@student_bp.route('/cancel_outpass/<int:outpass_id>', methods=['POST'])
+@login_required
+@student_required
+def cancel_outpass(outpass_id):
+    outpass = Outpass.query.get_or_404(outpass_id)
+    
+    # Security check: Student can only cancel their own outpass
+    if outpass.student_id != current_user.id:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('student.dashboard'))
+    
+    # Safety check: Cannot cancel if already checked out
+    if outpass.status == 'out':
+        flash('Cannot cancel a pass after exit. Please return to campus normally.', 'warning')
+        return redirect(url_for('student.dashboard'))
+        
+    outpass.status = 'rejected'
+    outpass.hod_remarks = "Cancelled by student (Changed plans)"
+    db.session.commit()
+    
+    Logger.log(current_user.id, f'Student cancelled their outpass request #{outpass_id}')
+    flash('Your outpass request has been cancelled.', 'info')
+    return redirect(url_for('student.dashboard'))

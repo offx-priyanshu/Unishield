@@ -113,6 +113,26 @@
         font-family: 'IBM Plex Mono', monospace;
         margin-top: 0.5rem;
     }
+
+    /* Validation error state */
+    .field-error {
+        border-color: var(--danger) !important;
+        box-shadow: 0 0 12px rgba(255,59,92,0.3) !important;
+        animation: shake 0.3s ease;
+    }
+    @keyframes shake {
+        0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+    }
+    .error-msg {
+        color: var(--danger);
+        font-size: 0.68rem;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 700;
+    }
+    .field-ok { border-color: var(--success) !important; }
 </style>
 {% endblock %}
 
@@ -124,7 +144,8 @@
         <p style="color: var(--text-muted); font-size: 0.85rem;">Secure campus departure authorization system.</p>
     </div>
 
-    <form method="POST" id="outpass-form" action="{{ url_for('student.request_outpass') }}">
+    <form method="POST" id="outpass-form" enctype="multipart/form-data"
+          action="{{ url_for('student.request_outpass') }}">
 
         <!-- HIDDEN FIELDS FOR BACKEND COMPATIBILITY -->
         <input type="hidden" name="destination" id="final_destination">
@@ -158,7 +179,8 @@
                     <option value="Internship/Work">Internship/Work</option>
                     <option value="Other Protocol">Other / Custom</option>
                 </select>
-                <input type="text" id="purpose_desc" class="futuristic-input" placeholder >
+                <input type="text" id="purpose_desc" class="futuristic-input" placeholder="e.g. Visiting family doctor, attending wedding..." required minlength="5">
+                <div id="purpose-error" class="error-msg" style="display:none;"><i class="fas fa-exclamation-circle"></i> Please briefly explain your reason</div>
             </div>
         </div>
 
@@ -201,12 +223,14 @@
                 <div>
                     <label style="font-size: 0.6rem; color: #64748b;">START DATE</label>
                     <input type="date" name="start_date" id="start_date" class="futuristic-input"
-                        onchange="updateCalcTime()">
+                        onchange="updateCalcTime()" min="{{ now.strftime('%Y-%m-%d') if now else '' }}">
+                    <div id="start-date-error" class="error-msg" style="display:none;"><i class="fas fa-exclamation-circle"></i> Start date is required</div>
                 </div>
                 <div>
                     <label style="font-size: 0.6rem; color: #64748b;">END DATE</label>
                     <input type="date" name="end_date" id="end_date" class="futuristic-input"
                         onchange="updateCalcTime()">
+                    <div id="end-date-error" class="error-msg" style="display:none;"><i class="fas fa-exclamation-circle"></i> End date is required and must be after start date</div>
                 </div>
             </div>
         </div>
@@ -349,39 +373,90 @@
         }
     }
 
+    function setError(id, msgId, show) {
+        const el = document.getElementById(id);
+        const msg = document.getElementById(msgId);
+        if (show) {
+            el.classList.add('field-error');
+            el.classList.remove('field-ok');
+            if (msg) msg.style.display = 'flex';
+        } else {
+            el.classList.remove('field-error');
+            el.classList.add('field-ok');
+            if (msg) msg.style.display = 'none';
+        }
+    }
+
     function mergeData() {
         const destType = document.getElementById('dest_type').value;
-        const destAddr = document.getElementById('dest_address').value;
-        if (!destAddr.trim()) {
-            alert('Please enter a destination address.');
+        const destAddr = document.getElementById('dest_address').value.trim();
+        let isValid = true;
+
+        // 1. Validate destination address
+        if (!destAddr) {
+            setError('dest_address', null, true);
+            isValid = false;
+        } else {
+            setError('dest_address', null, false);
+        }
+
+        // 2. Validate purpose description (must have meaningful detail)
+        const purpDesc = document.getElementById('purpose_desc').value.trim();
+        if (purpDesc.length < 5) {
+            setError('purpose_desc', 'purpose-error', true);
+            isValid = false;
+        } else {
+            setError('purpose_desc', 'purpose-error', false);
+        }
+
+        // 3. Validate dates for Home Leave
+        if (destType === 'Home/Resident') {
+            const startDate = document.getElementById('start_date').value;
+            const endDate   = document.getElementById('end_date').value;
+
+            if (!startDate) {
+                setError('start_date', 'start-date-error', true);
+                isValid = false;
+            } else {
+                setError('start_date', 'start-date-error', false);
+            }
+
+            if (!endDate) {
+                setError('end_date', 'end-date-error', true);
+                isValid = false;
+            } else if (endDate < startDate) {
+                setError('end_date', 'end-date-error', true);
+                document.getElementById('end-date-error').innerHTML = '<i class="fas fa-exclamation-circle"></i> End date cannot be before start date';
+                isValid = false;
+            } else {
+                setError('end_date', 'end-date-error', false);
+            }
+        }
+
+        if (!isValid) {
+            // Scroll to first error
+            document.querySelector('.field-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return false;
         }
-        document.getElementById('final_destination').value = `[${destType}] ${destAddr}`;
 
-        // Set pass_type based on destination
-        document.getElementById('final_pass_type').value =
-            (destType === 'Home/Resident') ? 'home' : 'local';
+        // --- All validations passed, build hidden fields ---
+        document.getElementById('final_destination').value = `[${destType}] ${destAddr}`;
+        document.getElementById('final_pass_type').value = (destType === 'Home/Resident') ? 'home' : 'local';
 
         const purpType = document.getElementById('purpose_type').value;
-        const purpDesc = document.getElementById('purpose_desc').value;
-
-        let pText = purpType;
-        if (purpDesc.trim() !== '') pText += ` - ${purpDesc}`;
-        if (document.getElementById('parent_notify').checked) {
-            pText += ' (Parent SMS: ENABLED)';
-        }
+        let pText = `${purpType} - ${purpDesc}`;
+        if (document.getElementById('parent_notify').checked) pText += ' (Parent SMS: ENABLED)';
         document.getElementById('final_purpose').value = pText;
 
         let hrs = document.querySelector('input[name="ui_hours"]:checked').value;
         if (hrs === 'custom') {
             hrs = document.getElementById('custom_hr').value;
             if (!hrs || hrs < 1) {
-                alert("Please enter a valid custom duration.");
+                alert('Please enter a valid custom duration.');
                 return false;
             }
         }
         document.getElementById('final_hours').value = hrs;
-
         return true;
     }
 

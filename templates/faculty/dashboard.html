@@ -44,7 +44,43 @@
     gap: 14px;
     transition: 0.3s;
 }
-.s-card:hover { border-color: rgba(0,210,255,0.2); transform: translateY(-2px); }
+.s-card-clickable { cursor: pointer; border-left: 3px solid transparent; }
+.s-card-clickable:hover { 
+    background: rgba(20,25,30,0.9);
+    border-color: rgba(0,210,255,0.4); 
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.s-card-blue:hover { border-left-color: var(--accent); }
+.s-card-red:hover { border-left-color: var(--danger); }
+.s-card-gold:hover { border-left-color: var(--warning); }
+
+/* ── Modals ── */
+.fm-backdrop {
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
+    align-items:center; justify-content:center;
+}
+.fm-backdrop.open { display:flex; }
+.fm-box {
+    background: linear-gradient(160deg,#0d1117,#141920);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px; width: 92%; max-width: 1000px;
+    max-height: 85vh; display: flex; flex-direction: column;
+    overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+    animation: fmSlideUp 0.3s ease-out;
+}
+@keyframes fmSlideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+.fm-header { padding:20px 28px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; }
+.fm-title { font-size:1rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:10px; }
+.fm-body { padding:0; overflow-y:auto; flex:1; }
+.fm-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+.fm-table th { background:rgba(255,255,255,0.02); padding:14px 20px; text-align:left; color:var(--text-muted); font-weight:600; text-transform:uppercase; font-size:0.65rem; letter-spacing:1px; }
+.fm-table td { padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.03); color:#eee; }
+.fm-close { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.7rem; font-weight:700; }
+.fm-close:hover { background:var(--danger); border-color:var(--danger); }
+.fm-export { background:rgba(0,245,122,0.1); border:1px solid rgba(0,245,122,0.3); color:var(--success); padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.7rem; font-weight:800; text-decoration:none; }
 .s-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
 .s-val { font-size:1.6rem; font-weight:800; color:#fff; line-height:1; }
 .s-lbl { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-top:3px; }
@@ -197,21 +233,21 @@
             <div class="s-lbl">Pending Queue</div>
         </div>
     </div>
-    <div class="s-card">
-        <div class="s-icon" style="background:rgba(0,245,122,0.1)"><i class="fas fa-check-double" style="color:var(--success)"></i></div>
+    <div class="s-card s-card-clickable s-card-blue" onclick="openFacultyModal('approved')">
+        <div class="s-icon" style="background:rgba(0,210,255,0.1)"><i class="fas fa-calendar-check" style="color:var(--accent)"></i></div>
         <div>
-            <div class="s-val" id="stat-approved">{{ stats.approved_today }}</div>
-            <div class="s-lbl">Approved Today</div>
+            <div class="s-val" id="stat-approved">{{ stats.approved_weekly }}</div>
+            <div class="s-lbl">Weekly Issued</div>
         </div>
     </div>
-    <div class="s-card">
+    <div class="s-card s-card-clickable s-card-red" onclick="openFacultyModal('emergency')">
         <div class="s-icon" style="background:rgba(255,59,92,0.1)"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div>
         <div>
             <div class="s-val" id="stat-emergency" style="color:{{ 'var(--danger)' if stats.emergency_count > 0 else '#fff' }}">{{ stats.emergency_count }}</div>
             <div class="s-lbl">Emergency</div>
         </div>
     </div>
-    <div class="s-card">
+    <div class="s-card s-card-clickable s-card-gold" onclick="openFacultyModal('parent')">
         <div class="s-icon" style="background:rgba(255,184,0,0.1)"><i class="fas fa-users-viewfinder" style="color:var(--warning)"></i></div>
         <div>
             <div class="s-val" id="stat-parent">{{ stats.parent_pending }}</div>
@@ -314,11 +350,19 @@
                     <div class="action-col">
                         <div>
                             <div class="verif-row">
-                                <div class="v-chip" style="background:{{ 'rgba(0,245,122,0.08)' if req.parent_verified else 'rgba(255,255,255,0.04)' }}">
+                                <div class="v-chip" style="background:{{ 'rgba(0,245,122,0.08)' if req.parent_verified else 'rgba(255,59,92,0.05)' }}">
                                     <div class="v-lbl">Parent</div>
                                     <div class="v-val" style="color:{{ 'var(--success)' if req.parent_verified else 'var(--warning)' }}">
                                         {{ '✓ VERIFIED' if req.parent_verified else '⏳ WAITING' }}
                                     </div>
+                                    {% if not req.parent_verified %}
+                                    <div style="margin-top:5px; font-size:0.58rem; color:rgba(255,184,0,0.7); display:flex; align-items:center; gap:4px;">
+                                        <i class="fas fa-phone-volume"></i> {{ student.parent_phone or 'No Ph.' }}
+                                    </div>
+                                    <div style="font-size:0.5rem; color:rgba(255,255,255,0.25); margin-top:3px; font-style:italic;">
+                                        Enquiry only • OTP at Warden
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <div class="v-chip" style="background:{{ 'rgba(0,245,122,0.08)' if req.hod_id else 'rgba(255,255,255,0.04)' }}">
                                     <div class="v-lbl">HOD</div>
@@ -379,10 +423,105 @@
     </div>
 
 </div>
+<!-- MODALS -->
+<div id="faculty-modal-backdrop" class="fm-backdrop" onclick="closeFacultyModal()">
+    <div class="fm-box" onclick="event.stopPropagation()">
+        <div class="fm-header">
+            <div class="fm-title" id="fm-title-text">Faculty Report</div>
+            <div style="display:flex; gap:10px;">
+                <a href="#" id="fm-export-btn" class="fm-export"><i class="fas fa-file-excel"></i> Export Excel</a>
+                <button class="fm-close" onclick="closeFacultyModal()">Close</button>
+            </div>
+        </div>
+        <div class="fm-body">
+            <table class="fm-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Roll No.</th>
+                        <th>Destination</th>
+                        <th>Priority</th>
+                        <th>Parent Verify</th>
+                        <th>Applied At</th>
+                    </tr>
+                </thead>
+                <tbody id="fm-tbody">
+                    <!-- Data here -->
+                </tbody>
+            </table>
+            <div id="fm-loader" style="padding:40px; text-align:center; color:var(--text-muted);">
+                <i class="fas fa-circle-notch fa-spin"></i> Syncing encrypted data...
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Modal Logic
+    const facultyModalData = {
+        'approved': { title: 'Weekly Issued Report (7 Days)', api: '/faculty/api/approved-today', export: '/faculty/export/approved-today', color: 'var(--accent)' },
+        'emergency': { title: 'Active Emergency Requests', api: '/faculty/api/emergency', export: '/faculty/export/emergency', color: 'var(--danger)' },
+        'parent': { title: 'Awaiting Parent Verification', api: '/faculty/api/parent-pending', export: '/faculty/export/parent-pending', color: 'var(--warning)' }
+    };
+
+    async function openFacultyModal(type) {
+        const cfg = facultyModalData[type];
+        document.getElementById('fm-title-text').innerHTML = `<i class="fas fa-database" style="color:${cfg.color}"></i> ${cfg.title}`;
+        document.getElementById('fm-export-btn').href = cfg.export;
+        document.getElementById('faculty-modal-backdrop').classList.add('open');
+        document.body.style.overflow = 'hidden';
+        
+        const tbody = document.getElementById('fm-tbody');
+        const loader = document.getElementById('fm-loader');
+        tbody.innerHTML = '';
+        loader.style.display = 'block';
+
+        try {
+            const r = await fetch(cfg.api);
+            const d = await r.json();
+            loader.style.display = 'none';
+            
+            if (d.passes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted)">No records found for this category.</td></tr>`;
+                return;
+            }
+
+            d.passes.forEach(p => {
+                const row = `
+                    <tr>
+                        <td>
+                            <div style="font-weight:700">${p.student_name}</div>
+                            <div style="font-size:0.65rem; color:var(--text-muted)">${p.department}</div>
+                        </td>
+                        <td class="mono">${p.student_id}</td>
+                        <td>${p.destination}</td>
+                        <td><span class="tag tag-${p.priority}">${p.priority}</span></td>
+                        <td>
+                            <span style="color:${p.parent_verified ? 'var(--success)' : 'var(--warning)'}; font-weight:800; font-size:0.65rem;">
+                                ${p.parent_verified ? '✓ VERIFIED' : '⏳ PENDING'}
+                            </span>
+                        </td>
+                        <td class="mono" style="font-size:0.7rem">${p.created_at}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (e) {
+            loader.innerHTML = '<span style="color:var(--danger)">Failed to fetch data.</span>';
+        }
+    }
+
+    function closeFacultyModal() {
+        document.getElementById('faculty-modal-backdrop').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // Escape key to close
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFacultyModal(); });
+
     // Live clock
     function updateClock() {
         const now = new Date();

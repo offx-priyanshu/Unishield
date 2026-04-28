@@ -4,355 +4,506 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sandip University - Portal</title>
+  <title>UniShield — Sandip University Portal</title>
+  <meta name="description" content="UniShield — Secure digital access for admin, faculty and students at Sandip University.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
     :root {
-      --primary: #00d2ff;
-      --primary-dim: rgba(0, 210, 255, 0.1);
-      --bg-dark: #000000;
-      --panel-bg: rgba(15, 20, 35, 0.4);
-      --panel-border: rgba(255, 255, 255, 0.08);
-      --text: #ffffff;
-      --text-muted: #8b9bb4;
-      --input-bg: rgba(0, 0, 0, 0.4);
+      --cyan: #00d4ff;
+      --cyan-glow: rgba(0, 212, 255, 0.18);
+      --cyan-dim: rgba(0, 212, 255, 0.08);
+      --bg: #040d1a;
+      --card-bg: rgba(10, 18, 36, 0.85);
+      --left-bg: rgba(8, 15, 30, 0.6);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-cyan: rgba(0, 212, 255, 0.22);
+      --text: #f0f4ff;
+      --muted: #6b7d9a;
+      --input-bg: rgba(0, 0, 0, 0.35);
+      --input-border: rgba(255, 255, 255, 0.09);
+      --tag-bg: rgba(255, 255, 255, 0.04);
     }
 
-
-
+    html, body {
+      height: 100%;
+    }
 
     body {
       font-family: 'Outfit', sans-serif;
-      background: radial-gradient(circle at 0% 0%, #061c3a 0%, #020813 40%, var(--bg-dark) 100%);
+      background: radial-gradient(ellipse at 15% 10%, #0a2040 0%, #030c1c 45%, #000810 100%);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 20px;
       overflow: hidden;
       position: relative;
     }
 
-
-
-    /* Ambient Glow Background Effect */
+    /* Ambient particles / glows */
     body::before {
       content: '';
-      position: absolute;
-      bottom: -20vh;
-      right: -10vw;
-      width: 60vw;
-      height: 60vh;
-      background: radial-gradient(circle at center, rgba(0, 210, 255, 0.08) 0%, transparent 60%);
-      filter: blur(100px);
-      z-index: 0;
+      position: fixed;
+      bottom: -15vh;
+      right: -8vw;
+      width: 55vw;
+      height: 55vh;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.07) 0%, transparent 65%);
+      filter: blur(80px);
       pointer-events: none;
+      z-index: 0;
+      animation: glowPulse 6s ease-in-out infinite alternate;
     }
 
-    .container {
+    body::after {
+      content: '';
+      position: fixed;
+      top: -10vh;
+      left: -5vw;
+      width: 40vw;
+      height: 40vh;
+      background: radial-gradient(circle, rgba(0, 80, 180, 0.12) 0%, transparent 60%);
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes glowPulse {
+      from { opacity: 0.6; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.05); }
+    }
+
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--cyan);
+      border-radius: 50%;
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh) translateX(0px); opacity: 0; }
+      10%  { opacity: 0.4; }
+      90%  { opacity: 0.15; }
+      100% { transform: translateY(-10vh) translateX(30px); opacity: 0; }
+    }
+
+    /* === CARD === */
+    .card {
       position: relative;
       z-index: 1;
       display: flex;
       width: 100%;
-      max-width: 1040px;
-      min-height: 620px;
-      background: var(--panel-bg);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--panel-border);
-      border-radius: 20px;
-      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      max-width: 1020px;
+      min-height: 580px;
+      background: var(--card-bg);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid var(--border);
+      border-radius: 22px;
       overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04) inset,
+        0 50px 100px rgba(0,0,0,0.7),
+        0 0 60px rgba(0,212,255,0.04);
+      animation: cardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
 
-
-    /* LEFT PANEL */
-    .left-panel {
+    /* ===== LEFT PANEL ===== */
+    .left {
       flex: 1;
-      padding: 56px;
+      padding: 52px 50px;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid var(--panel-border);
+      border-right: 1px solid var(--border);
+      background: var(--left-bg);
       position: relative;
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.2) 100%);
       overflow: hidden;
     }
 
-    /* Subtle glow accent */
-    .left-panel::before {
+    .left::before {
       content: '';
       position: absolute;
-      top: -150px;
-      left: -150px;
-      width: 350px;
-      height: 350px;
-      background: var(--primary);
-      filter: blur(150px);
-      opacity: 0.12;
+      top: -120px;
+      left: -120px;
+      width: 320px;
+      height: 320px;
+      background: var(--cyan);
       border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.09;
       pointer-events: none;
     }
 
-    .brand-container {
+    /* Brand */
+    .brand {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-bottom: auto;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 42px;
       position: relative;
-      z-index: 2;
+      z-index: 1;
     }
 
     .brand-logo {
-      width: 110px;
-      height: auto;
-      margin-bottom: 12px;
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px rgba(0,212,255,0.3));
     }
 
-    .brand-text {
-      font-size: 13px;
+    .brand-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-size: 11px;
       font-weight: 700;
-      color: var(--primary);
+      color: var(--cyan);
       text-transform: uppercase;
       letter-spacing: 2.5px;
     }
 
-    .hero-content {
-      margin-top: 40px;
-      margin-bottom: auto;
-      position: relative;
-      z-index: 2;
-    }
-
-    .hero-title {
-      font-size: 46px;
-      font-weight: 700;
-      line-height: 1.1;
-      margin-bottom: 18px;
-      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      letter-spacing: -0.5px;
-    }
-
-    .hero-desc {
-      font-size: 16px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      max-width: 320px;
-      margin-bottom: 48px;
-    }
-
-    .feature-tags {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .feature-tag {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 14px;
+    .brand-sub {
+      font-size: 9.5px;
       font-weight: 500;
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.03);
-      padding: 14px 20px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      width: fit-content;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
     }
 
-    .feature-tag:hover {
-      background: var(--primary-dim);
-      border-color: rgba(0, 210, 255, 0.25);
-      transform: translateX(6px);
-    }
-
-    .feature-tag::before {
-      content: '';
-      width: 8px;
-      height: 8px;
-      background: var(--primary);
-      border-radius: 50%;
-      box-shadow: 0 0 12px var(--primary);
-    }
-
-    /* RIGHT PANEL */
-    .right-panel {
-      width: 460px;
-      padding: 56px;
+    /* Hero */
+    .hero {
+      position: relative;
+      z-index: 1;
+      flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.1);
     }
 
-    .welcome-heading {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      letter-spacing: -0.5px;
+    .hero-title {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 0%, #b8d4f0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .welcome-subtext {
-      font-size: 15px;
-      color: var(--text-muted);
-      margin-bottom: 36px;
+    .hero-desc {
+      font-size: 14.5px;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 300px;
+      margin-bottom: 42px;
     }
 
-    .role-selection {
+    /* Feature tags */
+    .features {
       display: flex;
-      gap: 6px;
-      margin-bottom: 28px;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 6px;
-      border-radius: 14px;
-      border: 1px solid var(--panel-border);
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .role-btn {
+    .feat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 18px;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+      width: fit-content;
+      cursor: default;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.06), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s ease;
+    }
+
+    .feat:hover::before {
+      transform: translateX(100%);
+    }
+
+    .feat:hover {
+      border-color: var(--border-cyan);
+      background: var(--cyan-dim);
+      transform: translateX(8px);
+      color: #e0f8ff;
+    }
+
+    .feat-dot {
+      width: 8px;
+      height: 8px;
+      min-width: 8px;
+      background: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,212,255,0.4);
+      animation: dotPulse 2.5s ease-in-out infinite;
+    }
+
+    .feat:nth-child(2) .feat-dot { animation-delay: 0.3s; }
+    .feat:nth-child(3) .feat-dot { animation-delay: 0.6s; }
+    .feat:nth-child(4) .feat-dot { animation-delay: 0.9s; }
+
+    @keyframes dotPulse {
+      0%, 100% { box-shadow: 0 0 8px var(--cyan), 0 0 16px rgba(0,212,255,0.35); }
+      50%       { box-shadow: 0 0 14px var(--cyan), 0 0 28px rgba(0,212,255,0.6); }
+    }
+
+    /* ===== RIGHT PANEL ===== */
+    .right {
+      width: 440px;
+      min-width: 380px;
+      padding: 52px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: rgba(2, 8, 20, 0.3);
+    }
+
+    .welcome-title {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .welcome-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 30px;
+    }
+
+    /* Role Tabs */
+    .role-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 28px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 5px;
+      position: relative;
+    }
+
+    .role-tab {
       flex: 1;
-      padding: 12px 0;
+      padding: 10px 0;
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      font-size: 14px;
+      border-radius: 9px;
+      color: var(--muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
       font-weight: 600;
-      border-radius: 10px;
       cursor: pointer;
-      transition: all 0.3s ease;
-      font-family: inherit;
+      transition: all 0.28s ease;
+      position: relative;
+      z-index: 1;
     }
 
-    .role-btn:hover {
-      color: white;
+    .role-tab:hover {
+      color: #ccd9ee;
     }
 
-    .role-btn.active {
-      background: var(--primary-dim);
-      color: var(--primary);
-      box-shadow: inset 0 0 0 1px rgba(0, 210, 255, 0.3);
+    .role-tab.active {
+      background: var(--cyan-dim);
+      color: var(--cyan);
+      box-shadow: inset 0 0 0 1px var(--border-cyan);
     }
 
+    /* Form */
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .form-label {
       display: block;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 600;
+      letter-spacing: 1.8px;
+      margin-bottom: 9px;
     }
 
-    .input-wrapper {
+    .input-wrap {
       position: relative;
     }
 
     .form-input {
       width: 100%;
       background: var(--input-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 15px 16px;
+      border: 1px solid var(--input-border);
+      border-radius: 11px;
+      padding: 14px 16px;
       color: var(--text);
-      font-size: 15px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14.5px;
       outline: none;
       transition: all 0.3s ease;
-      font-family: inherit;
-    }
-
-
-
-    .form-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.1);
-      background: rgba(0, 0, 0, 0.6);
     }
 
     .form-input::placeholder {
-      color: rgba(255, 255, 255, 0.15);
+      color: rgba(255,255,255,0.13);
     }
 
-    .eye-icon {
+    .form-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1), 0 0 12px rgba(0,212,255,0.08);
+      background: rgba(0,0,0,0.5);
+    }
+
+    .eye-btn {
       position: absolute;
-      right: 16px;
+      right: 14px;
       top: 50%;
       transform: translateY(-50%);
       background: none;
       border: none;
-      color: var(--text-muted);
+      color: var(--muted);
       cursor: pointer;
       display: flex;
+      align-items: center;
       padding: 4px;
-      transition: color 0.3s;
+      transition: color 0.25s;
     }
 
-    .eye-icon:hover {
-      color: var(--primary);
+    .eye-btn:hover {
+      color: var(--cyan);
     }
 
-    .submit-btn {
+    /* Error box */
+    .err-box {
+      display: none;
+      background: rgba(255, 55, 90, 0.1);
+      border: 1px solid rgba(255, 55, 90, 0.28);
+      color: #ff7a90;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 500;
+      margin-bottom: 14px;
+      animation: errShake 0.4s ease;
+    }
+
+    @keyframes errShake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+
+    /* Sign In Button */
+    .sign-btn {
       width: 100%;
-      padding: 16px;
-      margin-top: 16px;
-      background: var(--primary);
-      color: #000;
+      padding: 15px;
+      margin-top: 8px;
+      background: var(--cyan);
+      color: #010d1a;
       border: none;
       border-radius: 12px;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: all 0.3s ease;
-      font-family: inherit;
-      box-shadow: 0 4px 20px rgba(0, 210, 255, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 24px rgba(0,212,255,0.35), 0 1px 0 rgba(255,255,255,0.2) inset;
+      position: relative;
+      overflow: hidden;
     }
 
-    .submit-btn:hover {
+    .sign-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .sign-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 210, 255, 0.4);
-      background: #33dbff;
+      box-shadow: 0 8px 32px rgba(0,212,255,0.5), 0 1px 0 rgba(255,255,255,0.25) inset;
+      background: #1adeff;
     }
 
-    .submit-btn:active {
+    .sign-btn:active {
       transform: translateY(1px);
+      box-shadow: 0 2px 12px rgba(0,212,255,0.3);
+    }
+
+    .sign-btn.loading {
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .sign-btn.success {
+      background: #00e676;
+      box-shadow: 0 4px 24px rgba(0,230,118,0.45);
+      color: #012010;
     }
 
     /* Responsive */
     @media (max-width: 860px) {
-      .container {
+      .card {
         flex-direction: column;
-        border-radius: 20px;
       }
-
-      .left-panel {
+      .left {
         border-right: none;
-        border-bottom: 1px solid var(--panel-border);
-        padding: 40px 32px;
+        border-bottom: 1px solid var(--border);
+        padding: 36px 32px;
       }
-
-      .right-panel {
+      .hero-title { font-size: 38px; }
+      .right {
         width: 100%;
-        padding: 40px 32px;
-      }
-
-      .hero-title {
-        font-size: 36px;
+        min-width: unset;
+        padding: 36px 32px;
       }
     }
   </style>
@@ -360,96 +511,140 @@
 
 <body>
 
-  <div class="container">
-    <!-- LEFT PANEL -->
-    <div class="left-panel">
-      <div class="brand-container">
-        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Sandip University Logo" class="brand-logo">
-        <div class="brand-text">SANDIP UNIVERSITY</div>
-      </div>
-      <div class="hero-content">
-        <h1 class="hero-title">UniShield</h1>
-        <p class="hero-desc">Secure digital access for admin , faculty and students</p>
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
 
-        <div class="feature-tags">
-          <div class="feature-tag">Face Recognition</div>
-          <div class="feature-tag">SMS Alerts</div>
-          <div class="feature-tag">Real-Time Tracking</div>
-          <div class="feature-tag">Auto Blocklist</div>
+  <div class="card">
+
+    <!-- LEFT PANEL -->
+    <div class="left">
+      <div class="brand">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Sandip University" class="brand-logo">
+        <div class="brand-info">
+          <span class="brand-name">Sandip University</span>
+          <span class="brand-sub">NAAC Recognised</span>
+        </div>
+      </div>
+
+      <div class="hero">
+        <h1 class="hero-title">UniShield</h1>
+        <p class="hero-desc">Secure digital access for admin, faculty and students</p>
+
+        <div class="features">
+          <div class="feat"><span class="feat-dot"></span>Face Recognition</div>
+          <div class="feat"><span class="feat-dot"></span>SMS Alerts</div>
+          <div class="feat"><span class="feat-dot"></span>Real-Time Tracking</div>
+          <div class="feat"><span class="feat-dot"></span>Auto Blocklist</div>
         </div>
       </div>
     </div>
 
     <!-- RIGHT PANEL -->
-    <div class="right-panel">
-      <h2 class="welcome-heading">Welcome Back</h2>
-      <p class="welcome-subtext">Please sign in to continue</p>
+    <div class="right">
+      <h2 class="welcome-title">Welcome Back</h2>
+      <p class="welcome-sub">Please sign in to continue</p>
 
-      <div class="role-selection">
-        <button class="role-btn active" data-role="admin" onclick="selectRole(this)">Admin</button>
-        <button class="role-btn" data-role="guard" onclick="selectRole(this)">Staff</button>
-        <button class="role-btn" data-role="student" onclick="selectRole(this)">Student</button>
+      <!-- Role Tabs -->
+      <div class="role-tabs">
+        <button class="role-tab active" id="tab-admin"    data-role="admin"    onclick="selectRole(this)">Admin</button>
+        <button class="role-tab"        id="tab-guard"   data-role="guard"    onclick="selectRole(this)">Staff</button>
+        <button class="role-tab"        id="tab-student" data-role="student"  onclick="selectRole(this)">Student</button>
       </div>
 
+      <!-- Username -->
       <div class="form-group">
-        <label class="form-label">Username</label>
-        <div class="input-wrapper">
-          <input type="text" id="username" class="form-input" placeholder="Enter username">
+        <label class="form-label" for="username">USERNAME</label>
+        <div class="input-wrap">
+          <input type="text" id="username" class="form-input" placeholder="Enter username" autocomplete="username">
         </div>
       </div>
 
+      <!-- Password -->
       <div class="form-group">
-        <label class="form-label">Password</label>
-        <div class="input-wrapper">
-          <input type="password" id="password" class="form-input" placeholder="Enter password">
-          <button class="eye-icon" onclick="togglePassword()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
+        <label class="form-label" for="password">PASSWORD</label>
+        <div class="input-wrap">
+          <input type="password" id="password" class="form-input" placeholder="Enter password" autocomplete="current-password">
+          <button class="eye-btn" id="eyeBtn" onclick="togglePwd()" type="button" aria-label="Toggle password visibility">
+            <!-- Eye Open -->
+            <svg id="eyeOpen" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- Eye Off -->
+            <svg id="eyeOff" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
             </svg>
           </button>
         </div>
       </div>
 
-      <div id="error-msg" style="
-        display: none;
-        background: rgba(255, 59, 92, 0.12);
-        border: 1px solid rgba(255, 59, 92, 0.3);
-        color: #ff6b8a;
-        padding: 12px 16px;
-        border-radius: 10px;
-        font-size: 13px;
-        font-weight: 500;
-        margin-bottom: 12px;
-      "></div>
+      <!-- Error -->
+      <div class="err-box" id="errBox"></div>
 
-      <button class="submit-btn" id="submitBtn" onclick="handleLogin()">SIGN IN</button>
+      <!-- Submit -->
+      <button class="sign-btn" id="signBtn" onclick="handleLogin()">SIGN IN</button>
     </div>
   </div>
 
   <script>
-    function selectRole(button) {
-      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
+    /* === Particles === */
+    (function () {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 22; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.cssText = `
+          left: ${Math.random() * 100}%;
+          width: ${Math.random() * 2.5 + 1}px;
+          height: ${Math.random() * 2.5 + 1}px;
+          animation-duration: ${Math.random() * 18 + 12}s;
+          animation-delay: ${Math.random() * 12}s;
+          opacity: 0;
+        `;
+        container.appendChild(p);
+      }
+    })();
+
+    /* === Role Selection === */
+    function selectRole(btn) {
+      document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
     }
 
-    function togglePassword() {
+    /* === Toggle Password === */
+    function togglePwd() {
       const pwd = document.getElementById('password');
+      const open = document.getElementById('eyeOpen');
+      const off  = document.getElementById('eyeOff');
       if (pwd.type === 'password') {
         pwd.type = 'text';
+        open.style.display = 'none';
+        off.style.display  = 'block';
       } else {
         pwd.type = 'password';
+        open.style.display = 'block';
+        off.style.display  = 'none';
       }
     }
 
+    /* === Show Error === */
+    function showError(msg) {
+      const box = document.getElementById('errBox');
+      box.textContent = '⚠ ' + msg;
+      box.style.display = 'block';
+      box.style.animation = 'none';
+      void box.offsetWidth;
+      box.style.animation = 'errShake 0.4s ease';
+    }
+
+    /* === Login === */
     async function handleLogin() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
-      const activeRoleBtn = document.querySelector('.role-btn.active');
-      const role = activeRoleBtn ? activeRoleBtn.dataset.role : 'admin';
-      const btn = document.getElementById('submitBtn');
-      const errBox = document.getElementById('error-msg');
+      const role     = document.querySelector('.role-tab.active').dataset.role;
+      const btn      = document.getElementById('signBtn');
+      const errBox   = document.getElementById('errBox');
 
       if (!username || !password) {
         showError('Please enter username and password.');
@@ -457,49 +652,38 @@
       }
 
       errBox.style.display = 'none';
-      const originalText = btn.textContent;
-      btn.textContent = 'SIGNING IN...';
-      btn.style.opacity = '0.8';
-      btn.style.pointerEvents = 'none';
+      btn.textContent = 'Signing in…';
+      btn.classList.add('loading');
 
       try {
-        const response = await fetch("{{ url_for('auth.login') }}", {
+        const res  = await fetch("{{ url_for('auth.login') }}", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role, remember: true })
         });
-        const data = await response.json();
+        const data = await res.json();
 
         if (data.success) {
-          btn.textContent = 'SUCCESS ✓';
-          btn.style.background = '#00f57a';
-          btn.style.boxShadow = '0 0 20px rgba(0, 245, 122, 0.4)';
-          window.location.href = data.redirect;
+          btn.textContent = '✓  Access Granted';
+          btn.classList.remove('loading');
+          btn.classList.add('success');
+          setTimeout(() => { window.location.href = data.redirect; }, 600);
         } else {
-          btn.textContent = originalText;
-          btn.style.opacity = '1';
-          btn.style.pointerEvents = 'auto';
-          showError(data.message || 'Invalid credentials. Please check username, password and role.');
+          btn.textContent = 'Sign In';
+          btn.classList.remove('loading');
+          showError(data.message || 'Invalid credentials. Check username, password & role.');
         }
-      } catch (err) {
-        btn.textContent = originalText;
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
+      } catch {
+        btn.textContent = 'Sign In';
+        btn.classList.remove('loading');
         showError('Connection error. Please try again.');
       }
     }
 
-    function showError(msg) {
-      const box = document.getElementById('error-msg');
-      box.textContent = '⚠ ' + msg;
-      box.style.display = 'block';
-    }
-
-    // Allow Enter key to submit
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Enter') handleLogin();
     });
   </script>
-</body>
 
+</body>
 </html>

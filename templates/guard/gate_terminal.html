@@ -152,6 +152,19 @@
         box-shadow: 0 10px 20px rgba(0, 210, 255, 0.2);
     }
 
+    .btn-qr-neon {
+        background: rgba(167, 139, 250, 0.05);
+        border: 1px solid rgba(167, 139, 250, 0.2);
+        color: #a78bfa;
+    }
+
+    .btn-qr-neon:hover {
+        background: rgba(167, 139, 250, 0.1);
+        border-color: #a78bfa;
+        box-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
+        transform: translateY(-3px);
+    }
+
     .stat-val {
         font-size: 1.8rem;
         font-weight: 800;
@@ -401,14 +414,12 @@
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Student ID / PRN</label>
                                 <input type="text" id="reg-sid"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder>
+                                    class="form-control bg-dark border-secondary text-white py-3" placeholder>
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Full Name</label>
                                 <input type="text" id="reg-name"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder>
+                                    class="form-control bg-dark border-secondary text-white py-3" placeholder>
                             </div>
                             <div class="col-md-4">
                                 <label class="small text-muted mb-2 uppercase">Department</label>
@@ -431,21 +442,18 @@
                             <div class="col-md-4">
                                 <label class="small text-muted mb-2 uppercase">Session</label>
                                 <input type="text" id="reg-session"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder>
+                                    class="form-control bg-dark border-secondary text-white py-3" placeholder>
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Student Phone</label>
                                 <input type="tel" id="reg-sphone"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder 10"
+                                    class="form-control bg-dark border-secondary text-white py-3" placeholder 10"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Parent Phone (Required for SMS)</label>
                                 <input type="tel" id="reg-pphone"
-                                    class="form-control bg-dark border-secondary text-white py-3"
-                                    placeholder 10"
+                                    class="form-control bg-dark border-secondary text-white py-3" placeholder 10"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                         </div>
@@ -508,8 +516,12 @@
             <button onclick="openRegistration('manual')" class="action-btn-neon">
                 <i class="fas fa-user-plus text-info"></i> REGISTER STUDENT
             </button>
+            <a href="/gate/qr-scanner" class="action-btn-neon btn-qr-neon" style="text-decoration: none;">
+                <i class="fas fa-qrcode"></i> SCAN OUTPASS QR
+            </a>
             <div class="d-flex gap-3">
-                <button id="btn-sos" onclick="triggerSOS()" class="action-btn-neon" style="color: var(--danger-glow); border-color: rgba(255,51,102,0.3);">
+                <button id="btn-sos" onclick="triggerSOS()" class="action-btn-neon"
+                    style="color: var(--danger-glow); border-color: rgba(255,51,102,0.3);">
                     <i class="fas fa-bullhorn"></i> SOS EMERGENCY
                 </button>
                 <a href="/gate/export/excel" class="action-btn-neon" style="color: #ccc; text-decoration: none;">
@@ -647,11 +659,11 @@
         const container = document.getElementById('log-items');
         const item = document.createElement('div');
         item.className = 'log-item';
-        
+
         let colorClass = 'info';
         if (data.type === 'SUCCESS') colorClass = 'success';
         if (data.type === 'DANGER') colorClass = 'danger';
-        
+
         item.innerHTML = `
             <div style="color: #666; font-size: 0.7rem;">${data.time}</div>
             <div style="flex:1;"><strong class="text-${colorClass}">[${data.type}]</strong> ${data.msg}</div>
@@ -663,7 +675,7 @@
     function triggerSOS() {
         const siren = document.getElementById('snd-sos');
         const btn = document.getElementById('btn-sos');
-        
+
         if (!sosActive) {
             if (confirm("CRITICAL: Trigger campus-wide security SOS? This will alert all administrative stations.")) {
                 sosActive = true;
@@ -673,7 +685,7 @@
                     guard: "{{ current_user.name }}",
                     time: new Date().toLocaleTimeString()
                 });
-                
+
                 siren.play().catch(e => console.warn("Audio play failed:", e));
                 btn.innerHTML = '<i class="fas fa-radiation fa-spin"></i> STOP SOS';
                 btn.style.background = 'rgba(255, 51, 102, 0.4)';
@@ -688,7 +700,7 @@
                 guard: "{{ current_user.name }}",
                 time: new Date().toLocaleTimeString()
             });
-            
+
             siren.pause();
             siren.currentTime = 0;
             btn.innerHTML = '<i class="fas fa-bullhorn"></i> SOS EMERGENCY';
@@ -808,8 +820,8 @@
 
     // ── ID Scanning Flow — powered by /gate/scan-id (pyzbar QR + pytesseract OCR) ──
     async function triggerIdScan(btn) {
-        const scanLine  = document.getElementById('id-scan-line');
-        const origText  = btn.innerHTML;
+        const scanLine = document.getElementById('id-scan-line');
+        const origText = btn.innerHTML;
 
         // Show scanning UI
         scanLine.style.display = 'block';
@@ -818,7 +830,7 @@
 
         // Step 1: Try client-side jsQR first (instant, no server round-trip)
         const scanCanvas = document.createElement('canvas');
-        scanCanvas.width  = video.videoWidth  || 1280;
+        scanCanvas.width = video.videoWidth || 1280;
         scanCanvas.height = video.videoHeight || 720;
         const sctx = scanCanvas.getContext('2d');
         sctx.drawImage(video, 0, 0);
@@ -826,7 +838,7 @@
         let clientQrFound = false;
         try {
             const imgData = sctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-            const qr      = jsQR(imgData.data, imgData.width, imgData.height);
+            const qr = jsQR(imgData.data, imgData.width, imgData.height);
             if (qr && qr.data) {
                 clientQrFound = true;
                 console.log('[scan-id] Client jsQR hit:', qr.data.slice(0, 80));
@@ -838,18 +850,18 @@
         btn.innerHTML = '<i class="fas fa-server fa-spin me-2"></i> PROCESSING...';
 
         try {
-            const res  = await fetch('/gate/scan-id', {
-                method:  'POST',
+            const res = await fetch('/gate/scan-id', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({
-                    image:     b64,
+                body: JSON.stringify({
+                    image: b64,
                     client_qr: clientQrFound ? (() => {
                         // re-decode to get the string value
                         try {
-                            const id2 = scanCanvas.getContext('2d').getImageData(0,0,scanCanvas.width,scanCanvas.height);
-                            const q2  = jsQR(id2.data, id2.width, id2.height);
+                            const id2 = scanCanvas.getContext('2d').getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+                            const q2 = jsQR(id2.data, id2.width, id2.height);
                             return q2 ? q2.data : '';
-                        } catch(e) { return ''; }
+                        } catch (e) { return ''; }
                     })() : ''
                 })
             });
@@ -883,9 +895,9 @@
 
     // Apply data returned from /gate/scan-id into the registration form
     async function _applyScannedData(resp) {
-        const d   = resp.data    || {};
-        const db  = resp.db_data || {};
-        const sid = resp.sid     || d.prn || d.student_id || '';
+        const d = resp.data || {};
+        const db = resp.db_data || {};
+        const sid = resp.sid || d.prn || d.student_id || '';
 
         // If already fully registered → skip registration, close overlay
         if (resp.exists && resp.has_face) {
@@ -900,13 +912,13 @@
         // Fill form fields — prefer DB values when student exists but has no face yet
         const fill = (id, val) => { if (val) document.getElementById(id).value = val; };
 
-        fill('reg-sid',     sid);
-        fill('reg-name',    db.name         || d.name    || '');
-        fill('reg-dept',    db.department   || d.dept    || d.department || '');
-        fill('reg-course',  db.course       || d.course  || '');
+        fill('reg-sid', sid);
+        fill('reg-name', db.name || d.name || '');
+        fill('reg-dept', db.department || d.dept || d.department || '');
+        fill('reg-course', db.course || d.course || '');
         fill('reg-session', db.session_year || d.session || d.year || '');
-        fill('reg-sphone',  db.phone        || d.mobile  || d.phone || '');
-        fill('reg-pphone',  db.parent_phone || '');
+        fill('reg-sphone', db.phone || d.mobile || d.phone || '');
+        fill('reg-pphone', db.parent_phone || '');
 
         const method = resp.method === 'qr' ? '✅ QR Code' : '⚠️ OCR Text';
         _showScanFeedback(
@@ -923,9 +935,9 @@
     function _showScanFeedback(type, html) {
         const colorMap = {
             success: 'var(--success-glow)',
-            danger:  'var(--danger-glow)',
+            danger: 'var(--danger-glow)',
             warning: 'var(--warning-glow)',
-            info:    'var(--accent-glow)',
+            info: 'var(--accent-glow)',
         };
         let box = document.getElementById('scan-feedback-box');
         if (!box) {
@@ -934,9 +946,9 @@
             box.style.cssText = 'margin-top:16px;padding:12px 16px;border-radius:10px;font-size:0.85rem;border:1px solid;text-align:left;';
             document.getElementById('step-1').appendChild(box);
         }
-        box.style.color       = colorMap[type] || '#fff';
+        box.style.color = colorMap[type] || '#fff';
         box.style.borderColor = colorMap[type] || '#fff';
-        box.style.background  = `${colorMap[type] || '#fff'}18`;
+        box.style.background = `${colorMap[type] || '#fff'}18`;
         box.innerHTML = html;
         box.style.display = 'block';
     }

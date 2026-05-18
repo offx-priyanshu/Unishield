@@ -49,7 +49,6 @@
         width: 85%;
         max-width: 800px;
         max-height: 450px;
-        /* Prevent it from taking too much vertical space */
         aspect-ratio: 16/9;
         border-radius: 20px;
         overflow: hidden;
@@ -87,6 +86,81 @@
         animation: fadeIn 0.4s ease;
     }
 
+    /* Stats Modal Floating Style */
+    .stats-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .stats-card {
+        background: #0f1218;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 1000px;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+        animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes modalPop {
+        from {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .stats-header {
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .stats-body {
+        padding: 0;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .stats-table th {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #555;
+        padding: 18px 30px;
+        background: rgba(255, 255, 255, 0.01);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .stats-table td {
+        padding: 16px 30px;
+        font-size: 0.85rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    .stats-table tr:last-child td {
+        border-bottom: none;
+    }
+
     @keyframes fadeIn {
         from {
             opacity: 0;
@@ -117,6 +191,7 @@
         border: 1px solid var(--border-glass);
         text-align: center;
         transition: 0.3s;
+        cursor: pointer;
     }
 
     .stat-mini:hover {
@@ -269,7 +344,6 @@
         opacity: 0;
         transform: translateY(-10px);
         transition: opacity 0.2s ease, transform 0.2s ease;
-        /* Hide scrollbar for clean UI */
         scrollbar-width: thin;
         scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     }
@@ -353,11 +427,14 @@
         <div class="video-container" id="vid-wrap">
             <video id="video-feed" autoplay playsinline muted></video>
             <canvas id="canvas-overlay"></canvas>
-            <div id="id-scan-line" class="scan-line" style="display: none;"></div>
         </div>
 
         <!-- Floating Control HUD -->
         <div class="mt-4 d-flex gap-3">
+            <div class="badge bg-dark border border-secondary p-2 px-3 rounded-pill">
+                <i class="fas fa-clock text-warning me-2"></i> SYSTEM TIME: <span id="live-clock"
+                    class="text-warning">00:00:00</span>
+            </div>
             <div class="badge bg-dark border border-secondary p-2 px-3 rounded-pill">
                 <i class="fas fa-check-circle text-success me-2"></i> NEURAL ENGINE: <span
                     class="text-success">ACTIVE</span>
@@ -394,16 +471,40 @@
                 <!-- STEP 1: Scan ID Card -->
                 <div id="step-1"
                     class="h-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
-                    <i class="fas fa-id-card fa-4x text-info mb-4"></i>
-                    <h3 class="mb-3 fw-bold text-white"> VALIDATE IDENTITY</h3>
-                    <p class="text-muted mb-5" style="max-width: 400px; margin: 0 auto; line-height: 1.6;">Show student
-                        ID card to the camera to extract PRN and details automatically.</p>
-                    <button id="btn-scan-id" onclick="triggerIdScan(this)"
-                        class="btn btn-info btn-lg px-5 py-3 fw-bold mb-3" style="width: 300px;">
-                        <i class="fas fa-qrcode me-2"></i> SCAN ID CARD NOW
-                    </button>
-                    <button onclick="skipScan()" class="btn btn-outline-secondary" style="width: 300px;">Skip & Fill
-                        Manually</button>
+
+                    <!-- DYNAMIC SCANNER AREA START -->
+                    <div id="live-qr-scanner-area"
+                        style="display: none; position: relative; width: 100%; max-width: 500px; margin: 0 auto; border-radius: 1rem; overflow: hidden; border: 2px solid var(--accent-glow);">
+                        <canvas id="qr-scan-canvas"
+                            style="width: 100%; max-height: 300px; transform: scaleX(-1);"></canvas>
+                        <div id="qr-scan-line" class="scan-line" style="display: block;"></div>
+                        <div class="position-absolute bottom-0 w-100 p-2 d-flex justify-content-between align-items-center"
+                            style="background: rgba(0,0,0,0.7);">
+                            <span class="text-info font-monospace small" id="scan-status-text"><i
+                                    class="fas fa-search fa-spin me-1"></i> Scanning QR / Card Text...</span>
+                            <button onclick="stopLiveIdScan(true)" class="btn btn-sm btn-danger py-0 px-2 fw-bold"><i
+                                    class="fas fa-times"></i> Cancel</button>
+                        </div>
+                    </div>
+
+                    <div id="scan-prompt-area">
+                        <i class="fas fa-id-card fa-4x text-info mb-4"></i>
+                        <h3 class="mb-3 fw-bold text-white"> VALIDATE IDENTITY</h3>
+                        <p class="text-muted mb-5" style="max-width: 400px; margin: 0 auto; line-height: 1.6;">Show
+                            student ID card to the camera. System will automatically read QR code or printed details.
+                        </p>
+                    </div>
+                    <!-- DYNAMIC SCANNER AREA END -->
+
+                    <!-- SINGLE UNIFIED SCAN BUTTON -->
+                    <div class="d-flex flex-column gap-3 w-100 align-items-center mt-4">
+                        <button id="btn-scan-id" onclick="startLiveIdScan(this)"
+                            class="btn btn-info btn-lg px-4 py-3 fw-bold w-100 shadow-lg" style="max-width: 350px;">
+                            <i class="fas fa-qrcode me-2"></i> SCAN ID CARD
+                        </button>
+                        <button onclick="skipScan()" class="btn btn-outline-secondary w-100 mt-2"
+                            style="max-width: 350px;">Skip & Fill Manually</button>
+                    </div>
                 </div>
 
                 <!-- STEP 2: Auto-filled Form -->
@@ -447,13 +548,15 @@
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Student Phone</label>
                                 <input type="tel" id="reg-sphone"
-                                    class="form-control bg-dark border-secondary text-white py-3" placeholder 10"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="10 digits"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                             <div class="col-md-6">
                                 <label class="small text-muted mb-2 uppercase">Parent Phone (Required for SMS)</label>
                                 <input type="tel" id="reg-pphone"
-                                    class="form-control bg-dark border-secondary text-white py-3" placeholder 10"
+                                    class="form-control bg-dark border-secondary text-white py-3"
+                                    placeholder="10 digits"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                             </div>
                         </div>
@@ -473,13 +576,13 @@
                         <div id="capture-status">
                             <i class="fas fa-camera fa-3x text-info mb-3"></i>
                             <h4>Face Biometric Capture</h4>
-                            <p class="small text-muted">System will capture 10 angles automatically.</p>
+                            <p class="small text-muted">System will capture 5 angles automatically.</p>
                             <button id="start-capture" onclick="startCaptureFlow()"
                                 class="btn btn-info w-100 py-3 mt-3 fw-bold">START CAPTURE</button>
                         </div>
                         <div id="capture-progress" style="display: none;">
                             <div class="spinner-border text-info mb-3" role="status"></div>
-                            <h4 id="capture-count">Capturing 0/10</h4>
+                            <h4 id="capture-count">Capturing 0/5</h4>
                             <p class="small text-muted">Please rotate head slightly...</p>
                         </div>
                     </div>
@@ -498,35 +601,46 @@
     <!-- Right: Activity & Alerts -->
     <div class="activity-panel">
         <div class="stats-row">
-            <div class="stat-mini">
+            <div class="stat-mini" onclick="openStatsModal('exits', 'Exits Today')">
                 <div class="stat-val" id="stat-exits">0</div>
                 <div class="stat-lbl">Exits Today</div>
             </div>
-            <div class="stat-mini">
+            <div class="stat-mini" onclick="openStatsModal('returns', 'Returns Today')">
                 <div class="stat-val" id="stat-returns" style="color: var(--success-glow);">0</div>
                 <div class="stat-lbl">Returns Today</div>
             </div>
-            <div class="stat-mini">
+            <div class="stat-mini" onclick="openStatsModal('out', 'Currently Outside')">
                 <div class="stat-val" id="stat-out" style="color: var(--danger-glow);">0</div>
                 <div class="stat-lbl">Currently Out</div>
             </div>
         </div>
 
         <div class="d-flex flex-column gap-3 mb-3">
+            {% if current_user.has_perm('enroll_student') %}
             <button onclick="openRegistration('manual')" class="action-btn-neon">
                 <i class="fas fa-user-plus text-info"></i> REGISTER STUDENT
             </button>
+            {% endif %}
+
+            {% if current_user.has_perm('verify_student') %}
             <a href="/gate/qr-scanner" class="action-btn-neon btn-qr-neon" style="text-decoration: none;">
                 <i class="fas fa-qrcode"></i> SCAN OUTPASS QR
             </a>
+            {% endif %}
+
             <div class="d-flex gap-3">
+                {% if current_user.has_perm('trigger_alert') %}
                 <button id="btn-sos" onclick="triggerSOS()" class="action-btn-neon"
                     style="color: var(--danger-glow); border-color: rgba(255,51,102,0.3);">
                     <i class="fas fa-bullhorn"></i> SOS EMERGENCY
                 </button>
+                {% endif %}
+
+                {% if current_user.has_perm('view_logs') %}
                 <a href="/gate/export/excel" class="action-btn-neon" style="color: #ccc; text-decoration: none;">
                     <i class="fas fa-file-excel text-success"></i> EXCEL REPORT
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -540,26 +654,75 @@
                 <div class="log-item" style="opacity: 0.5;">Waiting for gate events...</div>
             </div>
         </div>
-
     </div>
 </div>
-
-
 
 <!-- Audio Assets -->
 <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
 <audio id="snd-alert" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3"></audio>
 <audio id="snd-sos" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3" loop></audio>
 
+<!-- Stats Detail Modal (Floating Version) -->
+<div id="stats-modal-overlay" class="stats-overlay" onclick="closeStatsModal(event)">
+    <div class="stats-card" onclick="event.stopPropagation()">
+        <div class="stats-header">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-info bg-opacity-10 p-2 rounded-3">
+                    <i class="fas fa-database text-info"></i>
+                </div>
+                <h4 id="stats-modal-title" class="fw-bold mb-0 text-white">Currently Outside</h4>
+            </div>
+            <button onclick="closeStatsModal()"
+                class="btn btn-dark border-secondary rounded-pill px-4 py-2 small fw-bold"
+                style="font-size: 0.8rem;">Close</button>
+        </div>
+
+        <div class="stats-body">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0 stats-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Roll No.</th>
+                            <th>Destination</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th class="text-end">Applied At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-modal-body">
+                        <!-- Data will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<!-- Tesseract.js updated to Version 5 for direct createWorker support and stability -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-    const socket = io('/gate');
+    // System check: Are we running in a preview/sandbox (Canvas) or real Flask backend?
+    const isSandbox = window.location.protocol === 'blob:' || window.location.hostname.includes('usercontent');
+
+    function getApiUrl(path) {
+        try {
+            if (isSandbox) return 'http://127.0.0.1:5000' + path;
+            return path;
+        } catch (e) {
+            return 'http://127.0.0.1:5000' + path;
+        }
+    }
+
+    // Connect socket only if NOT in sandbox
+    const socket = (typeof io !== 'undefined' && !isSandbox) ? io('/gate') : null;
+
     const video = document.getElementById('video-feed');
     const canvas = document.getElementById('canvas-overlay');
     const ctx = canvas.getContext('2d');
@@ -570,10 +733,24 @@
     let capturedImages = [];
     let processingLock = false;
 
-    // Load face-api models for client-side bounding box
+    // --- NEW: Global Tesseract Worker for Fast OCR ---
+    let tesseractWorker = null;
+
+    // Load face-api models and OCR Worker
     async function loadModels() {
+        // Face API Models
         const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
         await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+
+        // Initialize OCR Worker immediately so it's ready before scanning (Tesseract v5 syntax)
+        try {
+            console.log("⏳ Pre-loading AI OCR Engine (v5)...");
+            tesseractWorker = await Tesseract.createWorker('eng');
+            console.log("✅ AI OCR Engine is Ready & Fast!");
+        } catch (e) {
+            console.error("OCR initialization failed:", e);
+        }
+
         startVideo();
     }
 
@@ -602,18 +779,19 @@
                 ctx.lineWidth = 4;
                 ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-                // Corners
                 ctx.fillStyle = '#00d2ff';
                 const s = 20;
-                ctx.fillRect(box.x - 2, box.y - 2, s, 4); ctx.fillRect(box.x - 2, box.y - 2, 4, s); // TL
-                ctx.fillRect(box.x + box.width - s + 2, box.y - 2, s, 4); ctx.fillRect(box.x + box.width - 2, box.y - 2, 4, s); // TR
+                ctx.fillRect(box.x - 2, box.y - 2, s, 4); ctx.fillRect(box.x - 2, box.y - 2, 4, s);
+                ctx.fillRect(box.x + box.width - s + 2, box.y - 2, s, 4); ctx.fillRect(box.x + box.width - 2, box.y - 2, 4, s);
             });
         }
         requestAnimationFrame(animateScanner);
     }
 
-    // Backend Scan Loop (800ms)
+    // Backend Scan Loop (1000ms)
     function startAutoScanLoop() {
+        if (isSandbox) return;
+
         setInterval(async () => {
             if (!isScanning || isRegOpen || processingLock) return;
 
@@ -630,46 +808,46 @@
                     body: JSON.stringify({ image: b64 })
                 });
                 const d = await res.json();
-                // Logic mostly handled via socket callbacks now for unified experience
             } catch (e) { }
         }, 1000);
     }
 
     // Socket Interactions
-    socket.on('gate_event', (data) => {
-        if (isRegOpen || processingLock) return;
+    if (socket) {
+        socket.on('gate_event', (data) => {
+            if (isRegOpen || processingLock) return;
 
-        if (data.state === 'IDLE') return;
+            if (data.state === 'IDLE') return;
 
-        if (data.state === 'UNKNOWN') {
-            // Sound and modal removed as per user request to only play sound on click.
-            processingLock = true;
-            setTimeout(() => processingLock = false, 4000); // 4s cooldown for unknown faces
-        } else {
-            showToast(data);
-            if (['EXIT', 'RETURN'].includes(data.state)) {
-                document.getElementById('snd-success').play();
+            if (data.state === 'UNKNOWN') {
                 processingLock = true;
-                setTimeout(() => processingLock = false, 4000); // 4s cooldown
+                setTimeout(() => processingLock = false, 4000);
+            } else {
+                showToast(data);
+                if (['EXIT', 'RETURN'].includes(data.state)) {
+                    document.getElementById('snd-success').play();
+                    processingLock = true;
+                    setTimeout(() => processingLock = false, 4000);
+                }
             }
-        }
-    });
+        });
 
-    socket.on('gate_log', (data) => {
-        const container = document.getElementById('log-items');
-        const item = document.createElement('div');
-        item.className = 'log-item';
+        socket.on('gate_log', (data) => {
+            const container = document.getElementById('log-items');
+            const item = document.createElement('div');
+            item.className = 'log-item';
 
-        let colorClass = 'info';
-        if (data.type === 'SUCCESS') colorClass = 'success';
-        if (data.type === 'DANGER') colorClass = 'danger';
+            let colorClass = 'info';
+            if (data.type === 'SUCCESS') colorClass = 'success';
+            if (data.type === 'DANGER') colorClass = 'danger';
 
-        item.innerHTML = `
-            <div style="color: #666; font-size: 0.7rem;">${data.time}</div>
-            <div style="flex:1;"><strong class="text-${colorClass}">[${data.type}]</strong> ${data.msg}</div>
-        `;
-        container.prepend(item);
-    });
+            item.innerHTML = `
+                <div style="color: #666; font-size: 0.7rem;">${data.time}</div>
+                <div style="flex:1;"><strong class="text-${colorClass}">[${data.type}]</strong> ${data.msg}</div>
+            `;
+            container.prepend(item);
+        });
+    }
 
     let sosActive = false;
     function triggerSOS() {
@@ -677,15 +855,16 @@
         const btn = document.getElementById('btn-sos');
 
         if (!sosActive) {
-            if (confirm("CRITICAL: Trigger campus-wide security SOS? This will alert all administrative stations.")) {
+            if (confirm("CRITICAL: Trigger campus-wide security SOS?")) {
                 sosActive = true;
-                socket.emit('sos_alert', {
-                    state: 'START',
-                    gate: "Main Gate",
-                    guard: "{{ current_user.name }}",
-                    time: new Date().toLocaleTimeString()
-                });
-
+                if (socket) {
+                    socket.emit('sos_alert', {
+                        state: 'START',
+                        gate: "Main Gate",
+                        guard: "{{ current_user.name }}",
+                        time: new Date().toLocaleTimeString()
+                    });
+                }
                 siren.play().catch(e => console.warn("Audio play failed:", e));
                 btn.innerHTML = '<i class="fas fa-radiation fa-spin"></i> STOP SOS';
                 btn.style.background = 'rgba(255, 51, 102, 0.4)';
@@ -694,13 +873,9 @@
             }
         } else {
             sosActive = false;
-            socket.emit('sos_alert', {
-                state: 'STOP',
-                gate: "Main Gate",
-                guard: "{{ current_user.name }}",
-                time: new Date().toLocaleTimeString()
-            });
-
+            if (socket) {
+                socket.emit('sos_alert', { state: 'STOP' });
+            }
             siren.pause();
             siren.currentTime = 0;
             btn.innerHTML = '<i class="fas fa-bullhorn"></i> SOS EMERGENCY';
@@ -709,6 +884,7 @@
             btn.style.boxShadow = 'none';
         }
     }
+    window.triggerSOS = triggerSOS;
 
     function showToast(data) {
         const toast = document.getElementById('res-toast');
@@ -723,28 +899,336 @@
         setTimeout(() => toast.style.display = 'none', 3000);
     }
 
-    // Registration Flow
+    // ── SUPER SMART PARSER (Sandip University Format Support) ──
+    function smartParseQR(rawText) {
+        let data = { name: '', prn: '', course: '', phone: '', session: '' };
+        if (!rawText) return data;
+
+        // Try JSON
+        try {
+            let p = JSON.parse(rawText);
+            if (p.name || p.prn || p.student_id) {
+                data.name = p.name || p.student_name || p.fullName || '';
+                data.prn = p.prn || p.student_id || p.id || p.rollNo || '';
+                data.course = p.course || p.branch || p.department || '';
+                data.phone = p.phone || p.mobile || p.contact || '';
+                data.session = p.session || p.year || '';
+                return data;
+            }
+        } catch (e) { }
+
+        let text = rawText.replace(/\r/g, '\n');
+
+        // 1. Exact PRN Match (Sandip Univ ID card Format: PRN No. 240205241010)
+        let prnMatch = text.match(/(?:PRN(?: No\.?)?|ID|Enrollment)[\s:]*([A-Z0-9]{8,20})/i);
+        if (prnMatch) data.prn = prnMatch[1].trim();
+        else {
+            let fallbackPrn = text.match(/\b(\d{12})\b/);
+            if (fallbackPrn) data.prn = fallbackPrn[1];
+        }
+
+        // 2. Name Match (Name : PRIYANSHU KUMAR)
+        let nameMatch = text.match(/(?:Name|Student)[\s:]*([A-Za-z\s]+)/i);
+        if (nameMatch) data.name = nameMatch[1].split('\n')[0].trim();
+
+        // 3. Course Match (Course : B.Tech CSE AI&ML)
+        let courseMatch = text.match(/(?:Course|Branch|Programme)[\s:]*(.*)/i);
+        if (courseMatch) data.course = courseMatch[1].split('\n')[0].trim();
+
+        // 4. Session Match (Session : 2024-28)
+        let sessionMatch = text.match(/(?:Session|Batch|Year)[\s:]*(\d{4}\s*[-/]\s*\d{2,4})/i);
+        if (sessionMatch) data.session = sessionMatch[1].trim();
+
+        // 5. Contact No Match
+        let phoneMatch = text.match(/(?:Contact(?: No\.?)?|Phone|Mobile)[\s:]*(\d{10})/i);
+        if (phoneMatch) data.phone = phoneMatch[1].trim();
+        else {
+            let fallbackPhone = text.match(/\b(\d{10})\b/);
+            if (fallbackPhone && fallbackPhone[1] !== data.prn) data.phone = fallbackPhone[1];
+        }
+
+        return data;
+    }
+
+    // ── CONTINUOUS DUAL-ENGINE SCANNER (QR + FAST BACKGROUND OCR) ──
+    let isLiveScanning = false;
+    let isOcrRunning = false;
+
+    function startLiveIdScan(btn) {
+        const scannerArea = document.getElementById('live-qr-scanner-area');
+        const promptArea = document.getElementById('scan-prompt-area');
+        const qrCanvas = document.getElementById('qr-scan-canvas');
+        const qctx = qrCanvas.getContext('2d', { willReadFrequently: true });
+        const statusText = document.getElementById('scan-status-text');
+
+        promptArea.style.display = 'none';
+        scannerArea.style.display = 'block';
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> SCANNING CONTINUOUSLY...';
+
+        isLiveScanning = true;
+        isOcrRunning = false;
+
+        // --- ENGINE 1: FAST QR SCANNING LOOP ---
+        const scanTick = () => {
+            if (!isLiveScanning) return;
+
+            if (typeof jsQR === 'undefined') {
+                isLiveScanning = false;
+                alert("QR Scanner library nahi mili.");
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                qrCanvas.width = video.videoWidth;
+                qrCanvas.height = video.videoHeight;
+                qctx.drawImage(video, 0, 0, qrCanvas.width, qrCanvas.height);
+                const imageData = qctx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+
+                const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+
+                if (code && code.data) {
+                    const parsedQR = smartParseQR(code.data);
+                    if (parsedQR.prn || parsedQR.name) {
+                        isLiveScanning = false;
+
+                        qctx.beginPath();
+                        qctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
+                        qctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
+                        qctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
+                        qctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
+                        qctx.lineTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
+                        qctx.lineWidth = 6;
+                        qctx.strokeStyle = "#00ff88";
+                        qctx.stroke();
+
+                        btn.innerHTML = '<i class="fas fa-magic fa-spin me-2"></i> DATA FUSION ACTIVE...';
+                        statusText.innerHTML = '<i class="fas fa-check me-1"></i> QR Code detected. Extracting missing text...';
+
+                        setTimeout(async () => {
+                            let finalDataToProcess = code.data;
+
+                            // 🚀 DATA FUSION: If QR only has PRN (no name), force a rapid OCR scan to grab the rest!
+                            if (!parsedQR.name && tesseractWorker) {
+                                try {
+                                    const ocrCanvas = document.createElement('canvas');
+                                    const scaleFactor = 0.75;
+                                    ocrCanvas.width = Math.max(1, video.videoWidth * scaleFactor);
+                                    ocrCanvas.height = Math.max(1, video.videoHeight * scaleFactor);
+                                    ocrCanvas.getContext('2d').drawImage(video, 0, 0, ocrCanvas.width, ocrCanvas.height);
+
+                                    const workerRes = await tesseractWorker.recognize(ocrCanvas);
+                                    // Combine QR text and OCR text
+                                    finalDataToProcess = code.data + "\n" + workerRes.data.text;
+                                    console.log("👉 FUSED QR + OCR DATA:\n", finalDataToProcess);
+                                } catch (e) {
+                                    console.log("Enhancement OCR skipped", e);
+                                }
+                            }
+
+                            processQrData(finalDataToProcess, qrCanvas.toDataURL('image/jpeg', 0.9), 'qr_client').finally(() => {
+                                btn.disabled = false;
+                                btn.innerHTML = originalText;
+                            });
+                        }, 50);
+                        return;
+                    } else {
+                        console.log("Skipping garbage QR code...");
+                    }
+                }
+            }
+            if (isLiveScanning) requestAnimationFrame(scanTick);
+        };
+        requestAnimationFrame(scanTick);
+
+        // --- ENGINE 2: FAST BACKGROUND OCR LOOP ---
+        const runBackgroundOCR = async () => {
+            if (!isLiveScanning) return;
+            if (isOcrRunning) return;
+
+            // If worker isn't loaded yet, delay and try again
+            if (!tesseractWorker) {
+                console.log("OCR worker not ready yet, waiting...");
+                if (isLiveScanning) setTimeout(runBackgroundOCR, 1000);
+                return;
+            }
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                isOcrRunning = true;
+                try {
+                    console.log("⚡ Fast OCR Engine Scanning frame...");
+
+                    const ocrCanvas = document.createElement('canvas');
+
+                    // OPTIMIZATION & FIX: Reduce size for speed AND ensure valid dimensions
+                    const scaleFactor = 0.75;
+                    const cWidth = Math.max(1, video.videoWidth * scaleFactor);
+                    const cHeight = Math.max(1, video.videoHeight * scaleFactor);
+
+                    ocrCanvas.width = cWidth;
+                    ocrCanvas.height = cHeight;
+                    ocrCanvas.getContext('2d').drawImage(video, 0, 0, cWidth, cHeight);
+
+                    // Directly use the canvas object with Tesseract v5. Safest method.
+                    const workerRes = await tesseractWorker.recognize(ocrCanvas);
+                    const text = workerRes.data.text;
+                    const parsed = smartParseQR(text);
+
+                    if (parsed.prn || (parsed.name && parsed.course)) {
+                        console.log("👉 TESSERACT FOUND ID DATA:\n", text);
+
+                        if (!isLiveScanning) return;
+                        isLiveScanning = false;
+
+                        qctx.fillStyle = "rgba(0, 255, 136, 0.3)";
+                        qctx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+                        btn.innerHTML = '<i class="fas fa-font me-2"></i> ID TEXT FOUND!';
+                        statusText.innerHTML = '<i class="fas fa-check me-1"></i> Card text extracted rapidly!';
+
+                        // We capture full quality image for backend saving if needed
+                        const b64Image = qrCanvas.toDataURL('image/jpeg', 0.9);
+                        processQrData(text, b64Image, 'ocr').finally(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.log("Background OCR skipped", e);
+                }
+                isOcrRunning = false;
+            }
+
+            // Run loop aggressively since it's much faster now (800ms gap)
+            if (isLiveScanning) {
+                setTimeout(runBackgroundOCR, 800);
+            }
+        };
+
+        // Start OCR almost immediately 
+        setTimeout(runBackgroundOCR, 500);
+    }
+    window.startLiveIdScan = startLiveIdScan;
+
+    function stopLiveIdScan(manualCancel = false) {
+        isLiveScanning = false;
+
+        if (manualCancel) {
+            document.getElementById('live-qr-scanner-area').style.display = 'none';
+            document.getElementById('scan-prompt-area').style.display = 'block';
+            const btn = document.getElementById('btn-scan-id');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> SCAN ID CARD';
+        }
+    }
+    window.stopLiveIdScan = stopLiveIdScan;
+
+
+    async function processQrData(scannedData, b64Image, methodType = 'qr_client') {
+        let resp;
+        console.log("👉 PROCESSING DATA:\n", scannedData);
+
+        try {
+            if (isSandbox) {
+                await new Promise(r => setTimeout(r, 1000));
+                resp = {
+                    success: true,
+                    method: methodType,
+                    data: smartParseQR(scannedData),
+                    sid: smartParseQR(scannedData).prn,
+                    exists: false,
+                    has_face: false,
+                    raw_qr: scannedData
+                };
+            } else {
+                const res = await fetch(getApiUrl('/gate/scan-id'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: b64Image,
+                        client_qr: (methodType === 'qr_client') ? scannedData : ''
+                    })
+                });
+                resp = await res.json();
+                resp.raw_qr = scannedData;
+                resp.method = methodType;
+            }
+
+            document.getElementById('live-qr-scanner-area').style.display = 'none';
+            document.getElementById('scan-prompt-area').style.display = 'block';
+
+            await _applyScannedData(resp);
+
+        } catch (e) {
+            document.getElementById('live-qr-scanner-area').style.display = 'none';
+            document.getElementById('scan-prompt-area').style.display = 'block';
+            console.error('[scan-id] process error:', e);
+            _showScanFeedback('danger', '<i class="fas fa-plug me-2"></i> Backend connection failed.');
+        }
+    }
+
+    // Registration Flow Functions
     function openRegistration(source) {
         isRegOpen = true;
         isScanning = false;
-        bootstrap.Modal.getInstance(document.getElementById('alertModal'))?.hide();
+        if (typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getInstance(document.getElementById('alertModal'))?.hide();
+        }
         document.getElementById('reg-panel').style.display = 'flex';
         goToStep(1);
     }
+    window.openRegistration = openRegistration;
 
     function closeRegistration() {
         document.getElementById('reg-panel').style.display = 'none';
         isRegOpen = false;
         isScanning = true;
+        stopLiveIdScan(true);
         capturedImages = [];
         document.getElementById('enroll-form').reset();
+
+        document.getElementById('live-qr-scanner-area').style.display = 'none';
+        document.getElementById('scan-prompt-area').style.display = 'block';
+
+        const btn = document.getElementById('btn-scan-id');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-qrcode me-2"></i> SCAN ID CARD';
+        }
+
         document.getElementById('capture-status').style.display = 'block';
         document.getElementById('capture-progress').style.display = 'none';
         document.getElementById('finalize-reg').disabled = true;
         document.getElementById('finalize-reg').innerHTML = 'FINALIZE ENROLLMENT <i class="fas fa-check ms-2"></i>';
     }
+    window.closeRegistration = closeRegistration;
 
     function goToStep(step) {
+        if (step === 3) {
+            const fields = [
+                { id: 'reg-sid', name: 'Student ID' },
+                { id: 'reg-name', name: 'Full Name' },
+                { id: 'reg-dept', name: 'Department' },
+                { id: 'reg-course', name: 'Course' },
+                { id: 'reg-session', name: 'Session' },
+                { id: 'reg-sphone', name: 'Student Phone' },
+                { id: 'reg-pphone', name: 'Parent Phone' }
+            ];
+
+            for (const field of fields) {
+                const val = document.getElementById(field.id).value.trim();
+                if (!val) {
+                    alert(`Please enter ${field.name}`);
+                    document.getElementById(field.id).focus();
+                    return;
+                }
+            }
+        }
+
         document.getElementById('step-1').style.display = 'none';
         document.getElementById('step-2').style.display = 'none';
         document.getElementById('step-3').style.display = 'none';
@@ -753,10 +1237,13 @@
         if (step === 2) document.getElementById('step-2').style.display = 'block';
         if (step === 3) document.getElementById('step-3').style.display = 'flex';
     }
+    window.goToStep = goToStep;
 
     function skipScan() {
+        stopLiveIdScan(true);
         goToStep(2);
     }
+    window.skipScan = skipScan;
 
     async function startCaptureFlow() {
         isCapturing = true;
@@ -780,11 +1267,19 @@
         document.getElementById('capture-progress').querySelector('.spinner-border').className = 'fas fa-check-circle text-success fa-2x mb-3';
         document.getElementById('finalize-reg').disabled = false;
     }
+    window.startCaptureFlow = startCaptureFlow;
 
     async function saveRegistration() {
         const btn = document.getElementById('finalize-reg');
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SAVING...';
         btn.disabled = true;
+
+        if (isSandbox) {
+            await new Promise(r => setTimeout(r, 1000));
+            alert("SANDBOX MODE: Student Registered Successfully!");
+            closeRegistration();
+            return;
+        }
 
         const studentData = {
             student_id: document.getElementById('reg-sid').value,
@@ -797,7 +1292,7 @@
         };
 
         try {
-            const res = await fetch('/gate/enroll', {
+            const res = await fetch(getApiUrl('/gate/enroll'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ student_data: studentData, images: capturedImages })
@@ -817,121 +1312,51 @@
             btn.disabled = false;
         }
     }
+    window.saveRegistration = saveRegistration;
 
-    // ── ID Scanning Flow — powered by /gate/scan-id (pyzbar QR + pytesseract OCR) ──
-    async function triggerIdScan(btn) {
-        const scanLine = document.getElementById('id-scan-line');
-        const origText = btn.innerHTML;
-
-        // Show scanning UI
-        scanLine.style.display = 'block';
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> SCANNING...';
-
-        // Step 1: Try client-side jsQR first (instant, no server round-trip)
-        const scanCanvas = document.createElement('canvas');
-        scanCanvas.width = video.videoWidth || 1280;
-        scanCanvas.height = video.videoHeight || 720;
-        const sctx = scanCanvas.getContext('2d');
-        sctx.drawImage(video, 0, 0);
-
-        let clientQrFound = false;
-        try {
-            const imgData = sctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-            const qr = jsQR(imgData.data, imgData.width, imgData.height);
-            if (qr && qr.data) {
-                clientQrFound = true;
-                console.log('[scan-id] Client jsQR hit:', qr.data.slice(0, 80));
-            }
-        } catch (e) { console.warn('[scan-id] jsQR error:', e); }
-
-        // Step 2: Send frame + client QR data to backend
-        const b64 = scanCanvas.toDataURL('image/jpeg', 0.92);
-        btn.innerHTML = '<i class="fas fa-server fa-spin me-2"></i> PROCESSING...';
-
-        try {
-            const res = await fetch('/gate/scan-id', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: b64,
-                    client_qr: clientQrFound ? (() => {
-                        // re-decode to get the string value
-                        try {
-                            const id2 = scanCanvas.getContext('2d').getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-                            const q2 = jsQR(id2.data, id2.width, id2.height);
-                            return q2 ? q2.data : '';
-                        } catch (e) { return ''; }
-                    })() : ''
-                })
-            });
-            const resp = await res.json();
-
-            scanLine.style.display = 'none';
-            btn.disabled = false;
-            btn.innerHTML = origText;
-
-            if (!resp.success) {
-                _showScanFeedback('danger',
-                    '<i class="fas fa-exclamation-triangle me-2"></i>' +
-                    (resp.message || 'Could not read ID card.') +
-                    ' Please align card and try again, or fill manually.'
-                );
-                return;
-            }
-
-            await _applyScannedData(resp);
-
-        } catch (e) {
-            scanLine.style.display = 'none';
-            btn.disabled = false;
-            btn.innerHTML = origText;
-            console.error('[scan-id] fetch error:', e);
-            _showScanFeedback('danger',
-                '<i class="fas fa-plug me-2"></i> Server connection error. Is the backend running?'
-            );
-        }
-    }
-
-    // Apply data returned from /gate/scan-id into the registration form
     async function _applyScannedData(resp) {
         const d = resp.data || {};
         const db = resp.db_data || {};
-        const sid = resp.sid || d.prn || d.student_id || '';
 
-        // If already fully registered → skip registration, close overlay
-        if (resp.exists && resp.has_face) {
-            _showScanFeedback('info',
-                `<i class="fas fa-check-circle me-2"></i>` +
-                `<strong>${db.name || sid}</strong> is already enrolled. Closing registration.`
-            );
-            setTimeout(() => closeRegistration(), 2000);
-            return;
+        const localParsed = smartParseQR(resp.raw_qr);
+
+        let sid = db.student_id || resp.sid || d.prn || localParsed.prn || '';
+        let sName = db.name || d.name || localParsed.name || '';
+        let sCourse = db.course || d.course || localParsed.course || '';
+        let sPhone = db.phone || d.mobile || d.phone || localParsed.phone || '';
+
+        if (!sName && !sid && resp.raw_qr && resp.raw_qr.trim() !== '') {
+            sName = resp.raw_qr.substring(0, 40).replace(/\n/g, ' ');
         }
 
-        // Fill form fields — prefer DB values when student exists but has no face yet
-        const fill = (id, val) => { if (val) document.getElementById(id).value = val; };
+        const forceFill = (id, val) => {
+            const el = document.getElementById(id);
+            if (el && val) el.value = val;
+        };
 
-        fill('reg-sid', sid);
-        fill('reg-name', db.name || d.name || '');
-        fill('reg-dept', db.department || d.dept || d.department || '');
-        fill('reg-course', db.course || d.course || '');
-        fill('reg-session', db.session_year || d.session || d.year || '');
-        fill('reg-sphone', db.phone || d.mobile || d.phone || '');
-        fill('reg-pphone', db.parent_phone || '');
+        forceFill('reg-sid', sid);
+        forceFill('reg-name', sName);
+        forceFill('reg-dept', db.department || d.dept || d.department || '');
+        forceFill('reg-course', sCourse);
+        forceFill('reg-session', db.session_year || d.session || d.year || '');
+        forceFill('reg-sphone', sPhone);
+        forceFill('reg-pphone', db.parent_phone || '');
 
-        const method = resp.method === 'qr' ? '✅ QR Code' : '⚠️ OCR Text';
-        _showScanFeedback(
-            resp.method === 'qr' ? 'success' : 'warning',
-            `<i class="fas fa-id-card me-2"></i> ID scanned via <strong>${method}</strong>. ` +
-            (resp.exists ? 'Student found in DB — verify details.' : 'New student — fill missing fields.')
-        );
+        const methodMap = {
+            'qr': '✅ QR Code',
+            'qr_client': '✅ QR Code',
+            'ocr': '🤖 Card Text OCR'
+        };
+        const method = methodMap[resp.method] || '🤖 Extracted Data';
 
-        // Short delay so user sees feedback, then advance to form step
-        setTimeout(() => goToStep(2), 900);
+        if (sName || sid) {
+            _showScanFeedback('success', `<i class="fas fa-id-card me-2"></i> Data read via <strong>${method}</strong>. Check details.`);
+            setTimeout(() => goToStep(2), 900);
+        } else {
+            _showScanFeedback('warning', `<i class="fas fa-exclamation-triangle me-2"></i> Card scanned, but no readable text found. Please align properly.`);
+        }
     }
 
-    // Inline feedback inside reg-panel (above the button)
     function _showScanFeedback(type, html) {
         const colorMap = {
             success: 'var(--success-glow)',
@@ -955,89 +1380,19 @@
 
     // Stats
     async function updateStats() {
-        const res = await fetch('/gate/status');
-        const data = await res.json();
-        document.getElementById('stat-exits').innerText = data.exits_today;
-        document.getElementById('stat-returns').innerText = data.returns_today;
-        document.getElementById('stat-out').innerText = data.currently_out;
+        if (isSandbox) return;
+        try {
+            const res = await fetch(getApiUrl('/gate/status'));
+            const data = await res.json();
+            document.getElementById('stat-exits').innerText = data.exits_today;
+            document.getElementById('stat-returns').innerText = data.returns_today;
+            document.getElementById('stat-out').innerText = data.currently_out;
+        } catch (e) { }
     }
     setInterval(updateStats, 10000);
     updateStats();
 
-    async function generateDailyReport() {
-        const res = await fetch('/gate/today-report');
-        const data = await res.json();
-
-        if (data.length === 0) {
-            alert("No movement recorded today yet.");
-            return;
-        }
-
-        // Create a printable window
-        const printWindow = window.open('', '_blank');
-        const today = new Date().toLocaleDateString();
-
-        let html = `
-            <html>
-            <head>
-                <title>UniShield - Daily Movement Report (${today})</title>
-                <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
-                    .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                    th { background-color: #f8f9fa; font-weight: bold; }
-                    tr:nth-child(even) { background-color: #fcfcfc; }
-                    .footer { margin-top: 50px; font-size: 0.8rem; text-align: right; border-top: 1px solid #eee; padding-top: 20px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>UniShield Security System</h1>
-                    <h2>Daily Student Movement Report</h2>
-                    <p>Date: ${today} | Terminal ID: GATE-01</p>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student Name</th>
-                            <th>Student ID</th>
-                            <th>Exit Time</th>
-                            <th>Return Time</th>
-                            <th>Final Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.map(m => `
-                            <tr>
-                                <td>${m.name}</td>
-                                <td>${m.sid}</td>
-                                <td>${m.exit_time}</td>
-                                <td>${m.return_time}</td>
-                                <td><strong>${m.status}</strong></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <div class="footer">
-                    <p>Generated on ${new Date().toLocaleString()}</p>
-                    <p>Confirmed by Security Officer: __________________________</p>
-                </div>
-                <script>
-                    window.onload = function() { window.print(); window.close(); }
-                <\/script>
-            </body>
-            </html>
-        `;
-
-        printWindow.document.write(html);
-        printWindow.document.close();
-    }
-
-    // Init
-    loadModels();
-
-    // Autocomplete Component (Reusable)
+    // Autocomplete Component
     class Autocomplete {
         constructor(inputId, dropdownId, wrapperId, options) {
             this.input = document.getElementById(inputId);
@@ -1072,9 +1427,7 @@
                     const item = document.createElement('div');
                     item.className = 'autocomplete-item';
 
-                    // Highlight matching part
                     if (val) {
-                        // Escape regex characters just in case
                         const sanitizedVal = val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                         const regex = new RegExp(`(${sanitizedVal})`, "gi");
                         item.innerHTML = match.replace(regex, "<span style='color: var(--accent-glow); font-weight: bold;'>$1</span>");
@@ -1100,14 +1453,12 @@
 
         handleInput() {
             const val = this.input.value.trim();
-
             let matches = [];
             if (val === '') {
                 matches = this.options;
             } else {
                 matches = this.options.filter(opt => opt.toLowerCase().includes(val.toLowerCase()));
             }
-
             this.renderOptions(matches, val);
         }
 
@@ -1185,25 +1536,105 @@
         }
     }
 
-    // Required Department List
-    const DEPARTMENTS = [
-        "SOET-FE", "SOET-ME", "SOET-EE", "SOET-CE", "SOCSE",
-        "SOCMS", "SOAS", "SNJSOE", "SOLIS", "SOL"
-    ];
+    const DEPARTMENTS = ["SOET-FE", "SOET-ME", "SOET-EE", "SOET-CE", "SOCSE", "SOCMS", "SOAS", "SNJSOE", "SOLIS", "SOL"];
+    const COURSES = ["BA LLB", "BBA", "BBA LLB", "BCA", "B.Com", "B.Ed", "B.Lib", "B.Sc Agriculture", "B.Tech AI & ML", "B.Tech CE", "B.Tech CSE", "B.Tech EE", "B.Tech ME", "D.El.Ed", "Diploma", "LLB", "LLM", "MBA", "MCA", "M.Lib", "M.Sc Agriculture", "M.Tech Civil", "M.Tech CSE", "M.Tech Power Systems", "M.Tech Thermal Engineering", "PhD Engineering", "PhD Management"];
 
-    // Required Course List
-    const COURSES = [
-        "BA LLB", "BBA", "BBA LLB", "BCA", "B.Com", "B.Ed",
-        "B.Lib", "B.Sc Agriculture", "B.Tech AI & ML", "B.Tech CE",
-        "B.Tech CSE", "B.Tech EE", "B.Tech ME", "D.El.Ed", "Diploma",
-        "LLB", "LLM", "MBA", "MCA", "M.Lib", "M.Sc Agriculture",
-        "M.Tech Civil", "M.Tech CSE", "M.Tech Power Systems",
-        "M.Tech Thermal Engineering", "PhD Engineering", "PhD Management"
-    ];
-
-    // Initialize the auto-complete on the fields
     new Autocomplete('reg-dept', 'dept-dropdown', 'dept-autocomplete-wrapper', DEPARTMENTS);
     new Autocomplete('reg-course', 'course-dropdown', 'course-autocomplete-wrapper', COURSES);
 
+    // Stats Modal Logic
+    async function openStatsModal(type, title) {
+        const overlay = document.getElementById('stats-modal-overlay');
+        const titleEl = document.getElementById('stats-modal-title');
+        const bodyEl = document.getElementById('stats-modal-body');
+        const headerLast = document.querySelector('.stats-table th:last-child');
+
+        // Dynamic Header
+        let timeHeader = 'Applied At';
+        if (type === 'exits') timeHeader = 'Exit Time';
+        if (type === 'returns') timeHeader = 'Return Time';
+        if (headerLast) headerLast.innerText = timeHeader;
+
+        titleEl.innerText = title;
+        bodyEl.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted small">Accessing Neural Database...</p>
+                </td>
+            </tr>
+        `;
+        overlay.style.display = 'flex';
+
+        try {
+            const res = await fetch(getApiUrl(`/gate/movements/${type}`));
+            const data = await res.json();
+
+            if (data.success && data.data.length > 0) {
+                let html = '';
+                data.data.forEach(m => {
+                    let priorityColor = 'text-muted';
+                    if (m.priority === 'MEDICAL') priorityColor = 'text-warning';
+                    if (m.priority === 'EMERGENCY') priorityColor = 'text-danger';
+
+                    // Use m.time for exits/returns, m.applied_at for currently out
+                    let displayTime = m.applied_at;
+                    if (type === 'exits' || type === 'returns') displayTime = m.time;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-white">${m.name}</div>
+                                <div class="small text-muted" style="font-size: 0.7rem;">STUDENT AUTHORIZED</div>
+                            </td>
+                            <td class="text-info font-monospace small">${m.sid}</td>
+                            <td class="text-muted small">${m.destination}</td>
+                            <td><span class="badge bg-dark border border-secondary ${priorityColor} px-2 py-1" style="font-size: 0.65rem;">${m.priority}</span></td>
+                            <td><span class="badge" style="background: rgba(0,210,255,0.05); color: var(--accent-glow); font-size: 0.65rem;">${m.status}</span></td>
+                            <td class="text-end font-monospace text-muted small">${displayTime}</td>
+                        </tr>
+                    `;
+                });
+                bodyEl.innerHTML = html;
+            } else {
+                bodyEl.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="opacity-25 mb-3">
+                                <i class="fas fa-folder-open fa-3x"></i>
+                            </div>
+                            <div class="text-muted small uppercase" style="letter-spacing: 2px;">No records found for this category.</div>
+                        </td>
+                    </tr>
+                `;
+            }
+        } catch (e) {
+            bodyEl.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p class="small">Security Breach: Failed to load database.</p>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function closeStatsModal(e) {
+        if (e && e.target !== document.getElementById('stats-modal-overlay')) return;
+        document.getElementById('stats-modal-overlay').style.display = 'none';
+    }
+
+    // Live Clock Logic
+    function updateClock() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const clockEl = document.getElementById('live-clock');
+        if (clockEl) clockEl.innerText = timeStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    loadModels();
 </script>
 {% endblock %}

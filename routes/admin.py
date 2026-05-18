@@ -24,6 +24,20 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def permission_required(perm):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.role != 'admin':
+                flash('Admin access required', 'danger')
+                return redirect(url_for('auth.login'))
+            if not current_user.has_perm(perm):
+                flash(f'Access Denied: You need the {perm} permission for this action.', 'danger')
+                return redirect(url_for('admin.dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 @admin_bp.route('/dashboard')
 @login_required
 @admin_required
@@ -32,7 +46,7 @@ def dashboard():
 
 @admin_bp.route('/students', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('STUDENT_MANAGE')
 def students():
     blacklist_id = request.args.get('blacklist_id')
     if blacklist_id:
@@ -58,7 +72,7 @@ def students():
 
 @admin_bp.route('/add_student', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('STUDENT_MANAGE')
 def add_student():
     if request.method == 'POST':
         name = request.form.get('name')
@@ -153,7 +167,7 @@ def add_student():
     return render_template('admin/add_student.html')
 @admin_bp.route('/students/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('STUDENT_MANAGE')
 def edit_student(user_id):
     student = User.query.get_or_404(user_id)
     if student.role != 'student':
@@ -198,7 +212,7 @@ def edit_student(user_id):
 
 @admin_bp.route('/outpasses', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('OUTPASS_APPROVE')
 def outpasses():
     action = request.args.get('action')
     op_id = request.args.get('op_id')
@@ -237,10 +251,18 @@ def outpasses():
     if search:
         query = query.join(User).filter(db.or_(User.name.ilike(f'%{search}%'), User.student_id.ilike(f'%{search}%')))
     
-    if status_filter != 'all':
-        all_outpasses = query.filter(Outpass.status == status_filter).order_by(Outpass.created_at.desc()).all()
-    else:
-        all_outpasses = query.order_by(Outpass.created_at.desc()).all()
+    if status_filter == 'overdue':
+        query = query.filter(Outpass.status == 'out', Outpass.expected_return < datetime.utcnow())
+    elif status_filter == 'today':
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        query = query.filter(Outpass.created_at >= today_start)
+    elif status_filter == 'returned_today':
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        query = query.filter(Outpass.status == 'returned', Outpass.actual_return >= today_start)
+    elif status_filter != 'all':
+        query = query.filter(Outpass.status == status_filter)
+    
+    all_outpasses = query.order_by(Outpass.created_at.desc()).all()
         
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     
@@ -262,9 +284,46 @@ def outpasses():
                            search=search)
 
 
+@admin_bp.route('/api/modal_data')
+@login_required
+@permission_required('OUTPASS_APPROVE')
+def api_modal_data():
+    filter_type = request.args.get('type')
+    query = Outpass.query
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    if filter_type == 'today':
+        passes = query.filter(Outpass.created_at >= today_start).order_by(Outpass.created_at.desc()).all()
+    elif filter_type == 'out':
+        passes = query.filter(Outpass.status == 'out').order_by(Outpass.created_at.desc()).all()
+    elif filter_type == 'overdue':
+        passes = query.filter(Outpass.status == 'out', Outpass.expected_return < datetime.utcnow()).order_by(Outpass.created_at.desc()).all()
+    elif filter_type == 'returned_today':
+        passes = query.filter(Outpass.status == 'returned', Outpass.actual_return >= today_start).order_by(Outpass.created_at.desc()).all()
+    elif filter_type == 'pending':
+        passes = query.filter(Outpass.status == 'pending').order_by(Outpass.created_at.desc()).all()
+    else:
+        passes = []
+
+    data = []
+    for p in passes:
+        s = p.student
+        data.append({
+            'id': p.id,
+            'student_name': s.name if s else 'N/A',
+            'student_id': s.student_id if s else 'N/A',
+            'department': s.department if s else 'N/A',
+            'destination': p.destination,
+            'priority': p.priority,
+            'parent_verified': p.parent_verified,
+            'status': p.status,
+            'created_at': p.created_at.strftime('%d %b %Y, %H:%M') if p.created_at else 'N/A'
+        })
+    return jsonify({'success': True, 'passes': data})
+
 @admin_bp.route('/analytics')
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def analytics():
     # Calculate real-time stats
     total_students = User.query.filter_by(role='student').count()
@@ -289,13 +348,13 @@ def analytics():
 
 @admin_bp.route('/reports')
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def reports():
     last_24h = datetime.utcnow() - timedelta(hours=24)
     
     total_24h = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h).count()
     suspicious = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h, ActivityLog.action.ilike('%blacklist%')).count()
-    logins = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h, ActivityLog.action.ilike('%login%')).count()
+    logins = User.query.filter(User.last_login >= last_24h).count()
     
     target_user = request.args.get('user_id')
     query = ActivityLog.query
@@ -313,14 +372,13 @@ def reports():
 
 @admin_bp.route('/sms_test')
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def sms_test_redirect():
     return redirect(url_for('admin.sms_center'))
 
 @admin_bp.route('/sms_center', methods=['GET', 'POST'])
-
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def sms_center():
     from models.log import SMSLog, SMSConfig
     
@@ -371,7 +429,7 @@ def notif_count():
 
 @admin_bp.route('/export/<type>')
 @login_required
-@admin_required
+@permission_required('LOG_EXPORT')
 def export(type):
     format = request.args.get('format', 'csv')
     
@@ -417,7 +475,7 @@ def export(type):
     return ExportService.export_csv(headers, data, filename)
 @admin_bp.route('/guards', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def guards():
     import json
     import os
@@ -533,7 +591,7 @@ def guards():
 
 @admin_bp.route('/guards/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def edit_guard(user_id):
     import json
     from models.user import User
@@ -586,7 +644,7 @@ def edit_guard(user_id):
 
 @admin_bp.route('/toggle_guard_duty/<int:user_id>')
 @login_required
-@admin_required
+@permission_required('SECURITY_CONTROL')
 def toggle_guard_duty(user_id):
     guard = User.query.get_or_404(user_id)
     if guard.role != 'guard':
@@ -601,17 +659,14 @@ def toggle_guard_duty(user_id):
 
 @admin_bp.route('/manage_admins', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('ALL')
 def manage_admins():
     import json
     if request.method == 'POST':
         action = request.form.get('action')
         
-        # Approve/Activate Action (Owner only)
+        # Approve/Activate Action
         if action == 'activate':
-            if current_user.admin_role != 'OWNER':
-                flash('Only the System Owner can approve new administrators.', 'danger')
-                return redirect(url_for('admin.manage_admins'))
             target_id = request.form.get('admin_id')
             admin = User.query.get(target_id)
             if admin:
@@ -686,10 +741,57 @@ def manage_admins():
                          active=active_admins,
                          pending=pending_admins)
 
+@admin_bp.route('/toggle_admin_duty/<int:user_id>', methods=['POST'])
+@login_required
+@permission_required('ALL')
+def toggle_admin_duty(user_id):
+    admin = User.query.get_or_404(user_id)
+    if admin.id == current_user.id:
+        flash('You cannot toggle your own status.', 'danger')
+        return redirect(url_for('admin.manage_admins'))
+    admin.status = 'INACTIVE' if admin.status == 'ACTIVE' else 'ACTIVE'
+    db.session.commit()
+    flash(f"Admin {admin.name} is now {admin.status}.", 'success')
+    return redirect(url_for('admin.manage_admins'))
+
+@admin_bp.route('/reset_admin_pwd', methods=['POST'])
+@login_required
+@permission_required('ALL')
+def reset_admin_pwd():
+    admin_id = request.form.get('admin_id')
+    new_pwd = request.form.get('new_password')
+    admin = User.query.get_or_404(admin_id)
+    admin.set_password(new_pwd)
+    db.session.commit()
+    flash(f"Password reset for {admin.name}.", 'success')
+    return redirect(url_for('admin.manage_admins'))
+
+@admin_bp.route('/edit_admin/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@permission_required('ALL')
+def edit_admin(user_id):
+    admin = User.query.get_or_404(user_id)
+    import json
+    
+    if request.method == 'POST':
+        admin.name = request.form.get('name')
+        admin.admin_role = request.form.get('role')
+        perms = request.form.getlist('perms')
+        admin.permissions = json.dumps(perms)
+        db.session.commit()
+        flash(f'Admin {admin.name} updated successfully.', 'success')
+        return redirect(url_for('admin.manage_admins'))
+        
+    try:
+        current_perms = json.loads(admin.permissions) if admin.permissions else []
+    except:
+        current_perms = []
+        
+    return render_template('admin/edit_admin.html', admin=admin, current_perms=current_perms)
 
 @admin_bp.route('/delete_user/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@permission_required('ALL')
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
@@ -724,7 +826,7 @@ def delete_user(user_id):
 
 @admin_bp.route('/faculty', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@permission_required('ALL')
 def manage_faculty():
     import json
     if request.method == 'POST':

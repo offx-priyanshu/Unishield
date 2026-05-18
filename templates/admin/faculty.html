@@ -341,13 +341,6 @@
                 </label>
                 <label class="perm-item">
                     <div class="perm-info">
-                        <span class="perm-name">Gate Control</span>
-                        <span class="perm-desc">Direct authority over terminal bypass</span>
-                    </div>
-                    <input type="checkbox" name="perms" value="GATE_CONTROL" class="custom-checkbox">
-                </label>
-                <label class="perm-item">
-                    <div class="perm-info">
                         <span class="perm-name">View Reports</span>
                         <span class="perm-desc">Access to analytics and audit logs</span>
                     </div>
@@ -457,7 +450,11 @@
                                     {% if item.is_online %}
                                         <b style="color: var(--success);">Online Now</b>
                                     {% elif item.user.last_active %}
-                                        {{ item.user.last_active.strftime('%H:%M Today') }}
+                                        {% if item.user.last_active.date() == now.date() %}
+                                            {{ item.user.last_active.strftime('%H:%M Today') }}
+                                        {% else %}
+                                            {{ item.user.last_active.strftime('%H:%M %d %b') }}
+                                        {% endif %}
                                     {% else %}
                                         Never
                                     {% endif %}
@@ -469,6 +466,7 @@
                                 <a href="{{ url_for('admin.edit_faculty', user_id=item.user.id) }}" class="action-btn" title="Edit Profile" style="color: var(--neon-cyan);"><i class="fas fa-edit"></i></a>
                                 <button class="action-btn" onclick="promptReset('{{ item.user.id }}', '{{ item.user.name }}')" title="Reset Credentials" style="color: #fff;"><i class="fas fa-key"></i></button>
                                 <a href="{{ url_for('admin.toggle_faculty_status', user_id=item.user.id) }}" class="action-btn" title="{{ 'Unblock Authority' if item.user.status == 'INACTIVE' else 'Block Authority' }}" style="color: {{ 'var(--success)' if item.user.status == 'INACTIVE' else 'var(--danger)' }};"><i class="fas fa-{{ 'user-check' if item.user.status == 'INACTIVE' else 'user-slash' }}"></i></a>
+                                <button class="action-btn danger" onclick="confirmDelete('{{ item.user.id }}', '{{ item.user.name }}')" title="Delete Authority" style="color: var(--danger);"><i class="fas fa-trash-alt"></i></button>
                             </div>
                             <form id="reset_form_{{ item.user.id }}" action="{{ url_for('admin.reset_user_password', user_id=item.user.id) }}" method="POST" style="display: none;">
                                 <input type="hidden" name="new_password" id="reset_input_{{ item.user.id }}">
@@ -512,6 +510,12 @@
         if (pass) {
             document.getElementById(`reset_input_${id}`).value = pass;
             document.getElementById(`reset_form_${id}`).submit();
+        }
+    }
+
+    function confirmDelete(id, name) {
+        if (confirm(`CRITICAL: Are you sure you want to permanently delete faculty member ${name}? This action cannot be undone.`)) {
+            document.getElementById(`delete_form_${id}`).submit();
         }
     }
 </script>

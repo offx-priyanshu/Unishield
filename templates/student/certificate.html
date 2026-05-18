@@ -121,52 +121,67 @@
             margin-top: auto;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            padding-top: 50px;
-            border-top: 2px solid #e2e8f0;
+            gap: 30px;
+            padding-top: 40px;
+            border-top: 1px solid #f1f5f9;
         }
 
         .signature-block {
             text-align: center;
             position: relative;
+            padding: 10px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
         }
 
         .sig-img {
-            max-width: 120px;
-            height: 60px;
+            max-width: 90px;
+            max-height: 45px;
             margin-bottom: 5px;
-            filter: grayscale(1) contrast(1.5);
-            opacity: 0.8;
+            filter: grayscale(1) contrast(1.2);
+            opacity: 0.9;
+            z-index: 2;
         }
 
         .placeholder-sig {
             font-family: 'Playfair Display', serif;
             font-style: italic;
-            color: #3b82f6;
-            font-size: 1.2rem;
+            color: #64748b;
+            font-size: 1rem;
             margin-bottom: 10px;
             display: block;
         }
 
         .stamp {
             position: absolute;
-            top: -20px;
-            right: 0;
-            width: 80px;
-            height: 80px;
-            opacity: 0.15;
+            bottom: 25px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            opacity: 0.3;
             pointer-events: none;
+            z-index: 1;
+            transform: rotate(-15deg);
         }
 
         .sig-label {
-            font-size: 0.8rem;
-            font-weight: 700;
+            font-size: 0.7rem;
+            font-weight: 800;
             color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            width: 100%;
         }
 
         .sig-sub {
-            font-size: 0.7rem;
-            color: #64748b;
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-top: 2px;
         }
 
         .qr-section {
@@ -286,24 +301,48 @@
             <div class="approval-chain">
                 <!-- HOD -->
                 <div class="signature-block">
-                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=HOD" class="stamp">
-                    <span class="placeholder-sig">{{ outpass.hod.name if outpass.hod_id else '---' }}</span>
+                    {% if outpass.hod and outpass.hod.stamp_path %}
+                        <img src="{{ url_for('static', filename='uploads/' + outpass.hod.stamp_path) }}" class="stamp">
+                    {% endif %}
+                    
+                    {% if outpass.hod and outpass.hod.signature_path %}
+                        <img src="{{ url_for('static', filename='uploads/' + outpass.hod.signature_path) }}" class="sig-img">
+                    {% else %}
+                        <span class="placeholder-sig">{{ outpass.hod.name if outpass.hod_id else '---' }}</span>
+                    {% endif %}
+                    
                     <div class="sig-label">H.O.D. Approval</div>
                     <div class="sig-sub">{{ outpass.hod_signed_at.strftime('%d/%m/%y') if outpass.hod_signed_at else 'PENDING' }}</div>
                 </div>
 
                 <!-- DEAN -->
                 <div class="signature-block">
-                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=DEAN" class="stamp">
-                    <span class="placeholder-sig">{{ outpass.dean.name if outpass.dean_id else '---' }}</span>
+                    {% if outpass.dean and outpass.dean.stamp_path %}
+                        <img src="{{ url_for('static', filename='uploads/' + outpass.dean.stamp_path) }}" class="stamp">
+                    {% endif %}
+                    
+                    {% if outpass.dean and outpass.dean.signature_path %}
+                        <img src="{{ url_for('static', filename='uploads/' + outpass.dean.signature_path) }}" class="sig-img">
+                    {% else %}
+                        <span class="placeholder-sig">{{ outpass.dean.name if outpass.dean_id else '---' }}</span>
+                    {% endif %}
+                    
                     <div class="sig-label">DEAN (Student Welfare)</div>
                     <div class="sig-sub">{{ outpass.dean_signed_at.strftime('%d/%m/%y') if outpass.dean_signed_at else 'PENDING' }}</div>
                 </div>
 
                 <!-- WARDEN -->
                 <div class="signature-block">
-                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=WARDEN" class="stamp">
-                    <span class="placeholder-sig">{{ outpass.warden.name if outpass.warden_id else '---' }}</span>
+                    {% if outpass.warden and outpass.warden.stamp_path %}
+                        <img src="{{ url_for('static', filename='uploads/' + outpass.warden.stamp_path) }}" class="stamp">
+                    {% endif %}
+                    
+                    {% if outpass.warden and outpass.warden.signature_path %}
+                        <img src="{{ url_for('static', filename='uploads/' + outpass.warden.signature_path) }}" class="sig-img">
+                    {% else %}
+                        <span class="placeholder-sig">{{ outpass.warden.name if outpass.warden_id else '---' }}</span>
+                    {% endif %}
+                    
                     <div class="sig-label">CHIEF WARDEN</div>
                     <div class="sig-sub">{{ outpass.warden_signed_at.strftime('%d/%m/%y') if outpass.warden_signed_at else 'PENDING' }}</div>
                 </div>

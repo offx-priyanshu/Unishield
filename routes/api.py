@@ -241,12 +241,13 @@ def stats_summary():
 
 @api_bp.route('/logs/active', methods=['GET'])
 def active_logs():
+    from models.log import ActivityLog
     last_24h = datetime.utcnow() - timedelta(hours=24)
     
     # 24h Summary Counts
     total_24h = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h).count()
     suspicious = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h, ActivityLog.action.ilike('%blacklist%')).count()
-    logins = ActivityLog.query.filter(ActivityLog.timestamp >= last_24h, ActivityLog.action.ilike('%login%')).count()
+    logins = User.query.filter(User.last_login >= last_24h).count()
 
     # Only return the last 50 logs for performance
     logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(50).all()

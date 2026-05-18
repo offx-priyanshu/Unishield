@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block page_title %}Edit Administrative Node{% endblock %}
+
+{% block extra_css %}
+<style>
+    .section-panel {
+        background: rgba(14, 18, 22, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .section-panel h3 {
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        color: var(--accent);
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .input-field {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: #fff;
+        padding: 1rem;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .input-field:focus {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+    }
+
+    /* Permission Checkboxes */
+    .perm-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .perm-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: #ccc;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: 0.3s;
+    }
+
+    .perm-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .perm-item input {
+        accent-color: var(--accent);
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-panel">
+    <h3>Update Identity: {{ admin.username }}</h3>
+    <form method="POST">
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="name" class="input-field" value="{{ admin.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>Assigned Role</label>
+            <select name="role" class="input-field">
+                <option value="SUPER_ADMIN" {% if admin.admin_role == 'SUPER_ADMIN' %}selected{% endif %}>SUPER ADMIN (Global Access)</option>
+                <option value="SECURITY_ADMIN" {% if admin.admin_role == 'SECURITY_ADMIN' %}selected{% endif %}>SECURITY ADMIN (Control Room)</option>
+                <option value="VIEWER" {% if admin.admin_role == 'VIEWER' %}selected{% endif %}>VIEWER (Audit Only)</option>
+                {% if admin.admin_role == 'OWNER' %}
+                <option value="OWNER" selected>SYSTEM OWNER (Immutable)</option>
+                {% endif %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Granular Permissions</label>
+            <div class="perm-grid">
+                <label class="perm-item">
+                    <input type="checkbox" name="perms" value="ALL" {% if 'ALL' in current_perms %}checked{% endif %}> 
+                    Full Control (ALL)
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" name="perms" value="STUDENT_MANAGE" {% if 'STUDENT_MANAGE' in current_perms %}checked{% endif %}> 
+                    Student Management
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" name="perms" value="OUTPASS_APPROVE" {% if 'OUTPASS_APPROVE' in current_perms %}checked{% endif %}> 
+                    Outpass Approval
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" name="perms" value="SECURITY_CONTROL" {% if 'SECURITY_CONTROL' in current_perms %}checked{% endif %}> 
+                    Command Center Access
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" name="perms" value="LOG_EXPORT" {% if 'LOG_EXPORT' in current_perms %}checked{% endif %}> 
+                    Data Export
+                </label>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a href="{{ url_for('admin.manage_admins') }}" class="btn btn-ghost" style="flex: 1; text-align: center;">CANCEL</a>
+            <button type="submit" class="btn btn-primary" style="flex: 1;">SAVE CHANGES</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

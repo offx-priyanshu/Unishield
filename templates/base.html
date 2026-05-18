@@ -143,11 +143,31 @@
             font-size: 1.4rem;
             filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.5));
         }
+        .logo:hover {
+            transform: translateX(5px);
+            filter: brightness(1.2);
+        }
+
+        .logo:hover i {
+            animation: rotate-logo 0.5s ease-in-out;
+        }
+
+        @keyframes rotate-logo {
+            0% { transform: rotate(0); }
+            50% { transform: rotate(15deg) scale(1.1); }
+            100% { transform: rotate(0); }
+        }
+
         .logo span { 
             font-size: 1.25rem; 
             font-weight: 800; 
             letter-spacing: 1px;
             font-family: 'Syne', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .logo:hover span {
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
         }
 
         .nav-section {
@@ -591,7 +611,7 @@
     
     {% if current_user.is_authenticated %}
     <aside>
-        <a href="/" class="logo" style="margin-bottom: 1rem;">
+        <a href="{% if current_user.role == 'admin' %}{{ url_for('admin.outpasses') }}{% elif current_user.role == 'guard' %}{{ url_for('guard.dashboard') }}{% elif current_user.role == 'warden' %}{{ url_for('warden.dashboard') }}{% elif current_user.role in ['hod', 'dean'] %}{{ url_for('faculty.dashboard') }}{% else %}{{ url_for('student.dashboard') }}{% endif %}" class="logo" style="margin-bottom: 1rem;">
             <i class="fas fa-fingerprint"></i>
             <span>UniShield</span>
         </a>
@@ -602,17 +622,39 @@
         <div class="nav-section">
             <div class="nav-section-title">Security Hub</div>
             {% if current_user.role == 'admin' %}
+                {% if current_user.has_perm('STUDENT_MANAGE') %}
                 <a href="{{ url_for('admin.students') }}" class="nav-link"><i class="fas fa-users"></i> Students</a>
-                <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link"><i class="fas fa-user-shield"></i> Faculty Authority</a>
-                <a href="{{ url_for('admin.guards') }}" class="nav-link"><i class="fas fa-shield-halved"></i> Security Guards</a>
-                <a href="{{ url_for('admin.outpasses') }}" class="nav-link"><i class="fas fa-id-badge"></i> Outpasses</a>
-                <a href="{{ url_for('gate.terminal') }}" class="nav-link"><i class="fas fa-microchip"></i> AI Gate</a>
+                {% endif %}
                 
+                {% if current_user.has_perm('ALL') %}
+                <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link"><i class="fas fa-user-shield"></i> Faculty Authority</a>
+                {% endif %}
+                
+                {% if current_user.has_perm('SECURITY_CONTROL') %}
+                <a href="{{ url_for('admin.guards') }}" class="nav-link"><i class="fas fa-shield-halved"></i> Security Guards</a>
+                {% endif %}
+                
+                {% if current_user.has_perm('OUTPASS_APPROVE') %}
+                <a href="{{ url_for('admin.outpasses') }}" class="nav-link"><i class="fas fa-id-badge"></i> Outpasses</a>
+                {% endif %}
+                
+                {% if current_user.has_perm('SECURITY_CONTROL') %}
+                <a href="{{ url_for('gate.terminal') }}" class="nav-link"><i class="fas fa-microchip"></i> AI Gate</a>
+                {% endif %}
+                
+                {% if current_user.has_perm('SECURITY_CONTROL') or current_user.has_perm('ALL') %}
                 <div class="nav-section-title">Intelligence</div>
+                
+                {% if current_user.has_perm('SECURITY_CONTROL') %}
                 <a href="{{ url_for('admin.analytics') }}" class="nav-link"><i class="fas fa-chart-line"></i> Analytics</a>
                 <a href="{{ url_for('admin.reports') }}" class="nav-link"><i class="fas fa-history"></i> Activity Logs</a>
                 <a href="{{ url_for('admin.sms_center') }}" class="nav-link"><i class="fas fa-sms"></i> SMS Center</a>
+                {% endif %}
+                
+                {% if current_user.has_perm('ALL') %}
                 <a href="{{ url_for('admin.manage_admins') }}" class="nav-link"><i class="fas fa-crown"></i> Admins</a>
+                {% endif %}
+                {% endif %}
             {% elif current_user.role == 'guard' %}
                 <a href="{{ url_for('guard.dashboard') }}" class="nav-link"><i class="fas fa-desktop"></i> Terminal</a>
                 <a href="{{ url_for('gate.terminal') }}" class="nav-link"><i class="fas fa-microchip"></i> AI Gate</a>

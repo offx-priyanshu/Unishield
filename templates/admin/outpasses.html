@@ -4,278 +4,427 @@
 
 {% block extra_css %}
 <style>
-/* Dashboard Summary Cards */
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
+    /* Dashboard Summary Cards */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
 
-.summary-card {
-    background: rgba(14, 18, 22, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s, border-color 0.3s;
-}
+    .summary-card {
+        background: rgba(14, 18, 22, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s, border-color 0.3s;
+    }
 
-.summary-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.1);
-}
+    .summary-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
 
-.summary-card .icon-wrap {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-}
+    .summary-card .icon-wrap {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
 
-.summary-card.total .icon-wrap     { background: rgba(255, 255, 255, 0.05); color: #fff; }
-.summary-card.outside .icon-wrap   { background: rgba(0, 210, 255, 0.1); color: var(--accent); }
-.summary-card.overdue .icon-wrap   { background: rgba(255, 59, 92, 0.1); color: var(--danger); }
-.summary-card.returned .icon-wrap  { background: rgba(0, 245, 122, 0.1); color: var(--success); }
-.summary-card.pending .icon-wrap   { background: rgba(255, 184, 0, 0.1); color: var(--warning); }
+    .summary-card.total .icon-wrap     { background: rgba(255, 255, 255, 0.1); color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+    .summary-card.outside .icon-wrap   { background: rgba(0, 210, 255, 0.2); color: var(--accent); box-shadow: 0 0 15px rgba(0,210,255,0.2); }
+    .summary-card.overdue .icon-wrap   { background: rgba(255, 59, 92, 0.2); color: var(--danger); box-shadow: 0 0 15px rgba(255,59,92,0.2); }
+    .summary-card.returned .icon-wrap  { background: rgba(0, 245, 122, 0.2); color: var(--success); box-shadow: 0 0 15px rgba(0,245,122,0.2); }
+    .summary-card.pending .icon-wrap   { background: rgba(255, 184, 0, 0.2); color: var(--warning); box-shadow: 0 0 15px rgba(255,184,0,0.2); }
 
-.summary-value {
-    font-size: 2rem;
-    font-weight: 800;
-    font-family: 'Syne', sans-serif;
-    margin-bottom: 0.25rem;
-    line-height: 1;
-}
+    .summary-card:hover .icon-wrap {
+        transform: scale(1.1);
+        filter: brightness(1.2);
+    }
 
-.summary-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 600;
-}
+    .summary-card.active .icon-wrap {
+        animation: pulse-glow 2s infinite;
+    }
 
-/* Control Bar: Search & Actions */
-.control-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-}
+    @keyframes pulse-glow {
+        0% { transform: scale(1); filter: brightness(1); }
+        50% { transform: scale(1.05); filter: brightness(1.3); }
+        100% { transform: scale(1); filter: brightness(1); }
+    }
 
-.search-box {
-    display: flex;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    width: 300px;
-}
+    /* ── Modals ── */
+    .fm-backdrop {
+        display:none; position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
+        align-items:center; justify-content:center;
+    }
+    .fm-backdrop.open { display:flex; }
+    .fm-box {
+        background: linear-gradient(160deg,#0d1117,#141920);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 22px; width: 92%; max-width: 1000px;
+        max-height: 85vh; display: flex; flex-direction: column;
+        overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+        animation: fmSlideUp 0.3s ease-out;
+    }
+    @keyframes fmSlideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+    
+    .fm-header { padding:20px 28px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; }
+    .fm-title { font-size:1rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:10px; }
+    .fm-body { padding:0; overflow-y:auto; flex:1; }
+    .fm-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .fm-table th { background:rgba(255,255,255,0.02); padding:14px 20px; text-align:left; color:var(--text-muted); font-weight:600; text-transform:uppercase; font-size:0.65rem; letter-spacing:1px; }
+    .fm-table td { padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.03); color:#eee; }
+    .fm-close { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.7rem; font-weight:700; }
+    .fm-close:hover { background:var(--danger); border-color:var(--danger); }
+    
+    /* Tags */
+    .tag { padding:3px 9px; border-radius:6px; font-size:0.6rem; font-weight:900; text-transform:uppercase; letter-spacing:0.8px; }
+    .tag-normal  { background:rgba(255,255,255,0.05); color:#888; }
+    .tag-medical { background:rgba(0,210,255,0.1); color:var(--accent); }
+    .tag-emergency { background:rgba(255,59,92,0.15); color:var(--danger); }
 
-.search-box input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text-main);
-    width: 100%;
-    padding: 0;
-    margin-left: 10px;
-    font-size: 0.9rem;
-}
 
-.export-group {
-    display: flex;
-    gap: 0.5rem;
-}
+    .summary-value {
+        font-size: 2rem;
+        font-weight: 800;
+        font-family: 'Syne', sans-serif;
+        margin-bottom: 0.25rem;
+        line-height: 1;
+    }
 
-.btn-sm {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    gap: 0.4rem;
-}
+    .summary-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
 
-/* Status Tabs */
-.status-tabs {
-    display: flex;
-    gap: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 1.5rem;
-    padding-bottom: 0px;
-}
+    /* Control Bar: Search & Actions */
+    .control-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
 
-.tab-link {
-    padding: 0.8rem 1.5rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+    .search-box {
+        display: flex;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        width: 300px;
+    }
 
-.tab-link:hover {
-    color: var(--text-main);
-}
+    .search-box input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-main);
+        width: 100%;
+        padding: 0;
+        margin-left: 10px;
+        font-size: 0.9rem;
+    }
 
-.tab-link.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-    background: linear-gradient(to top, rgba(0, 210, 255, 0.05) 0%, transparent 100%);
-}
+    .export-group {
+        display: flex;
+        gap: 0.5rem;
+    }
 
-.tab-badge {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.65rem;
-}
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        gap: 0.4rem;
+    }
 
-.tab-link.active .tab-badge {
-    background: var(--accent);
-    color: #000;
-}
+    /* Status Tabs */
+    .status-tabs {
+        display: flex;
+        gap: 0.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+        padding-bottom: 0px;
+    }
 
-/* Data Table Updates */
-.smart-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    font-size: 0.85rem;
-}
+    .tab-link {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-.smart-table th {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 1rem;
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    color: var(--text-muted);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
+    .tab-link:hover {
+        color: var(--text-main);
+    }
 
-.smart-table td {
-    padding: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-    vertical-align: middle;
-}
+    .tab-link.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+        background: linear-gradient(to top, rgba(0, 210, 255, 0.05) 0%, transparent 100%);
+    }
 
-.smart-table tr:hover td {
-    background: rgba(255, 255, 255, 0.015);
-}
+    .tab-badge {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.65rem;
+    }
 
-.smart-table tr.overdue-row {
-    border-left: 3px solid var(--danger);
-    background: rgba(255, 59, 92, 0.02);
-}
+    .tab-link.active .tab-badge {
+        background: var(--accent);
+        color: #000;
+    }
 
-.profile-cell {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
+    /* Data Table Updates */
+    .smart-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.85rem;
+    }
 
-.avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: var(--accent);
-}
+    .smart-table th {
+        background: rgba(0, 0, 0, 0.4);
+        padding: 1rem;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
 
-.std-name { font-weight: 600; color: #fff; }
-.std-id { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
-.sub-reason { font-size: 0.75rem; color: var(--text-muted); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;}
+    .smart-table td {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        vertical-align: middle;
+    }
 
-/* Countdown Timer */
-.countdown-pill {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-.countdown-pill.safe { background: rgba(0, 245, 122, 0.1); color: var(--success); border: 1px solid rgba(0, 245, 122, 0.2); }
-.countdown-pill.warn { background: rgba(255, 184, 0, 0.1); color: var(--warning); border: 1px solid rgba(255, 184, 0, 0.2); }
-.countdown-pill.danger { background: rgba(255, 59, 92, 0.1); color: var(--danger); border: 1px solid var(--danger); animation: pulse 2s infinite; }
+    .smart-table tr:hover td {
+        background: rgba(255, 255, 255, 0.015);
+    }
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(255, 59, 92, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0); }
-}
+    .smart-table tr.overdue-row {
+        border-left: 3px solid var(--danger);
+        background: rgba(255, 59, 92, 0.02);
+    }
 
-/* Status Badges */
-.status {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-.status.pending { background: rgba(255, 184, 0, 0.1); color: var(--warning); border: 1px solid rgba(255,184,0,0.3); }
-.status.approved { background: rgba(0, 245, 122, 0.1); color: var(--success); border: 1px solid rgba(0,245,122,0.3); }
-.status.out { background: rgba(0, 210, 255, 0.15); color: var(--accent); border: 1px solid rgba(0,210,255,0.4); box-shadow: 0 0 10px rgba(0,210,255,0.1);}
-.status.returned { background: rgba(255, 255, 255, 0.05); color: #aaa; border: 1px solid rgba(255,255,255,0.1); }
-.status.rejected { background: rgba(255, 255, 255, 0.05); color: #666; text-decoration: line-through; }
-.status.late { background: rgba(255, 59, 92, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+    .profile-cell {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
 
-/* Table Actions */
-.act-group { display: flex; gap: 6px; }
-.tbl-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-muted);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-.tbl-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
-.tbl-btn.approve:hover { background: var(--success); color: #000; border-color: var(--success); }
-.tbl-btn.reject:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-.tbl-btn.blacklist:hover { background: #000; color: var(--danger); border-color: var(--danger); }
-.tbl-btn.view:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+    .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: var(--accent);
+    }
 
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-}
-.empty-icon {
-    font-size: 4rem;
-    color: rgba(255, 255, 255, 0.05);
-    margin-bottom: 1.5rem;
-}
+    .std-name {
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .std-id {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: monospace;
+    }
+
+    .sub-reason {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    /* Countdown Timer */
+    .countdown-pill {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .countdown-pill.safe {
+        background: rgba(0, 245, 122, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(0, 245, 122, 0.2);
+    }
+
+    .countdown-pill.warn {
+        background: rgba(255, 184, 0, 0.1);
+        color: var(--warning);
+        border: 1px solid rgba(255, 184, 0, 0.2);
+    }
+
+    .countdown-pill.danger {
+        background: rgba(255, 59, 92, 0.1);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(255, 59, 92, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 59, 92, 0);
+        }
+    }
+
+    /* Status Badges */
+    .status {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .status.pending {
+        background: rgba(255, 184, 0, 0.1);
+        color: var(--warning);
+        border: 1px solid rgba(255, 184, 0, 0.3);
+    }
+
+    .status.approved {
+        background: rgba(0, 245, 122, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(0, 245, 122, 0.3);
+    }
+
+    .status.out {
+        background: rgba(0, 210, 255, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(0, 210, 255, 0.4);
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.1);
+    }
+
+    .status.returned {
+        background: rgba(255, 255, 255, 0.05);
+        color: #aaa;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .status.rejected {
+        background: rgba(255, 255, 255, 0.05);
+        color: #666;
+        text-decoration: line-through;
+    }
+
+    .status.late {
+        background: rgba(255, 59, 92, 0.1);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+    }
+
+    /* Table Actions */
+    .act-group {
+        display: flex;
+        gap: 6px;
+    }
+
+    .tbl-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .tbl-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .tbl-btn.approve:hover {
+        background: var(--success);
+        color: #000;
+        border-color: var(--success);
+    }
+
+    .tbl-btn.reject:hover {
+        background: var(--danger);
+        color: #fff;
+        border-color: var(--danger);
+    }
+
+    .tbl-btn.blacklist:hover {
+        background: #000;
+        color: var(--danger);
+        border-color: var(--danger);
+    }
+
+    .tbl-btn.view:hover {
+        background: var(--accent);
+        color: #000;
+        border-color: var(--accent);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.05);
+        margin-bottom: 1.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -283,34 +432,36 @@
 
 <!-- Top Summary Cards -->
 <div class="summary-grid">
-    <div class="summary-card total">
+    <div class="summary-card total {% if current_status == 'today' %}active{% endif %}" onclick="openAdminModal('today')" style="cursor: pointer;">
         <div class="icon-wrap"><i class="fas fa-file-invoice"></i></div>
         <div class="summary-value">{{ total_today }}</div>
         <div class="summary-label">Requests Today</div>
     </div>
-    
-    <div class="summary-card outside">
+
+    <div class="summary-card outside {% if current_status == 'out' %}active{% endif %}" onclick="openAdminModal('out')" style="cursor: pointer;">
         <div class="icon-wrap"><i class="fas fa-walking"></i></div>
         <div class="summary-value">{{ currently_out }}</div>
         <div class="summary-label">Currently Outside</div>
         {% if currently_out > 0 %}
-        <div style="position: absolute; top: 1.5rem; right: 1.5rem; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent);"></div>
+        <div
+            style="position: absolute; top: 1.5rem; right: 1.5rem; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent);">
+        </div>
         {% endif %}
     </div>
 
-    <div class="summary-card overdue" style="{% if overdue > 0 %}border-color: rgba(255, 59, 92, 0.4);{% endif %}">
+    <div class="summary-card overdue {% if current_status == 'overdue' %}active{% endif %}" onclick="openAdminModal('overdue')" style="cursor: pointer; {% if overdue > 0 %}border-color: rgba(255, 59, 92, 0.4);{% endif %}">
         <div class="icon-wrap"><i class="fas fa-exclamation-triangle"></i></div>
         <div class="summary-value">{{ overdue }}</div>
         <div class="summary-label">Late / Overdue</div>
     </div>
 
-    <div class="summary-card returned">
+    <div class="summary-card returned {% if current_status == 'returned_today' %}active{% endif %}" onclick="openAdminModal('returned_today')" style="cursor: pointer;">
         <div class="icon-wrap"><i class="fas fa-check-circle"></i></div>
         <div class="summary-value">{{ returned_today }}</div>
         <div class="summary-label">Returned Today</div>
     </div>
 
-    <div class="summary-card pending">
+    <div class="summary-card pending {% if current_status == 'pending' %}active{% endif %}" onclick="openAdminModal('pending')" style="cursor: pointer;">
         <div class="icon-wrap"><i class="fas fa-clock"></i></div>
         <div class="summary-value">{{ pending_reqs }}</div>
         <div class="summary-label">Pending Approval</div>
@@ -322,24 +473,30 @@
     <form class="search-box" method="GET">
         <input type="hidden" name="status" value="{{ current_status }}">
         <i class="fas fa-search" style="color: var(--text-muted)"></i>
-        <input type="text" name="search" placeholder="Search by Student Name / ID..." value="{{ search }}" onchange="this.form.submit()">
+        <input type="text" name="search" placeholder="Search by Student Name / ID..." value="{{ search }}"
+            onchange="this.form.submit()">
     </form>
-    
+
     <div class="export-group">
-        <a href="#" class="btn btn-primary btn-sm" onclick="return confirm('Approve all pending requests?')"><i class="fas fa-check-double"></i> Bulk Approve</a>
-        <a href="{{ url_for('admin.export', type='outpasses', format='csv') }}" class="btn btn-ghost btn-sm"><i class="fas fa-file-csv"></i> Export CSV</a>
+        <a href="#" class="btn btn-primary btn-sm" onclick="return confirm('Approve all pending requests?')"><i
+                class="fas fa-check-double"></i> Bulk Approve</a>
+        <a href="{{ url_for('admin.export', type='outpasses', format='csv') }}" class="btn btn-ghost btn-sm"><i
+                class="fas fa-file-csv"></i> Export CSV</a>
     </div>
 </div>
 
 <!-- Main Table Card -->
 <div class="card" style="padding: 0;">
-    
+
     <!-- Tabs -->
     <div class="status-tabs">
         <a href="?status=all" class="tab-link {% if current_status == 'all' %}active{% endif %}">All</a>
-        <a href="?status=pending" class="tab-link {% if current_status == 'pending' %}active{% endif %}">Pending <span class="tab-badge">{{ pending_reqs }}</span></a>
+        <a href="?status=pending" class="tab-link {% if current_status == 'pending' %}active{% endif %}">Pending <span
+                class="tab-badge">{{ pending_reqs }}</span></a>
         <a href="?status=approved" class="tab-link {% if current_status == 'approved' %}active{% endif %}">Approved</a>
-        <a href="?status=out" class="tab-link {% if current_status == 'out' %}active{% endif %}">Active (Outside) <span class="tab-badge" style="background:{% if currently_out>0 %}var(--accent);color:#000{% endif %}">{{ currently_out }}</span></a>
+        <a href="?status=out" class="tab-link {% if current_status == 'out' %}active{% endif %}">Active (Outside) <span
+                class="tab-badge" style="background:{% if currently_out>0 %}var(--accent);color:#000{% endif %}">{{
+                currently_out }}</span></a>
         <a href="?status=returned" class="tab-link {% if current_status == 'returned' %}active{% endif %}">Completed</a>
         <a href="?status=rejected" class="tab-link {% if current_status == 'rejected' %}active{% endif %}">Rejected</a>
     </div>
@@ -360,12 +517,12 @@
             <tbody>
                 {% for op in outpasses %}
                 {% set student = op.student %}
-                
+
                 {% set is_overdue = false %}
                 {% if op.status == 'out' and now > op.expected_return %}
-                    {% set is_overdue = true %}
+                {% set is_overdue = true %}
                 {% endif %}
-                
+
                 <tr class="{% if is_overdue %}overdue-row{% endif %}">
                     <td>
                         <div class="profile-cell">
@@ -385,13 +542,15 @@
                     </td>
                     <td>
                         {% if op.status == 'out' %}
-                            <div class="countdown-pill" data-expected="{{ op.expected_return.isoformat() }}Z">
-                                <!-- JS fills this -->
-                                Loading live tracking...
-                            </div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Limit: {{ op.time_limit_hours }} Hrs</div>
+                        <div class="countdown-pill" data-expected="{{ op.expected_return.isoformat() }}Z">
+                            <!-- JS fills this -->
+                            Loading live tracking...
+                        </div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Limit: {{
+                            op.time_limit_hours }} Hrs</div>
                         {% else %}
-                            <span class="mono" style="font-size: 0.8rem; color: #888;">{{ op.expected_return.strftime('%b %d, %H:%M') if op.expected_return else '—' }}</span>
+                        <span class="mono" style="font-size: 0.8rem; color: #888;">{{ op.expected_return.strftime('%b
+                            %d, %H:%M') if op.expected_return else '—' }}</span>
                         {% endif %}
                     </td>
                     <td class="mono" style="color: var(--text-muted); font-size: 0.8rem;">
@@ -399,31 +558,39 @@
                     </td>
                     <td>
                         {% if is_overdue %}
-                            <span class="status late">LATE</span>
+                        <span class="status late">LATE</span>
                         {% elif op.status == 'pending' %}
-                            <span class="status pending">PENDING</span>
+                        <span class="status pending">PENDING</span>
                         {% elif op.status == 'approved' %}
-                            <span class="status approved">APPROVED</span>
+                        <span class="status approved">APPROVED</span>
                         {% elif op.status == 'out' %}
-                            <span class="status out">ACTIVE</span>
+                        <span class="status out">ACTIVE</span>
                         {% elif op.status == 'returned' %}
-                            <span class="status returned">COMPLETED</span>
+                        <span class="status returned">COMPLETED</span>
                         {% elif op.status == 'rejected' %}
-                            <span class="status rejected">REJECTED</span>
+                        <span class="status rejected">REJECTED</span>
                         {% else %}
-                            <span class="status pending">{{ op.status | upper }}</span>
+                        <span class="status pending">{{ op.status | upper }}</span>
                         {% endif %}
                     </td>
                     <td>
                         <div class="act-group">
                             {% if op.status == 'pending' %}
-                                <a href="?action=approve&op_id={{ op.id }}&status={{ current_status }}" class="tbl-btn approve" title="Approve"><i class="fas fa-check"></i></a>
-                                <a href="?action=reject&op_id={{ op.id }}&status={{ current_status }}" class="tbl-btn reject" title="Reject"><i class="fas fa-times"></i></a>
+                            <a href="?action=approve&op_id={{ op.id }}&status={{ current_status }}"
+                                class="tbl-btn approve" title="Approve"><i class="fas fa-check"></i></a>
+                            <a href="?action=reject&op_id={{ op.id }}&status={{ current_status }}"
+                                class="tbl-btn reject" title="Reject"><i class="fas fa-times"></i></a>
                             {% elif op.status == 'out' %}
-                                <a href="#" class="tbl-btn" style="background: rgba(0, 245, 122, 0.1); color: var(--success); width: auto; padding: 0 10px; font-weight: 700;" title="Mark Returned"><i class="fas fa-arrow-down" style="margin-right:5px"></i> RETURNED</a>
+                            <a href="#" class="tbl-btn"
+                                style="background: rgba(0, 245, 122, 0.1); color: var(--success); width: auto; padding: 0 10px; font-weight: 700;"
+                                title="Mark Returned"><i class="fas fa-arrow-down" style="margin-right:5px"></i>
+                                RETURNED</a>
                             {% endif %}
                             {% if op.status == 'out' and is_overdue %}
-                                <a href="?action=blacklist&op_id={{ op.id }}&status={{ current_status }}" class="tbl-btn blacklist" title="Blacklist Student" onclick="return confirm('Blacklist this student permanently?')"><i class="fas fa-ban"></i></a>
+                            <a href="?action=blacklist&op_id={{ op.id }}&status={{ current_status }}"
+                                class="tbl-btn blacklist" title="Blacklist Student"
+                                onclick="return confirm('Blacklist this student permanently?')"><i
+                                    class="fas fa-ban"></i></a>
                             {% endif %}
                         </div>
                     </td>
@@ -434,7 +601,8 @@
                         <div class="empty-state">
                             <div class="empty-icon"><i class="fas fa-shield-alt"></i></div>
                             <h3 style="color: #fff; margin-bottom: 0.5rem;">No Outpass Requests Yet</h3>
-                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">All students are currently inside the campus perimeters.</p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">All students
+                                are currently inside the campus perimeters.</p>
                             <button class="btn btn-ghost"><i class="fas fa-plus"></i> Create Manual Entry</button>
                         </div>
                     </td>
@@ -445,30 +613,122 @@
     </div>
 </div>
 
+<!-- MODALS -->
+<div id="admin-modal-backdrop" class="fm-backdrop" onclick="closeAdminModal()">
+    <div class="fm-box" onclick="event.stopPropagation()">
+        <div class="fm-header">
+            <div class="fm-title" id="fm-title-text">Outpass Report</div>
+            <div style="display:flex; gap:10px;">
+                <button class="fm-close" onclick="closeAdminModal()">Close</button>
+            </div>
+        </div>
+        <div class="fm-body">
+            <table class="fm-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Roll No.</th>
+                        <th>Destination</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Applied At</th>
+                    </tr>
+                </thead>
+                <tbody id="fm-tbody">
+                    <!-- Data here -->
+                </tbody>
+            </table>
+            <div id="fm-loader" style="padding:40px; text-align:center; color:var(--text-muted);">
+                <i class="fas fa-circle-notch fa-spin"></i> Syncing encrypted data...
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Modal Logic for Admin Outpass Dashboard
+    const adminModalData = {
+        'today': { title: 'Requests Today', color: '#fff' },
+        'out': { title: 'Currently Outside', color: 'var(--accent)' },
+        'overdue': { title: 'Late / Overdue', color: 'var(--danger)' },
+        'returned_today': { title: 'Returned Today', color: 'var(--success)' },
+        'pending': { title: 'Pending Approval', color: 'var(--warning)' }
+    };
+
+    async function openAdminModal(type) {
+        const cfg = adminModalData[type];
+        document.getElementById('fm-title-text').innerHTML = `<i class="fas fa-database" style="color:${cfg.color}"></i> ${cfg.title}`;
+        document.getElementById('admin-modal-backdrop').classList.add('open');
+        document.body.style.overflow = 'hidden';
+        
+        const tbody = document.getElementById('fm-tbody');
+        const loader = document.getElementById('fm-loader');
+        tbody.innerHTML = '';
+        loader.style.display = 'block';
+
+        try {
+            const r = await fetch(`/admin/api/modal_data?type=${type}`);
+            const d = await r.json();
+            loader.style.display = 'none';
+            
+            if (d.passes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted)">No records found for this category.</td></tr>`;
+                return;
+            }
+
+            d.passes.forEach(p => {
+                const priorityClass = p.priority === 'emergency' ? 'emergency' : (p.priority === 'medical' ? 'medical' : 'normal');
+                const row = `
+                    <tr>
+                        <td>
+                            <div style="font-weight:700">${p.student_name}</div>
+                            <div style="font-size:0.65rem; color:var(--text-muted)">${p.department}</div>
+                        </td>
+                        <td class="mono">${p.student_id}</td>
+                        <td>${p.destination}</td>
+                        <td><span class="tag tag-${priorityClass}">${p.priority}</span></td>
+                        <td><span style="font-weight:800; font-size:0.65rem;">${p.status.toUpperCase()}</span></td>
+                        <td class="mono" style="font-size:0.7rem">${p.created_at}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (e) {
+            loader.innerHTML = '<span style="color:var(--danger)">Failed to fetch data.</span>';
+        }
+    }
+
+    function closeAdminModal() {
+        document.getElementById('admin-modal-backdrop').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // Escape key to close
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAdminModal(); });
+
     // Live Countdown Timer Engine
     function updateCountdowns() {
         const pills = document.querySelectorAll('.countdown-pill');
         const now = new Date();
-        
+
         pills.forEach(pill => {
             const expectedStr = pill.getAttribute('data-expected');
             if (!expectedStr) return;
-            
+
             const expected = new Date(expectedStr);
             const diffMs = expected - now;
-            
+
             pill.className = 'countdown-pill'; // reset
-            
+
             if (diffMs > 0) {
                 // Time remaining
                 const diffMins = Math.floor(diffMs / 60000);
                 const hrs = Math.floor(diffMins / 60);
                 const mins = diffMins % 60;
-                
+
                 if (hrs > 0) {
                     pill.innerHTML = `<i class="fas fa-stopwatch"></i> ${hrs}h ${mins}m left`;
                     pill.classList.add('safe');
@@ -481,23 +741,23 @@
                 const overdueMins = Math.abs(Math.floor(diffMs / 60000));
                 const hrs = Math.floor(overdueMins / 60);
                 const mins = overdueMins % 60;
-                
+
                 pill.innerHTML = `⚠️ OVERDUE by ${hrs > 0 ? hrs + 'h ' : ''}${mins}m`;
                 pill.classList.add('danger');
-                
+
                 // Add styling to parent row
                 const tr = pill.closest('tr');
-                if(!tr.classList.contains('overdue-row')){
+                if (!tr.classList.contains('overdue-row')) {
                     tr.classList.add('overdue-row');
                     const statusCell = tr.querySelector('.status');
-                    if(statusCell) {
+                    if (statusCell) {
                         statusCell.className = 'status late';
                         statusCell.innerText = 'LATE';
                     }
-                    
+
                     // Add blacklist button if not already there
                     const actionGroup = tr.querySelector('.act-group');
-                    if(actionGroup && !actionGroup.innerHTML.includes('fa-ban')) {
+                    if (actionGroup && !actionGroup.innerHTML.includes('fa-ban')) {
                         // The user will need to refresh for the functional backend link, but UI wise we can show it
                     }
                 }

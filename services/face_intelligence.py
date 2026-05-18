@@ -47,6 +47,9 @@ class FaceIntelligence:
             if results:
                 return results[0]["embedding"], results[0]["face_confidence"]
             return None, 0
+        except ValueError:
+            # Face nahi mila, chupchap return ho jao, error print mat karo
+            return None, 0
         except Exception as e:
             print(f"[FaceIntelligence] Embedding Error: {e}")
             return None, 0

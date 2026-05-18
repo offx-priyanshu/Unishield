@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
 from flask_login import login_required, current_user
+from functools import wraps
 from models.db import db
 from models.user import User
 from models.outpass import Outpass
@@ -34,6 +35,9 @@ gate_bp = Blueprint('gate', __name__, url_prefix='/gate')
 def terminal():
     if current_user.role not in ['admin', 'guard']:
         return "Unauthorized", 403
+    if current_user.role == 'guard' and not current_user.has_perm('verify_student'):
+        flash('Access Denied: You need the Verification permission.', 'danger')
+        return redirect(url_for('guard.dashboard'))
     return render_template('guard/gate_terminal.html')
 
 @gate_bp.route('/qr-scanner')
@@ -41,14 +45,18 @@ def terminal():
 def qr_scanner():
     if current_user.role not in ['admin', 'guard']:
         return "Unauthorized", 403
+    if current_user.role == 'guard' and not current_user.has_perm('verify_student'):
+        flash('Access Denied: You need the Verification permission.', 'danger')
+        return redirect(url_for('guard.dashboard'))
     return render_template('guard/qr_scanner.html')
 
 @gate_bp.route('/auto-scan', methods=['POST'])
 @login_required
 def auto_scan():
+    if current_user.role == 'guard' and not current_user.has_perm('verify_student'):
+        return jsonify({'success': False, 'message': 'Permission Denied (Verification required)'}), 403
     data = request.json
     image_b64 = data.get('image')
-    
     if not image_b64:
         return jsonify({'success': False, 'message': 'No frame received'}), 400
 
@@ -122,12 +130,8 @@ def auto_scan():
 @gate_bp.route('/scan-id', methods=['POST'])
 @login_required
 def scan_id():
-    """
-    POST /gate/scan-id
-    Accepts a base64 image of student ID card.
-    Tries QR decode first, falls back to OCR.
-    Returns extracted student data + DB lookup result.
-    """
+    if current_user.role == 'guard' and not current_user.has_perm('enroll_student'):
+        return jsonify({'success': False, 'message': 'Permission Denied (Enrollment required)'}), 403
     data        = request.json or {}
     image_b64   = data.get('image', '')
     client_qr   = data.get('client_qr')
@@ -139,6 +143,9 @@ def scan_id():
     
     # Unified extraction: tries client_qr first, then server QR, then OCR
     result = extract_id_card_data(image_b64, client_qr_data=client_qr)
+
+    print("\n--- ID SCAN RESULT ---")
+    print(result)
 
     if not result['success']:
         return jsonify({'success': False, 'message': 'Could not read ID card. Try again or fill manually.'})
@@ -176,6 +183,8 @@ def scan_id():
 @gate_bp.route('/enroll', methods=['POST'])
 @login_required
 def enroll():
+    if current_user.role == 'guard' and not current_user.has_perm('enroll_student'):
+        return jsonify({'success': False, 'message': 'Permission Denied (Enrollment required)'}), 403
     data = request.json
     images = data.get('images', []) 
     student_data = data.get('student_data', {})
@@ -224,9 +233,46 @@ def get_stats():
         'currently_out': out
     })
 
+@gate_bp.route('/movements/<move_type>')
+@login_required
+def get_movements(move_type):
+    if current_user.role == 'guard' and not current_user.has_perm('view_logs'):
+        return jsonify({'success': False, 'message': 'Permission Denied'}), 403
+    
+    today = datetime.utcnow().date()
+    query = Outpass.query
+
+    if move_type == 'exits':
+        query = query.filter(db.func.date(Outpass.exit_time) == today)
+    elif move_type == 'returns':
+        query = query.filter(db.func.date(Outpass.return_time) == today)
+    elif move_type == 'out':
+        query = query.filter(Outpass.status == 'out')
+    else:
+        return jsonify({'success': False, 'message': 'Invalid movement type'}), 400
+
+    movements = query.order_by(Outpass.created_at.desc()).all()
+    
+    report_data = []
+    for m in movements:
+        report_data.append({
+            'name': m.student.name,
+            'sid': m.student.student_id,
+            'destination': m.destination,
+            'priority': m.priority.upper(),
+            'status': m.status.upper(),
+            'time': (m.exit_time or m.created_at).strftime('%I:%M %p'),
+            'applied_at': m.created_at.strftime('%I:%M %p')
+        })
+    
+    return jsonify({'success': True, 'data': report_data})
+
+
 @gate_bp.route('/today-report')
 @login_required
 def today_report():
+    if current_user.role == 'guard' and not current_user.has_perm('view_logs'):
+        return jsonify({'success': False, 'message': 'Permission Denied (Logs required)'}), 403
     today = datetime.utcnow().date()
     # Fetch all outpasses that were either exited or returned today
     movements = Outpass.query.filter(
@@ -249,6 +295,9 @@ def today_report():
 @gate_bp.route('/export/excel')
 @login_required
 def export_excel():
+    if current_user.role == 'guard' and not current_user.has_perm('view_logs'):
+        flash('Access Denied: You need the Logs permission.', 'danger')
+        return redirect(url_for('guard.dashboard'))
     from utils.export import ExportService
     today = datetime.utcnow().date()
     movements = Outpass.query.filter(

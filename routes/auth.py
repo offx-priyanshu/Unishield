@@ -75,9 +75,10 @@ def login():
         
         # Update login stats
         user.last_login = datetime.utcnow()
+        user.last_action = 'System Login'
         db.session.commit()
         
-        Logger.log(user.id, f'User {username} logged in')
+        Logger.log(user.id, f'User {username} logged in', severity='info')
 
         
         # Define redirect URL based on role
@@ -184,7 +185,9 @@ def update_profile():
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    Logger.log(current_user.id, 'System Session Terminated (Logout)')
+    Logger.log(current_user.id, 'System Session Terminated (Logout)', severity='info')
+    current_user.last_action = 'System Logout'
+    db.session.commit()
     logout_user()
     flash('Logged out successfully.', 'info')
     return redirect(url_for('auth.login'))

@@ -40,6 +40,31 @@ def check_overdue_outpasses(app):
         
         db.session.commit()
 
+def cleanup_old_system_logs(app):
+    with app.app_context():
+        from models.log import ActivityLog, SMSLog
+        from models.db import db
+        from datetime import timedelta
+        
+        threshold = datetime.utcnow() - timedelta(hours=24)
+        
+        # 1. Cleanup Login Logs
+        ActivityLog.query.filter(
+            ActivityLog.timestamp < threshold,
+            db.or_(
+                ActivityLog.action.ilike('%logged in%'),
+                ActivityLog.action.ilike('%logout%'),
+                ActivityLog.action.ilike('%terminated%')
+            )
+        ).delete(synchronize_session=False)
+        
+        # 2. Cleanup SMS Logs
+        SMSLog.query.filter(
+            SMSLog.sent_at < threshold
+        ).delete(synchronize_session=False)
+        
+        db.session.commit()
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -99,6 +124,7 @@ def create_app():
     # Background Tasks
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=check_overdue_outpasses, trigger="interval", minutes=60, args=[app])
+    scheduler.add_job(func=cleanup_old_system_logs, trigger="interval", minutes=60, args=[app])
     scheduler.start()
 
     @app.route('/')

@@ -5,6 +5,7 @@
 {% block content %}
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
     
+    {% if current_user.has_perm('verify_student') %}
     <a href="{{ url_for('gate.terminal') }}" class="card" style="text-decoration: none; text-align: center; padding: 4rem; transition: transform 0.3s; border-top: 4px solid var(--accent);">
         <i class="fas fa-video" style="font-size: 4rem; color: var(--accent); margin-bottom: 2rem;"></i>
         <h2 style="color: white; margin-bottom: 1rem;">AI SMART SCANNER</h2>
@@ -13,8 +14,9 @@
             LAUNCH SMART LENS <i class="fas fa-chevron-right"></i>
         </div>
     </a>
+    {% endif %}
 
-    
+    {% if current_user.has_perm('view_logs') %}
     <div class="card" style="padding: 4rem; text-align: center; border-top: 4px solid var(--success);">
         <i class="fas fa-id-card-clip" style="font-size: 4rem; color: var(--success); margin-bottom: 2rem;"></i>
         <h2 style="color: white; margin-bottom: 1rem;">GATE ACTIVITY MONITOR</h2>
@@ -31,6 +33,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
 
 </div>

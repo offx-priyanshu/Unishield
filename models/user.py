@@ -35,7 +35,7 @@ class User(db.Model, UserMixin):
     permissions = db.Column(db.Text) # JSON list of permissions
     status = db.Column(db.String(20), default='PENDING') # PENDING | ACTIVE | INACTIVE
     last_login = db.Column(db.DateTime)
-    last_active = db.Column(db.DateTime, default=datetime.utcnow)
+    last_active = db.Column(db.DateTime)
     last_action = db.Column(db.String(200)) # Last readable action performed
     
     is_active = db.Column(db.Boolean, default=True)

@@ -24,6 +24,24 @@ def guard_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def guard_permission_required(perm):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            if current_user.role == 'admin':
+                return f(*args, **kwargs)
+            if current_user.role != 'guard':
+                flash('Guard access required', 'danger')
+                return redirect(url_for('auth.login'))
+            if not current_user.has_perm(perm):
+                flash(f'Access Denied: You need the {perm} permission.', 'danger')
+                return redirect(url_for('guard.dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 @guard_bp.route('/dashboard')
 @login_required
 @guard_required
@@ -34,7 +52,7 @@ from utils.id_card import extract_id_card_data
 
 @guard_bp.route('/scan-id', methods=['POST'])
 @login_required
-@guard_required
+@guard_permission_required('enroll_student')
 def scan_id_card():
     data  = request.get_json() or {}
     b64   = data.get('id_card_image', '')
@@ -63,7 +81,7 @@ def scan_id_card():
 
 @guard_bp.route('/enroll', methods=['POST'])
 @login_required
-@guard_required
+@guard_permission_required('enroll_student')
 def enroll_student():
     data = request.json
     student_id = data.get('student_id')

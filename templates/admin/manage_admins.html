@@ -213,22 +213,31 @@
 
     /* Action Buttons */
     .btn-action {
-        background: none;
-        border: none;
-        font-size: 0.9rem;
-        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        transition: 0.3s;
+        transition: all 0.3s ease;
+        text-decoration: none;
     }
 
-    .btn-del {
-        color: var(--danger);
+    .btn-action:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
     }
 
-    .btn-del:hover {
-        color: #ff5274;
-        transform: scale(1.1);
-    }
+    .btn-action.edit i { color: #00d2ff; }
+    .btn-action.pwd i { color: #fff; }
+    .btn-action.block i { color: #ff5274; }
+    .btn-action.del i { color: #ff5274; }
+    
+    .btn-action:hover.del { background: rgba(255, 82, 116, 0.1); border-color: rgba(255, 82, 116, 0.3); }
+    .btn-action:hover.block { background: rgba(255, 82, 116, 0.1); border-color: rgba(255, 82, 116, 0.3); }
 
     .btn-activate {
         background: var(--success);
@@ -384,19 +393,26 @@
                     </td>
                     <td>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            {% if a.status == 'PENDING' and current_user.admin_role == 'OWNER' %}
-                            <form method="POST">
+                            {% if a.status == 'PENDING' %}
+                            <form method="POST" style="margin-right: 5px;">
                                 <input type="hidden" name="action" value="activate">
                                 <input type="hidden" name="admin_id" value="{{ a.id }}">
                                 <button type="submit" class="btn-activate">ACTIVATE</button>
                             </form>
                             {% endif %}
 
+                            <a href="{{ url_for('admin.edit_admin', user_id=a.id) }}" class="btn-action edit" title="Edit Admin"><i class="fas fa-edit"></i></a>
+                            
+                            <button type="button" class="btn-action pwd" title="Reset Password" onclick="openPwdModal({{ a.id }}, '{{ a.name }}')"><i class="fas fa-key"></i></button>
+                            
+                            <form action="{{ url_for('admin.toggle_admin_duty', user_id=a.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-action block" title="Toggle Access"><i class="fas {% if a.status == 'ACTIVE' %}fa-user-slash{% else %}fa-user-check{% endif %}"></i></button>
+                            </form>
+
                             <form action="{{ url_for('admin.delete_user', user_id=a.id) }}" method="POST"
                                 onsubmit="return confirm('CRITICAL: Purge this administrative node?');"
                                 style="display: inline;">
-                                <button type="submit" class="btn-action btn-del"><i
-                                        class="fas fa-trash-alt"></i></button>
+                                <button type="submit" class="btn-action del"><i class="fas fa-trash-alt"></i></button>
                             </form>
                         </div>
                     </td>
@@ -404,6 +420,22 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Password Reset Modal -->
+<div id="pwdModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background: rgba(20,25,30,0.9); border:1px solid var(--border); padding:2rem; border-radius:12px; width:400px; max-width:90%;">
+        <h3 style="color:var(--accent); font-size:1rem; margin-bottom:1rem; letter-spacing:1px; text-transform:uppercase;">Reset Access Password</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">Enter new password for <span id="pwdAdminName" style="color:#fff; font-weight:bold;"></span>.</p>
+        <form method="POST" action="{{ url_for('admin.reset_admin_pwd') }}">
+            <input type="hidden" name="admin_id" id="pwdAdminId">
+            <input type="password" name="new_password" class="input-field" placeholder="New Password" required style="margin-bottom:1.5rem;">
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-ghost" onclick="closePwdModal()" style="flex:1;">CANCEL</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">UPDATE KEY</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -419,6 +451,16 @@
         } else {
             target.innerText = '';
         }
+    }
+</script>
+<script>
+    function openPwdModal(id, name) {
+        document.getElementById('pwdAdminId').value = id;
+        document.getElementById('pwdAdminName').innerText = name;
+        document.getElementById('pwdModal').style.display = 'flex';
+    }
+    function closePwdModal() {
+        document.getElementById('pwdModal').style.display = 'none';
     }
 </script>
 {% endblock %}

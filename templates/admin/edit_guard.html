@@ -197,8 +197,8 @@
                 <label class="p-item"><input type="checkbox" name="perms" value="verify_student" {% if 'verify_student' in current_perms %}checked{% endif %}> Verification</label>
                 <label class="p-item"><input type="checkbox" name="perms" value="enroll_student" {% if 'enroll_student' in current_perms %}checked{% endif %}> Enrollment</label>
                 <label class="p-item"><input type="checkbox" name="perms" value="view_logs" {% if 'view_logs' in current_perms %}checked{% endif %}> Logs</label>
-                <label class="p-item"><input type="checkbox" name="perms" value="manage_alerts" {% if 'manage_alerts' in current_perms %}checked{% endif %}> Alerts</label>
-                <label class="p-item"><input type="checkbox" name="perms" value="manual_override" {% if 'manual_override' in current_perms %}checked{% endif %}> Override</label>
+                <label class="p-item"><input type="checkbox" name="perms" value="trigger_alert" {% if 'trigger_alert' in current_perms or 'manage_alerts' in current_perms %}checked{% endif %}> Alerts</label>
+
             </div>
 
             <div class="btn-group">

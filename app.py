@@ -146,7 +146,12 @@ def inject_global_vars():
 
 with app.app_context():
     db.create_all()
-    admin_user = User.query.filter_by(role='admin').first()
+
+    # Find the owner admin by the configured username
+    admin_user = User.query.filter_by(
+        username=Config.ADMIN_USERNAME
+    ).first()
+
     if not admin_user:
         admin = User(
             username=Config.ADMIN_USERNAME,
@@ -158,13 +163,14 @@ with app.app_context():
             status='ACTIVE',
             permissions='["ALL"]'
         )
+
         admin.set_password(Config.ADMIN_PASSWORD)
         db.session.add(admin)
-
         db.session.commit()
+
     else:
-        # Keep the existing admin username and email.
-        # Only update the password.
+        # Update ONLY the owner admin's password.
+        # Do not modify other approved admin accounts.
         admin_user.set_password(Config.ADMIN_PASSWORD)
         db.session.commit()
 

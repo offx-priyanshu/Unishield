@@ -175,7 +175,6 @@ with app.app_context():
         db.session.commit()
 
 return app
-```
 
 if **name** == '**main**':
 app = create\_app()

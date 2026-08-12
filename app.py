@@ -1,6 +1,6 @@
-from flask import Flask, redirect, url\_for, flash, jsonify
-from flask\_login import LoginManager
-from flask\_jwt\_extended import JWTManager
+from flask import Flask, redirect, url_for, flash, jsonify
+from flask_login import LoginManager
+from flask_jwt_extended import JWTManager
 from models.db import db
 from models.user import User
 from config import Config
@@ -9,11 +9,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import os
 from datetime import datetime
 
-def check\_overdue\_outpasses(app):
-with app.app\_context():
+def check_overdue_outpasses(app):
+with app.app_context():
 from models.outpass import Outpass
 from models.user import User
-from services.sms\_service import SMSService
+from services.sms_service import SMSService
 from models.db import db
 
 ```
@@ -42,8 +42,8 @@ from models.db import db
     db.session.commit()
 ```
 
-def cleanup\_old\_system\_logs(app):
-with app.app\_context():
+def cleanup_old_system_logs(app):
+with app.app_context():
 from models.log import ActivityLog, SMSLog
 from models.db import db
 from datetime import timedelta
@@ -69,9 +69,9 @@ from datetime import timedelta
     db.session.commit()
 ```
 
-def create\_app():
+def create_app():
 app = Flask(**name**)
-app.config.from\_object(Config)
+app.config.from_object(Config)
 
 ```
 db.init_app(app)
@@ -177,5 +177,5 @@ with app.app_context():
 return app
 
 if **name** == '**main**':
-app = create\_app()
+app = create_app()
 socketio.run(app, debug=True, port=8000)

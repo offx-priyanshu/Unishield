@@ -9,83 +9,84 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import os
 from datetime import datetime
 
-def check_overdue_outpasses(app):
-with app.app_context():
-from models.outpass import Outpass
-from models.user import User
-from services.sms_service import SMSService
-from models.db import db
 
-```
-    now = datetime.utcnow()
-    # Find all students who are "out" and late, and haven't been alerted yet
-    late_outpasses = Outpass.query.filter(
-        Outpass.status == 'out',
-        Outpass.expected_return < now,
-        Outpass.alert_sent == False
-    ).all()
-    
-    for op in late_outpasses:
-        student = User.query.get(op.student_id)
-        if student:
-            # 1. Send SMS Alert
-            SMSService.notify_overdue(student.name, student.parent_phone, student.phone, op.expected_return.strftime('%H:%M'))
-            
-            # 2. Add Violation
-            student.violations += 1
-            if student.violations >= 3:
-                student.is_blacklisted = True
-            
-            # 3. Mark alert as sent
-            op.alert_sent = True
-    
-    db.session.commit()
-```
+def check_overdue_outpasses(app):
+    with app.app_context():
+        from models.outpass import Outpass
+        from models.user import User
+        from services.sms_service import SMSService
+        from models.db import db
+
+        now = datetime.utcnow()
+
+        late_outpasses = Outpass.query.filter(
+            Outpass.status == 'out',
+            Outpass.expected_return < now,
+            Outpass.alert_sent == False
+        ).all()
+
+        for op in late_outpasses:
+            student = User.query.get(op.student_id)
+
+            if student:
+                SMSService.notify_overdue(
+                    student.name,
+                    student.parent_phone,
+                    student.phone,
+                    op.expected_return.strftime('%H:%M')
+                )
+
+                student.violations += 1
+
+                if student.violations >= 3:
+                    student.is_blacklisted = True
+
+                op.alert_sent = True
+
+        db.session.commit()
+
 
 def cleanup_old_system_logs(app):
-with app.app_context():
-from models.log import ActivityLog, SMSLog
-from models.db import db
-from datetime import timedelta
+    with app.app_context():
+        from models.log import ActivityLog, SMSLog
+        from models.db import db
+        from datetime import timedelta
 
-```
-    threshold = datetime.utcnow() - timedelta(hours=24)
-    
-    # 1. Cleanup Login Logs
-    ActivityLog.query.filter(
-        ActivityLog.timestamp < threshold,
-        db.or_(
-            ActivityLog.action.ilike('%logged in%'),
-            ActivityLog.action.ilike('%logout%'),
-            ActivityLog.action.ilike('%terminated%')
-        )
-    ).delete(synchronize_session=False)
-    
-    # 2. Cleanup SMS Logs
-    SMSLog.query.filter(
-        SMSLog.sent_at < threshold
-    ).delete(synchronize_session=False)
-    
-    db.session.commit()
-```
+        threshold = datetime.utcnow() - timedelta(hours=24)
+
+        ActivityLog.query.filter(
+            ActivityLog.timestamp < threshold,
+            db.or_(
+                ActivityLog.action.ilike('%logged in%'),
+                ActivityLog.action.ilike('%logout%'),
+                ActivityLog.action.ilike('%terminated%')
+            )
+        ).delete(synchronize_session=False)
+
+        SMSLog.query.filter(
+            SMSLog.sent_at < threshold
+        ).delete(synchronize_session=False)
+
+        db.session.commit()
+
 
 def create_app():
-app = Flask(**name**)
-app.config.from_object(Config)
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-```
-db.init_app(app)
-socketio.init_app(app)
+    db.init_app(app)
+    socketio.init_app(app)
 
-login_manager = LoginManager()
-login_manager.login_view = 'auth.login'
-login_manager.init_app(app)
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-    
-jwt = JWTManager(app)
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    jwt = JWTManager(app)
+
 
 @app.template_filter('from_json')
 def from_json(value):
@@ -118,6 +119,7 @@ app.register_blueprint(api_bp, url_prefix='/api')
 app.register_blueprint(gate_bp, url_prefix='/gate')
 app.register_blueprint(faculty_bp, url_prefix='/faculty')
 app.register_blueprint(warden_bp, url_prefix='/warden')
+
 
 @app.before_request
 def update_last_active():
@@ -173,6 +175,7 @@ with app.app_context():
         # Do not modify other approved admin accounts.
         admin_user.set_password(Config.ADMIN_PASSWORD)
         db.session.commit()
+
 
 return app
 

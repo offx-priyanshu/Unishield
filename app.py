@@ -157,11 +157,11 @@ def create_app():
             db.session.add(admin)
 
             db.session.commit()
-        else:
-            admin_user.username = Config.ADMIN_USERNAME
-            admin_user.email    = Config.ADMIN_EMAIL
-            admin_user.set_password(Config.ADMIN_PASSWORD)
-            db.session.commit()
+       else:
+    # Keep the existing admin username and email.
+    # Only update the password.
+    admin_user.set_password(Config.ADMIN_PASSWORD)
+    db.session.commit()
 
     return app
 
